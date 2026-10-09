@@ -199,7 +199,7 @@ function saveTireAndProceed() {
   }
   var cid = getParam('customerId') || sessionStorage.getItem('reception_customerId') || '';
   var vid = getParam('vehicleId') || sessionStorage.getItem('reception_vehicleId') || '';
-  location.href = 'd_reception_form?customerId=' + encodeURIComponent(cid)
+  location.href = 'd_reception_form.html?customerId=' + encodeURIComponent(cid)
     + '&vehicleId=' + encodeURIComponent(vid);
 }
 

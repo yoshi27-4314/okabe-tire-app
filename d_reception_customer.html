@@ -117,7 +117,7 @@ async function doSearch() {
 
 function selectCustomer(customerId) {
   sessionStorage.setItem('reception_customerId', customerId);
-  location.href = 'd_reception_vehicle?customerId=' + encodeURIComponent(customerId);
+  location.href = 'd_reception_vehicle.html?customerId=' + encodeURIComponent(customerId);
 }
 
 async function createCustomer() {

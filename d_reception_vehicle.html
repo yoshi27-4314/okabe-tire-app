@@ -228,7 +228,7 @@ async function goToNext() {
   sessionStorage.setItem('reception_vehicleId', vid);
 
   if (fromForm) {
-    location.href = 'd_reception_form?customerId='
+    location.href = 'd_reception_form.html?customerId='
       + encodeURIComponent(customerId) + '&vehicleId=' + encodeURIComponent(vid);
     return;
   }
@@ -236,13 +236,13 @@ async function goToNext() {
   var purpose = sessionStorage.getItem('reception_purpose') || '';
 
   if (purpose === '履き替え') {
-    location.href = 'd_reception_form?customerId='
+    location.href = 'd_reception_form.html?customerId='
       + encodeURIComponent(customerId) + '&vehicleId=' + encodeURIComponent(vid);
   } else if (purpose === '返却のみ') {
-    location.href = 'search_storage?fromReception=1';
+    location.href = 'search_storage.html?fromReception=1';
   } else {
     await createPhotoFolder();
-    location.href = 'd_reception_tire?customerId='
+    location.href = 'd_reception_tire.html?customerId='
       + encodeURIComponent(customerId) + '&vehicleId=' + encodeURIComponent(vid);
   }
 }

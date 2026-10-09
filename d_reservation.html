@@ -227,7 +227,7 @@ function goToReception() {
   if (name) sessionStorage.setItem('reservation_name', name);
   if (phone) sessionStorage.setItem('reservation_phone', phone);
   if (orderNumber) sessionStorage.setItem('reservation_orderNumber', orderNumber);
-  location.href = 'd_reception_customer?fromReservation=1';
+  location.href = 'd_reception_customer.html?fromReservation=1';
 }
 
 if (getParam('tab') === 'list') {
