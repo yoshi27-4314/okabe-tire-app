@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>預かりタイヤ検索 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.pm-btn { width: 36px; height: 36px; font-size: 18px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 8px; background: var(--white); cursor: pointer; color: var(--orange); }
+.pm-btn:active { background: #FFF3EB; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; }
+.wo-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+.wo-card-customer { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.wo-card-detail { font-size: 14px; color: var(--text2); line-height: 1.5; }
+.filter-bar { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+.filter-btn { padding: 6px 12px; font-size: 12px; font-weight: 600; border: 1.5px solid var(--border); border-radius: 6px; color: var(--text3); cursor: pointer; background: var(--white); }
+.filter-btn.active { border-color: var(--orange); background: #FFF3EB; color: var(--orange); }
+.check-row { display: flex; align-items: center; gap: 10px; }
+.check-row input[type=checkbox] { width: 22px; height: 22px; flex-shrink: 0; accent-color: var(--orange); }
+.check-row .card-body { flex: 1; cursor: pointer; }
+.cart-box { background: #FFF8F0; border: 2px solid var(--orange); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; }
+.cart-title { font-size: 14px; font-weight: 700; color: var(--orange); margin-bottom: 8px; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
+.cart-item:last-child { border-bottom: none; }
+.cart-remove { color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; }
+</style>
+</head>
+<body>
+
+<!-- 検索トップ -->
+<div id="scrTop" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="goBack()">&lt; 戻る</button>
+    <div class="header-title">預かりタイヤ検索</div>
+  </div>
+  <div class="content">
+    <!-- 出庫かご -->
+    <div class="cart-box" id="cartBox" style="display:none;">
+      <div class="cart-title">出庫かご（<span id="cartCount">0</span>件）</div>
+      <div id="cartItems"></div>
+      <button class="btn-primary" style="margin-top:10px;font-size:16px;padding:14px;" onclick="doBulkRelease()">まとめて出庫する</button>
+    </div>
+
+    <div class="search-box">
+      <input class="search-input" type="text" id="searchQuery" placeholder="何でも検索" onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-btn" id="searchBtn" onclick="doSearch()">検索</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-top:-12px;margin-bottom:12px;padding-left:4px;">顧客名 / ナンバー / 棚番 / タイヤサイズ / メーカー / 車種 / 顧客コード / 日付</div>
+    <div class="filter-bar">
+      <span class="filter-btn active" data-value="" onclick="setFilter(this)">すべて</span>
+      <span class="filter-btn" data-value="保管中" onclick="setFilter(this)">保管中</span>
+      <span class="filter-btn" data-value="出庫予定" onclick="setFilter(this)">出庫予定</span>
+      <span class="filter-btn" data-value="格納待ち" onclick="setFilter(this)">格納待ち</span>
+      <span class="filter-btn" data-value="早期返却中" onclick="setFilter(this)">早期返却中</span>
+    </div>
+    <div class="confirm-box">
+      <div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:8px;">預かり状況</div>
+      <div id="summaryContent" style="color:var(--text3);text-align:center;padding:8px;">読み込み中...</div>
+    </div>
+    <div id="searchResults"></div>
+  </div>
+  <div class="page-id">預かりタイヤ検索</div>
+</div>
+
+<!-- タイヤ詳細 -->
+<div id="scrDetail" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrTop')">&lt; 戻る</button>
+    <div class="header-title">タイヤ詳細</div>
+  </div>
+  <div class="content">
+    <div id="detailContent"></div>
+    <button class="btn-primary" style="margin-bottom:10px;" onclick="showEditScreen()">タイヤ情報を編集する</button>
+    <div style="display:flex;gap:8px;margin-bottom:10px;">
+      <button class="btn-secondary" style="flex:1;" id="detailAddCartBtn" onclick="addToCartFromDetail()">出庫かごに入れる</button>
+    </div>
+    <div style="text-align:right;margin-top:16px;">
+      <a href="#" style="font-size:13px;color:var(--red);text-decoration:underline;" onclick="event.preventDefault();navigateTo('g_warehouse_special.html',{tireSetId:curSetId})">廃棄する</a>
+    </div>
+  </div>
+  <div class="page-id">タイヤ詳細</div>
+</div>
+
+<div id="scrEdit" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrDetail')">&lt; 戻る</button>
+    <div class="header-title">タイヤ情報の編集</div>
+  </div>
+  <div class="content">
+    <div id="editContent"></div>
+    <div class="hint-bar">変更した事実は記録されます。</div>
+    <button class="btn-primary" id="editSaveBtn" onclick="saveTireRecord()">変更を保存</button>
+    <button class="btn-secondary" onclick="showScr('scrDetail')">キャンセル</button>
+  </div>
+  <div class="page-id">タイヤ情報編集</div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+var curFilter = '', curSetId = '', curSetVer = 0, curRecords = [], curTireSet = null;
+var allResults = [];
+
+// 出庫かご（sessionStorageで検索をまたいで保持）
+function getCart() {
+  try { return JSON.parse(sessionStorage.getItem('release_cart') || '[]'); } catch(e) { return []; }
+}
+function saveCart(cart) {
+  sessionStorage.setItem('release_cart', JSON.stringify(cart));
+}
+function addToCart(setId, ver, label) {
+  var cart = getCart();
+  for (var i = 0; i < cart.length; i++) {
+    if (cart[i].setId === setId) return;
+  }
+  cart.push({ setId: setId, ver: ver, label: label });
+  saveCart(cart);
+  renderCart();
+}
+function removeFromCart(setId) {
+  var cart = getCart().filter(function(c) { return c.setId !== setId; });
+  saveCart(cart);
+  renderCart();
+  renderResults();
+}
+function isInCart(setId) {
+  var cart = getCart();
+  for (var i = 0; i < cart.length; i++) {
+    if (cart[i].setId === setId) return true;
+  }
+  return false;
+}
+function renderCart() {
+  var cart = getCart();
+  var box = document.getElementById('cartBox');
+  if (cart.length === 0) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  document.getElementById('cartCount').textContent = cart.length;
+  var h = '';
+  for (var i = 0; i < cart.length; i++) {
+    h += '<div class="cart-item">'
+      + '<span>' + escapeHtml(cart[i].label) + '</span>'
+      + '<span class="cart-remove" onclick="removeFromCart(\'' + escapeHtml(cart[i].setId) + '\')">取消</span>'
+      + '</div>';
+  }
+  document.getElementById('cartItems').innerHTML = h;
+}
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function setFilter(el) {
+  var b = document.querySelectorAll('.filter-btn');
+  for (var i = 0; i < b.length; i++) b[i].classList.remove('active');
+  el.classList.add('active');
+  curFilter = el.dataset.value || '';
+  renderResults();
+}
+
+async function doSearch() {
+  var q = document.getElementById('searchQuery').value.trim();
+  if (!q) { showError('検索語を入力してください'); return; }
+  startLoading(document.getElementById('searchBtn'));
+  var r = await callAPI('warehouse_searchTires', { query: q, statusFilter: curFilter });
+  stopLoading(document.getElementById('searchBtn'));
+  if (handleAPIError(r)) return;
+  allResults = r.data.tires || [];
+  renderResults();
+}
+
+function renderResults() {
+  var filtered = allResults;
+  if (curFilter) {
+    filtered = allResults.filter(function(item) {
+      return String((item.location || {})['状態']) === curFilter;
+    });
+  }
+  var h = '<div class="section-label">検索結果（' + filtered.length + '件）</div>';
+  if (!filtered.length) {
+    h += '<div style="text-align:center;color:var(--text3);padding:20px;">該当なし</div>';
+  }
+  for (var i = 0; i < filtered.length; i++) {
+    h += renderCard(filtered[i]);
+  }
+  document.getElementById('searchResults').innerHTML = h;
+}
+
+function renderCard(item) {
+  var loc = item.location || {}, ts = item.tireSet || {};
+  var setId = ts['タイヤセットID'] || '';
+  var sc = getStatusClass(loc['状態'] || '');
+  var isStored = String(loc['状態']) === '保管中';
+  var ver = Number(loc['版番号'] || 0);
+  var inCart = isInCart(setId);
+  var plateInfo = [ts['ナンバー'], ts['車種']].filter(Boolean).map(escapeHtml).join(' / ');
+  var tireInfo = [ts['区分'], ts['メーカー'], ts['サイズ']].filter(Boolean).map(escapeHtml).join(' / ');
+  var label = (ts['顧客名'] || '') + ' / ' + (loc['棚'] || '-');
+
+  var html = '<div class="wo-card">'
+    + '<div class="check-row">';
+  if (isStored) {
+    html += '<input type="checkbox" onclick="event.stopPropagation()" onchange="onCheckCard(this,\'' + escapeHtml(setId) + '\',' + ver + ',\'' + escapeHtml(label) + '\')"' + (inCart ? ' checked' : '') + '>';
+  }
+  html += '<div class="card-body" onclick="loadDetail(\'' + escapeHtml(setId) + '\')">'
+    + '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
+    + '<span style="font-size:15px;font-weight:700;color:var(--brown);">' + escapeHtml(loc['棚'] || '\u2014') + '</span>'
+    + '<span class="status ' + sc + '">' + escapeHtml(loc['状態'] || '') + '</span></div>'
+    + '<div class="wo-card-customer">' + escapeHtml(ts['顧客名'] || '') + '</div>'
+    + (plateInfo ? '<div class="wo-card-detail">' + plateInfo + '</div>' : '')
+    + (tireInfo ? '<div class="wo-card-detail">' + tireInfo + '</div>' : '')
+    + '</div></div></div>';
+  return html;
+}
+
+function onCheckCard(cb, setId, ver, label) {
+  if (cb.checked) {
+    addToCart(setId, ver, label);
+  } else {
+    removeFromCart(setId);
+  }
+}
+
+function addToCartFromDetail() {
+  if (!curSetId) return;
+  addToCart(curSetId, curSetVer, curDetailLabel);
+  showSuccess('出庫かごに追加しました');
+  showScr('scrTop');
+}
+
+var curDetailLabel = '';
+
+async function doBulkRelease() {
+  var cart = getCart();
+  if (cart.length === 0) return;
+  if (!confirmAction(cart.length + '件のタイヤを出庫しますか？')) return;
+  var success = 0, fail = 0;
+  for (var i = 0; i < cart.length; i++) {
+    var r = await callAPI('warehouse_release', {
+      tireSetId: cart[i].setId,
+      version: cart[i].ver
+    });
+    if (r && r.ok) { success++; } else { fail++; }
+  }
+  sessionStorage.removeItem('release_cart');
+  if (fail > 0) {
+    showError(success + '件出庫、' + fail + '件失敗');
+  } else {
+    showSuccess(success + '件を出庫しました');
+  }
+  setTimeout(function() { location.href = 'index.html'; }, 1500);
+}
+
+async function loadDetail(setId) {
+  curSetId = setId;
+  var r = await callAPI('warehouse_tireDetail', { tireSetId: setId });
+  if (handleAPIError(r)) return;
+  var ts = r.data.tireSet || {}, loc = r.data.location || {};
+  var records = r.data.records || [];
+  curSetVer = Number(loc['版番号'] || 0);
+  curDetailLabel = (ts['顧客名'] || '') + ' / ' + (loc['棚'] || '-');
+  curRecords = records;
+  curTireSet = ts;
+  var isStored = String(loc['状態']) === '保管中';
+
+  var h = '<div class="confirm-box"><div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">保管情報</div>';
+  h += row('状態', loc['状態']) + row('棚番', loc['棚']) + row('区分', ts['区分']) + row('本数', ts['本数']);
+  h += '</div>';
+  h += '<div class="confirm-box"><div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">顧客・車両</div>';
+  h += row('顧客', ts['顧客名']) + row('車両', [ts['ナンバー'], ts['車種']].filter(Boolean).join(' / '));
+  h += '</div>';
+
+  var posOrder = ['左前','右前','左後','右後'];
+  if (records.length > 0) {
+    h += '<div class="confirm-box"><div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">タイヤ情報</div>';
+    for (var p = 0; p < posOrder.length; p++) {
+      var rec = null;
+      for (var ri = 0; ri < records.length; ri++) {
+        if (records[ri]['位置'] === posOrder[p]) { rec = records[ri]; break; }
+      }
+      if (!rec) continue;
+      h += '<div style="font-size:12px;font-weight:600;color:var(--orange);margin-top:8px;margin-bottom:4px;">' + posOrder[p] + '</div>';
+      h += row('メーカー', rec['メーカー']) + row('銘柄', rec['銘柄']) + row('サイズ', rec['サイズ']);
+      h += row('製造年月', rec['製造年月']);
+      h += row('残溝', rec['残溝'] ? rec['残溝'] + ' mm' : '');
+      h += row('ホイール種別', rec['ホイール種別']) + row('ホイール素材', rec['ホイール素材']);
+      h += row('キャップ', rec['キャップ']) + row('ナット', rec['ナット']);
+      if (rec['状態メモ']) h += row('メモ', rec['状態メモ']);
+    }
+    h += '</div>';
+  } else {
+    h += '<div class="confirm-box"><div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">タイヤ情報</div>';
+    h += '<div style="color:var(--text3);padding:8px;">タイヤ記録なし</div></div>';
+  }
+
+  if (ts['全体メモ']) {
+    h += '<div class="confirm-box"><div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">メモ</div>';
+    h += '<div style="font-size:14px;color:var(--text);white-space:pre-wrap;">' + escapeHtml(ts['全体メモ']) + '</div></div>';
+  }
+
+  document.getElementById('detailContent').innerHTML = h;
+
+  function row(label, val) {
+    if (!val) return '';
+    return '<div class="confirm-row"><span class="confirm-label">' + label + '</span><span class="confirm-value">' + escapeHtml(val) + '</span></div>';
+  }
+
+  var btn = document.getElementById('detailAddCartBtn');
+  if (isStored && !isInCart(setId)) {
+    btn.style.display = '';
+    btn.textContent = '出庫かごに入れる';
+  } else if (isStored && isInCart(setId)) {
+    btn.style.display = '';
+    btn.textContent = '出庫かごに入っています';
+    btn.disabled = true;
+  } else {
+    btn.style.display = 'none';
+  }
+  showScr('scrDetail');
+}
+
+function showEditScreen() {
+  var posOrder = ['左前','右前','左後','右後'];
+  var editRecs = [];
+  for (var p = 0; p < posOrder.length; p++) {
+    var found = null;
+    for (var ri = 0; ri < curRecords.length; ri++) {
+      if (curRecords[ri]['位置'] === posOrder[p]) { found = curRecords[ri]; break; }
+    }
+    editRecs.push(found || { '記録ID': '', '位置': posOrder[p], 'メーカー': '', '銘柄': '', 'サイズ': '', '製造年月': '', '残溝': '', 'ホイール種別': '', 'ホイール素材': '', 'キャップ': '', 'ナット': '', '状態メモ': '' });
+  }
+  var r0 = editRecs[0];
+  var h = '<div class="form-section"><div class="form-section-title">タイヤ共通情報</div>'
+    + '<div class="form-row"><label class="form-label">メーカー</label><input class="form-input" type="text" id="ed_maker" value="' + escapeHtml(r0['メーカー'] || '') + '" placeholder="ブリヂストン"></div>'
+    + '<div class="form-row"><label class="form-label">銘柄</label><input class="form-input" type="text" id="ed_brand" value="' + escapeHtml(r0['銘柄'] || '') + '" placeholder="ブリザック VRX3"></div>'
+    + '<div class="form-row"><label class="form-label">サイズ</label><input class="form-input" type="text" id="ed_size" value="' + escapeHtml(r0['サイズ'] || '') + '" placeholder="195/65R15"></div>'
+    + '<div class="form-row"><label class="form-label">製造年月</label><input class="form-input" type="text" id="ed_mfg" value="' + escapeHtml(r0['製造年月'] || '') + '" placeholder="2024.20"></div>'
+    + '<div class="form-row"><label class="form-label">ホイール種別</label><div class="toggle-group" id="ed_wheelType">'
+    + tgl('純正', r0['ホイール種別']) + tgl('社外', r0['ホイール種別']) + '</div></div>'
+    + '<div class="form-row"><label class="form-label">ホイール素材</label><div class="toggle-group" id="ed_wheelMat">'
+    + tgl('アルミ', r0['ホイール素材']) + tgl('スチール', r0['ホイール素材']) + '</div></div>'
+    + '<div class="form-row"><label class="form-label">キャップ</label><div class="toggle-group" id="ed_cap">'
+    + tgl('あり', r0['キャップ']) + tgl('なし', r0['キャップ']) + '</div></div>'
+    + '<div class="form-row"><label class="form-label">ナット</label><div class="toggle-group" id="ed_nut" style="flex-wrap:wrap;">'
+    + tgl('お客様保管', r0['ナット']) + tgl('車載', r0['ナット']) + tgl('共用', r0['ナット']) + '</div></div>'
+    + '</div>';
+  h += '<div class="form-section"><div class="form-section-title">残溝（個別入力）</div>'
+    + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">';
+  for (var p = 0; p < 4; p++) {
+    var rec = editRecs[p];
+    h += '<div><input type="hidden" id="ed_' + p + '_id" value="' + escapeHtml(rec['記録ID'] || '') + '">'
+      + '<label class="form-label" style="text-align:center;">' + posOrder[p] + '</label>'
+      + '<div style="display:flex;align-items:center;justify-content:center;gap:4px;">'
+      + '<button type="button" class="pm-btn" style="width:40px;" onclick="adjGroove(this,-1)">-1</button>'
+      + '<button type="button" class="pm-btn" style="width:34px;font-size:14px;" onclick="adjGroove(this,-0.1)">-.1</button>'
+      + '<input class="form-input" type="number" step="0.1" id="ed_' + p + '_groove" value="' + escapeHtml(rec['残溝'] || '5.0') + '" style="width:65px;text-align:center;padding:8px;font-size:18px;font-weight:700;">'
+      + '<button type="button" class="pm-btn" style="width:34px;font-size:14px;" onclick="adjGroove(this,0.1)">+.1</button>'
+      + '<button type="button" class="pm-btn" style="width:40px;" onclick="adjGroove(this,1)">+1</button>'
+      + '</div></div>';
+  }
+  h += '</div></div>';
+  h += '<div class="form-section"><div class="form-section-title">全体メモ</div>'
+    + '<textarea class="form-input" rows="3" id="ed_memo" placeholder="5・6本目の情報、状態の特記事項など" style="resize:vertical;">' + escapeHtml(curTireSet ? (curTireSet['全体メモ'] || '') : '') + '</textarea></div>';
+  document.getElementById('editContent').innerHTML = h;
+  showScr('scrEdit');
+}
+function tgl(val, cur) {
+  return '<span class="toggle-btn' + (val === cur ? ' checked' : '') + '" data-value="' + val + '" onclick="toggleCheck(this)">' + val + '</span>';
+}
+
+function adjGroove(btn, delta) {
+  var input = btn.parentNode.querySelector('input[type=number]');
+  var val = parseFloat(input.value) || 5.0;
+  val = Math.round((val + delta) * 10) / 10;
+  if (val < 0) val = 0;
+  if (val > 20) val = 20;
+  input.value = val.toFixed(1);
+}
+
+async function saveTireRecord() {
+  var posOrder = ['左前','右前','左後','右後'];
+  var maker = document.getElementById('ed_maker').value.trim();
+  var brand = document.getElementById('ed_brand').value.trim();
+  var size = document.getElementById('ed_size').value.trim();
+  var mfg = document.getElementById('ed_mfg').value.trim();
+  var wheelType = getToggleValue('ed_wheelType');
+  var wheelMat = getToggleValue('ed_wheelMat');
+  var cap = getToggleValue('ed_cap');
+  var nut = getToggleValue('ed_nut');
+  var recs = [];
+  for (var p = 0; p < 4; p++) {
+    var idEl = document.getElementById('ed_' + p + '_id');
+    if (!idEl) continue;
+    recs.push({
+      '記録ID': idEl.value,
+      '位置': posOrder[p],
+      'メーカー': maker,
+      '銘柄': brand,
+      'サイズ': size,
+      '製造年月': mfg,
+      '残溝': document.getElementById('ed_' + p + '_groove').value,
+      'ホイール種別': wheelType,
+      'ホイール素材': wheelMat,
+      'キャップ': cap,
+      'ナット': nut,
+      '状態メモ': ''
+    });
+  }
+  startLoading(document.getElementById('editSaveBtn'));
+  var result = await callAPI('warehouse_updateTireRecord', {
+    tireSetId: curSetId,
+    records: recs,
+    setUpdates: {
+      '全体メモ': document.getElementById('ed_memo').value.trim()
+    }
+  });
+  stopLoading(document.getElementById('editSaveBtn'));
+  if (handleAPIError(result)) return;
+  showSuccess('タイヤ情報を保存しました');
+  loadDetail(curSetId);
+}
+
+async function loadSummary() {
+  var r = await callAPI('warehouse_top', {});
+  if (handleAPIError(r)) return;
+  var sc = (r.data || {}).statusCounts || {};
+  document.getElementById('summaryContent').innerHTML =
+    '<div class="confirm-row"><span class="confirm-label">保管中</span><span class="confirm-value">' + (sc['保管中'] || 0) + ' セット</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">格納待ち</span><span class="confirm-value" style="color:var(--orange);">' + (sc['格納待ち'] || 0) + ' セット</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">出庫予定</span><span class="confirm-value" style="color:var(--blue);">' + (sc['出庫予定'] || 0) + ' セット</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">早期返却申請中</span><span class="confirm-value" style="color:var(--gold);">' + (sc['早期返却申請中'] || 0) + ' セット</span></div>';
+}
+
+renderCart();
+loadSummary();
+</script>
+</body>
+</html>

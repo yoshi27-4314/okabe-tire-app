@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>D. 受付 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.new-btn { width: 100%; padding: 16px; font-size: 16px; font-weight: 700; color: var(--white); background: var(--orange); border: none; border-radius: 12px; cursor: pointer; box-shadow: var(--shadow-md); }
+.new-btn:active { transform: scale(0.98); }
+.wo-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow-sm); }
+.wo-card:active { transform: scale(0.98); }
+.wo-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.wo-number { font-size: 15px; font-weight: 700; color: var(--brown); }
+.wo-card-customer { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.wo-card-detail { font-size: 14px; color: var(--text2); line-height: 1.5; }
+.wo-card-time { font-size: 14px; color: var(--text2); margin-top: 4px; }
+.section-toggle { background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; margin-bottom: 10px; overflow: hidden; }
+.section-toggle-header { padding: 12px 16px; font-size: 14px; font-weight: 600; color: var(--brown); cursor: pointer; display: flex; justify-content: space-between; align-items: center; }
+.section-toggle-body { padding: 0 12px 12px; }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <button class="back-btn" onclick="goBack()">&lt; 戻る</button>
+    <div class="header-title">D. 受付</div>
+  </div>
+  <div class="content">
+    <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:24px;">
+      <button class="new-btn" onclick="startReception('履き替え')">タイヤ履き替え</button>
+      <button class="new-btn" style="background:var(--blue);" onclick="location.href='d_reservation.html'">タイヤ交換予約</button>
+      <button class="new-btn" style="background:var(--green);" onclick="startReception('預かりのみ')">預かりのみ（入荷）</button>
+      <button class="new-btn" style="background:var(--brown);" onclick="startReception('返却のみ')">返却のみ</button>
+    </div>
+
+    <div class="section-toggle">
+      <div class="section-toggle-header" onclick="toggleSection('secToday')">
+        <span id="secTodayLabel">本日の来店受付</span>
+        <span style="font-size:14px;color:var(--orange);line-height:1;">▼</span>
+      </div>
+      <div id="secToday" style="display:none;" class="section-toggle-body">
+        <div id="todayList"><div style="text-align:center;color:var(--text3);padding:12px;">読み込み中...</div></div>
+      </div>
+    </div>
+
+    <div class="section-toggle">
+      <div class="section-toggle-header" onclick="location.href='d_reservation.html?tab=list'">
+        <span>予約一覧（希望日順）</span>
+        <span style="font-size:14px;color:var(--orange);line-height:1;">▼</span>
+      </div>
+    </div>
+  </div>
+  <div class="page-id">D-1 受付一覧</div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+
+function startReception(purpose) {
+  sessionStorage.setItem('reception_purpose', purpose);
+  location.href = 'd_reception_customer.html';
+}
+
+function toggleSection(id) {
+  var el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+}
+
+async function loadList() {
+  var result = await callAPI('reception_list', {});
+  if (handleAPIError(result)) return;
+  var orders = result.data.orders || [];
+  var today = new Date().toISOString().substring(0, 10);
+
+  var todayOrders = orders.filter(function(o) {
+    var regDate = o['登録日時'] ? new Date(o['登録日時']).toISOString().substring(0, 10) : '';
+    return regDate === today;
+  });
+
+  document.getElementById('secTodayLabel').textContent = '本日の来店受付（' + todayOrders.length + '件）';
+
+  if (todayOrders.length === 0) {
+    document.getElementById('todayList').innerHTML = '<div style="text-align:center;color:var(--text3);padding:12px;">本日の受付はありません</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < todayOrders.length; i++) {
+    var o = todayOrders[i];
+    var sc = getStatusClass(o['状態']);
+    html += '<div class="wo-card" onclick="navigateTo(\'d_reception_form.html\',{orderNumber:\'' + escapeHtml(o['伝票番号']) + '\'})">'
+      + '<div class="wo-card-top">'
+      + '<span class="status ' + sc + '">' + escapeHtml(o['状態']) + '</span>'
+      + '</div>'
+      + '<div class="wo-card-customer">' + escapeHtml(o['顧客名'] || '') + '</div>'
+      + '<div class="wo-card-detail">' + escapeHtml(o['ナンバー'] || '') + ' / ' + escapeHtml(o['車種'] || '') + '</div>'
+      + '<div class="wo-card-detail">' + escapeHtml(o['利用区分'] || '') + '</div>'
+      + '<div style="font-size:12px;color:var(--text3);margin-top:4px;">' + escapeHtml(o['伝票番号']) + ' / ' + formatDateTime(o['登録日時']) + '</div>'
+      + '</div>';
+  }
+  document.getElementById('todayList').innerHTML = html;
+}
+
+loadList();
+</script>
+</body>
+</html>

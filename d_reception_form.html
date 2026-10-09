@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>D. 受付内容 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.done-icon { text-align: center; font-size: 64px; margin: 30px 0 12px; }
+.done-title { text-align: center; font-size: 20px; font-weight: 700; color: var(--brown); margin-bottom: 8px; }
+.done-wo-number { text-align: center; font-size: 16px; font-weight: 600; color: var(--orange); margin-bottom: 20px; }
+</style>
+</head>
+<body>
+
+<!-- D-6 受付内容入力 -->
+<div id="scrForm" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <button class="back-btn" onclick="history.back()">&lt; 戻る</button>
+    <div class="header-title">受付内容</div>
+  </div>
+  <div class="content">
+    <div class="info-bar" id="formInfo">読み込み中...</div>
+    <div id="vehicleAlert" style="display:none;background:#FFF3EB;border:1px solid var(--orange);border-radius:8px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:13px;color:var(--brown);font-weight:600;margin-bottom:8px;">車両が未登録です</div>
+      <button class="btn-primary" style="margin:0;font-size:14px;padding:10px;" onclick="goToVehicleFromForm()">車両を登録する</button>
+    </div>
+    <div id="tireInfoBar" style="display:none;background:#F0F7FF;border:1px solid var(--blue);border-radius:8px;padding:12px;margin-bottom:12px;">
+      <div style="font-size:13px;color:var(--blue);font-weight:600;margin-bottom:4px;">タイヤ情報</div>
+      <div id="tireInfoSummary" style="font-size:13px;color:var(--text2);"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">受付情報</div>
+      <div class="form-row"><label class="form-label">利用区分</label>
+        <div class="toggle-group" id="useTypeGroup">
+          <span class="toggle-btn" data-value="新規顧客" onclick="toggleCheck(this)">新規顧客</span>
+          <span class="toggle-btn" data-value="既存顧客" onclick="toggleCheck(this)">既存顧客</span>
+          <span class="toggle-btn" data-value="継続" onclick="toggleCheck(this)">継続</span>
+        </div>
+      </div>
+      <div class="form-row"><label class="form-label">基幹作業指示書番号（任意・10桁）</label><input class="form-input" type="text" id="instructionNo" placeholder="0000000000" maxlength="10"></div>
+      <div class="form-row"><label class="form-label">納期希望</label><input class="form-input" type="datetime-local" id="deliveryRequest"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">料金プラン</div>
+      <div class="form-row"><label class="form-label">プラン</label>
+        <select class="form-select" id="pricePlanId" onchange="estimatePrice()">
+          <option value="">選択してください</option>
+          <option value="P-001">A 軽自動車（5,000円）</option>
+          <option value="P-002">B 16インチまで（7,000円）</option>
+          <option value="P-003">C 18インチまで（10,000円）</option>
+          <option value="P-004">D 19インチ以上（12,000円）</option>
+        </select>
+      </div>
+      <div id="priceInfo"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">その他</div>
+      <div class="form-row"><label class="form-label">お預かり物</label><input class="form-input" type="text" id="custody" placeholder="ホイールキャップ、ナット袋など"></div>
+      <div class="form-row"><label class="form-label">メモ</label><textarea class="form-input" rows="3" id="memo" placeholder="備考・連絡事項" style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="btn-row" style="flex-direction:column;gap:10px;">
+      <button class="btn-primary" style="flex:none;" onclick="showConfirm()">確認画面へ</button>
+      <button class="btn-secondary" style="flex:none;" id="draftBtn" onclick="saveDraft()">下書きを保存</button>
+      <button class="btn-secondary" style="flex:none;" onclick="history.back()">戻る</button>
+    </div>
+  </div>
+  <div class="page-id">D-6 受付内容入力</div>
+</div>
+
+<!-- D-7 受付確認 -->
+<div id="scrConfirm" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrForm')">&lt; 戻る</button>
+    <div class="header-title">受付内容の確認</div>
+  </div>
+  <div class="content">
+    <div id="confirmContent"></div>
+    <div class="btn-row" style="flex-direction:column;gap:10px;">
+      <button class="btn-primary" style="flex:none;font-size:16px;padding:16px;" id="confirmBtn" onclick="doConfirm()">受付を確定する</button>
+      <button class="btn-secondary" style="flex:none;" onclick="showScr('scrForm')">修正する</button>
+    </div>
+  </div>
+  <div class="page-id">D-7 受付確認</div>
+</div>
+
+<!-- D-8 受付完了 -->
+<div id="scrDone" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <div class="header-title">受付完了</div>
+  </div>
+  <div class="content">
+    <div class="done-icon">&#x2705;</div>
+    <div class="done-title">受付が完了しました</div>
+    <div class="done-wo-number" id="doneOrderNumber"></div>
+    <button class="btn-primary" style="background:var(--brown);margin-bottom:10px;" onclick="location.href='pdf_preview.html?orderNumber='+document.getElementById('doneOrderNumber').textContent">受付確認書を見る</button>
+    <button class="btn-primary" onclick="location.href='d_reception_list.html'">受付一覧に戻る</button>
+    <button class="btn-secondary" style="margin-top:10px;" onclick="location.href='index.html'">ホームに戻る</button>
+  </div>
+  <div class="page-id">D-8 受付完了</div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+var customerId = getParam('customerId') || sessionStorage.getItem('reception_customerId') || '';
+var vehicleId = getParam('vehicleId') || sessionStorage.getItem('reception_vehicleId') || '';
+var orderNumber = getParam('orderNumber') || '';
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function goToVehicleFromForm() {
+  saveFormToStorage();
+  location.href = 'd_reception_vehicle?customerId=' + encodeURIComponent(customerId) + '&fromForm=1';
+}
+
+function loadTireInfo() {
+  var purpose = sessionStorage.getItem('reception_purpose') || '';
+  if (purpose === '履き替え') {
+    document.getElementById('tireInfoSummary').innerHTML = '<span style="color:var(--blue);">タイヤ情報は履き替え作業後に記録します</span>';
+    document.getElementById('tireInfoBar').style.display = '';
+    return;
+  }
+  var tireType = sessionStorage.getItem('reception_tireType') || '';
+  var tireCount = sessionStorage.getItem('reception_tireCount') || '';
+  var tireMemo = sessionStorage.getItem('reception_tireMemo') || '';
+  var tireRecordsStr = sessionStorage.getItem('reception_tireRecords') || '';
+  if (!tireType && !tireCount && !tireRecordsStr) return;
+  var parts = [];
+  if (tireType) parts.push(escapeHtml(tireType) + 'タイヤ');
+  if (tireCount) parts.push(escapeHtml(tireCount) + '本');
+  if (tireRecordsStr) {
+    try {
+      var records = JSON.parse(tireRecordsStr);
+      if (records.length > 0 && records[0].maker) parts.push(escapeHtml(records[0].maker));
+      if (records.length > 0 && records[0].size) parts.push(escapeHtml(records[0].size));
+    } catch(e) {}
+  }
+  if (tireMemo) parts.push('メモ: ' + escapeHtml(tireMemo));
+  if (parts.length > 0) {
+    document.getElementById('tireInfoSummary').innerHTML = parts.join(' / ');
+    document.getElementById('tireInfoBar').style.display = '';
+  }
+}
+
+function initForm() {
+  var cName = sessionStorage.getItem('reception_customerName') || customerId;
+  document.getElementById('formInfo').innerHTML =
+    '<span class="info-bar-label">顧客: </span><strong>' + escapeHtml(cName) + '</strong>';
+  if (!vehicleId) {
+    document.getElementById('vehicleAlert').style.display = '';
+  }
+  loadTireInfo();
+  var saved = sessionStorage.getItem('reception_formData');
+  if (saved) {
+    try {
+      var data = JSON.parse(saved);
+      if (data.useType) {
+        var btns = document.querySelectorAll('#useTypeGroup .toggle-btn');
+        for (var i = 0; i < btns.length; i++) {
+          btns[i].classList.toggle('checked', btns[i].dataset.value === data.useType);
+        }
+      }
+      if (data.instructionNo) document.getElementById('instructionNo').value = data.instructionNo;
+      if (data.deliveryRequest) document.getElementById('deliveryRequest').value = data.deliveryRequest;
+      if (data.pricePlanId) document.getElementById('pricePlanId').value = data.pricePlanId;
+      if (data.custody) document.getElementById('custody').value = data.custody;
+      if (data.memo) document.getElementById('memo').value = data.memo;
+    } catch(e) {}
+  }
+}
+
+function saveFormToStorage() {
+  var data = {
+    useType: getToggleValue('useTypeGroup'),
+    instructionNo: document.getElementById('instructionNo').value,
+    deliveryRequest: document.getElementById('deliveryRequest').value,
+    pricePlanId: document.getElementById('pricePlanId').value,
+    custody: document.getElementById('custody').value,
+    memo: document.getElementById('memo').value
+  };
+  sessionStorage.setItem('reception_formData', JSON.stringify(data));
+}
+window.addEventListener('beforeunload', saveFormToStorage);
+
+async function estimatePrice() {
+  var planId = document.getElementById('pricePlanId').value;
+  if (!planId || !customerId) { document.getElementById('priceInfo').innerHTML = ''; return; }
+  var result = await callAPI('contract_estimate', { customerId: customerId, pricePlanId: planId });
+  if (handleAPIError(result)) return;
+  var d = result.data;
+  var html = '<div style="background:var(--white);border:1px solid var(--border-light);border-radius:10px;padding:14px;margin-top:8px;">'
+    + '<div style="display:flex;justify-content:space-between;padding:4px 0;">'
+    + '<span style="font-size:13px;color:var(--text2);">保管料（税別）</span>'
+    + '<span style="font-size:14px;font-weight:600;">&yen;' + d.baseFee.toLocaleString() + '</span></div>';
+  if (d.discountAmount > 0) {
+    html += '<div style="display:flex;justify-content:space-between;padding:4px 0;color:var(--green);">'
+      + '<span style="font-size:13px;">' + d.contractCount + '台割引 ' + d.discountRate + '%</span>'
+      + '<span style="font-size:14px;font-weight:600;">-&yen;' + d.discountAmount.toLocaleString() + '</span></div>';
+  }
+  html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-top:1px solid var(--border-light);margin-top:4px;">'
+    + '<span style="font-size:14px;font-weight:600;">合計（税別）</span>'
+    + '<span style="font-size:16px;font-weight:700;color:var(--orange);">&yen;' + d.total.toLocaleString() + '</span></div></div>';
+  document.getElementById('priceInfo').innerHTML = html;
+}
+
+function getTireDataForConfirm() {
+  var tireRecords = [];
+  var tireRecordsStr = sessionStorage.getItem('reception_tireRecords') || '';
+  if (tireRecordsStr) {
+    try { tireRecords = JSON.parse(tireRecordsStr); } catch(e) {}
+  }
+  return {
+    tireRecords: tireRecords,
+    tireType: sessionStorage.getItem('reception_tireType') || '',
+    tireCount: sessionStorage.getItem('reception_tireCount') || '',
+    tireMemo: sessionStorage.getItem('reception_tireMemo') || '',
+    photoFolderId: sessionStorage.getItem('reception_photoFolderId') || ''
+  };
+}
+
+function showConfirm() {
+  var useType = getToggleValue('useTypeGroup');
+  var tire = getTireDataForConfirm();
+  var html = '<div class="confirm-box">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">受付情報</div>'
+    + '<div class="confirm-row"><span class="confirm-label">利用区分</span><span class="confirm-value">' + escapeHtml(useType || '未選択') + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">料金プラン</span><span class="confirm-value">' + escapeHtml(document.getElementById('pricePlanId').selectedOptions[0] ? document.getElementById('pricePlanId').selectedOptions[0].text : '未選択') + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">納期希望</span><span class="confirm-value">' + escapeHtml(document.getElementById('deliveryRequest').value || '-') + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">お預かり物</span><span class="confirm-value">' + escapeHtml(document.getElementById('custody').value || '-') + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">メモ</span><span class="confirm-value">' + escapeHtml(document.getElementById('memo').value || '-') + '</span></div>'
+    + '</div>';
+  if (tire.tireType || tire.tireCount || tire.tireRecords.length > 0) {
+    html += '<div class="confirm-box">'
+      + '<div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">タイヤ情報</div>';
+    if (tire.tireType) html += '<div class="confirm-row"><span class="confirm-label">区分</span><span class="confirm-value">' + escapeHtml(tire.tireType) + 'タイヤ</span></div>';
+    if (tire.tireCount) html += '<div class="confirm-row"><span class="confirm-label">本数</span><span class="confirm-value">' + escapeHtml(tire.tireCount) + '本</span></div>';
+    if (tire.tireRecords.length > 0 && tire.tireRecords[0].maker) {
+      html += '<div class="confirm-row"><span class="confirm-label">メーカー</span><span class="confirm-value">' + escapeHtml(tire.tireRecords[0].maker) + '</span></div>';
+    }
+    if (tire.tireRecords.length > 0 && tire.tireRecords[0].size) {
+      html += '<div class="confirm-row"><span class="confirm-label">サイズ</span><span class="confirm-value">' + escapeHtml(tire.tireRecords[0].size) + '</span></div>';
+    }
+    if (tire.tireRecords.length > 0 && tire.tireRecords[0].brand) {
+      html += '<div class="confirm-row"><span class="confirm-label">銘柄</span><span class="confirm-value">' + escapeHtml(tire.tireRecords[0].brand) + '</span></div>';
+    }
+    if (tire.tireMemo) html += '<div class="confirm-row"><span class="confirm-label">タイヤメモ</span><span class="confirm-value">' + escapeHtml(tire.tireMemo) + '</span></div>';
+    html += '</div>';
+  }
+  document.getElementById('confirmContent').innerHTML = html;
+  showScr('scrConfirm');
+}
+
+async function saveDraft() {
+  startLoading(document.getElementById('draftBtn'));
+  var params = {
+    customerId: customerId, vehicleId: vehicleId,
+    useType: getToggleValue('useTypeGroup'),
+    instructionNo: document.getElementById('instructionNo').value.trim(),
+    deliveryRequest: document.getElementById('deliveryRequest').value,
+    custody: document.getElementById('custody').value.trim(),
+    memo: document.getElementById('memo').value.trim()
+  };
+  if (orderNumber) params.orderNumber = orderNumber;
+  var result = await callAPI('reception_saveDraft', params);
+  stopLoading(document.getElementById('draftBtn'));
+  if (handleAPIError(result)) return;
+  orderNumber = result.data.orderNumber;
+  showSuccess('下書きを保存しました（' + orderNumber + '）');
+}
+
+async function doConfirm() {
+  var missing = [];
+  if (!customerId) missing.push('顧客');
+  if (!vehicleId) missing.push('車両');
+  if (!getToggleValue('useTypeGroup')) missing.push('利用区分');
+  if (!document.getElementById('pricePlanId').value) missing.push('料金プラン');
+  if (missing.length > 0) {
+    showError('未入力: ' + missing.join('、'));
+    return;
+  }
+
+  var tire = getTireDataForConfirm();
+
+  var tireLines = [{ role: '外した', destination: '保管' }];
+  if (tire.tireRecords.length > 0) {
+    tireLines = tire.tireRecords.map(function(r) {
+      return { role: '外した', destination: '保管', position: r.position || '' };
+    });
+  }
+
+  startLoading(document.getElementById('confirmBtn'));
+  var result = await callAPI('reception_confirm', {
+    idempotencyKey: generateIdempotencyKey(),
+    customerId: customerId,
+    vehicleId: vehicleId,
+    orderNumber: orderNumber || undefined,
+    useType: getToggleValue('useTypeGroup'),
+    instructionNo: document.getElementById('instructionNo').value.trim(),
+    deliveryRequest: document.getElementById('deliveryRequest').value,
+    custody: document.getElementById('custody').value.trim(),
+    memo: document.getElementById('memo').value.trim(),
+    tireType: tire.tireType,
+    tireCount: tire.tireCount,
+    tireMemo: tire.tireMemo,
+    tireRecords: tire.tireRecords,
+    tireLines: tireLines,
+    photoFolderId: tire.photoFolderId,
+    contract: { pricePlanId: document.getElementById('pricePlanId').value }
+  });
+  stopLoading(document.getElementById('confirmBtn'));
+  if (handleAPIError(result)) return;
+
+  document.getElementById('doneOrderNumber').textContent = result.data.orderNumber;
+  sessionStorage.removeItem('reception_customerId');
+  sessionStorage.removeItem('reception_vehicleId');
+  sessionStorage.removeItem('reception_customerName');
+  sessionStorage.removeItem('reception_formData');
+  sessionStorage.removeItem('reception_tireRecords');
+  sessionStorage.removeItem('reception_tireType');
+  sessionStorage.removeItem('reception_tireCount');
+  sessionStorage.removeItem('reception_tireMemo');
+  sessionStorage.removeItem('reception_photoFolderId');
+  showScr('scrDone');
+}
+
+initForm();
+</script>
+</body>
+</html>

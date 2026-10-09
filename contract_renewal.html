@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>契約更新・督促 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.wo-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow-sm); }
+.wo-card:active { transform: scale(0.98); }
+.wo-card-customer { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.wo-card-detail { font-size: 14px; color: var(--text2); line-height: 1.5; }
+.done-icon { text-align: center; font-size: 64px; margin: 30px 0 12px; }
+.done-title { text-align: center; font-size: 20px; font-weight: 700; color: var(--brown); margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<!-- R-1 契約一覧 -->
+<div id="scrList" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <button class="back-btn" onclick="goBack()">&lt; 戻る</button>
+    <div class="header-title">契約更新・督促</div>
+  </div>
+  <div class="content">
+    <div id="contractList"><div style="text-align:center;color:var(--text3);padding:12px;">読み込み中...</div></div>
+  </div>
+  <div class="page-id">R-1 契約更新・督促</div>
+</div>
+
+<!-- R-2 契約詳細 -->
+<div id="scrDetail" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrList')">&lt; 戻る</button>
+    <div class="header-title">契約詳細</div>
+  </div>
+  <div class="content">
+    <div id="detailContent"></div>
+    <div class="form-section" style="margin-top:16px;">
+      <div class="form-section-title">連絡状況</div>
+      <div class="toggle-group" id="contactStatusGroup" style="flex-wrap:wrap;margin-bottom:8px;">
+        <span class="toggle-btn" data-value="未連絡" onclick="toggleCheck(this)" style="font-size:12px;padding:8px 12px;">未連絡</span>
+        <span class="toggle-btn" data-value="連絡済み" onclick="toggleCheck(this)" style="font-size:12px;padding:8px 12px;">連絡済み</span>
+        <span class="toggle-btn" data-value="返事待ち" onclick="toggleCheck(this)" style="font-size:12px;padding:8px 12px;">返事待ち</span>
+        <span class="toggle-btn" data-value="予約入り" onclick="toggleCheck(this)" style="font-size:12px;padding:8px 12px;">予約入り</span>
+        <span class="toggle-btn" data-value="連絡不能" onclick="toggleCheck(this)" style="font-size:12px;padding:8px 12px;color:var(--red);">連絡不能</span>
+        <span class="toggle-btn" data-value="督促済" onclick="toggleCheck(this)" style="font-size:12px;padding:8px 12px;color:var(--red);">督促済</span>
+      </div>
+      <textarea class="form-input" rows="3" id="contactMemo" placeholder="連絡日時、内容、お客様の反応など" style="font-size:14px;resize:vertical;"></textarea>
+      <button class="btn-primary" style="margin-top:8px;" id="contactSaveBtn" onclick="saveContact()">連絡状況を保存</button>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">アクション</div>
+      <button class="btn-secondary" onclick="location.href='d_reservation.html'">タイヤ交換予約を入れる</button>
+      <button class="btn-secondary" onclick="showScr('scrRenew')">契約を更新する</button>
+      <button class="btn-secondary" style="color:var(--red);border-color:var(--red);" id="closeBtn" onclick="closeContract()">契約を終了する</button>
+    </div>
+  </div>
+  <div class="page-id">R-2 契約詳細</div>
+</div>
+
+<!-- R-3 契約更新 -->
+<div id="scrRenew" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrDetail')">&lt; 戻る</button>
+    <div class="header-title">契約更新</div>
+  </div>
+  <div class="content">
+    <div id="renewInfo"></div>
+    <div class="form-section">
+      <div class="form-section-title">更新内容</div>
+      <div class="form-row"><label class="form-label">更新後の返却予定日（任意）</label><input class="form-input" type="date" id="renewReturnDate" style="padding:10px 12px;font-size:14px;"></div>
+      <div class="form-row"><label class="form-label">更新メモ</label><textarea class="form-input" rows="2" id="renewMemo" placeholder="更新時の備考" style="font-size:14px;resize:vertical;"></textarea></div>
+    </div>
+    <button class="btn-primary" style="background:var(--green);font-size:16px;padding:16px;" id="renewBtn" onclick="doRenew()">契約を更新する</button>
+    <button class="btn-secondary" onclick="showScr('scrDetail')">キャンセル</button>
+  </div>
+  <div class="page-id">R-3 契約更新</div>
+</div>
+
+<!-- R-4 更新完了 -->
+<div id="scrDone" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <div class="header-title">更新完了</div>
+  </div>
+  <div class="content">
+    <div class="done-icon">&#x2705;</div>
+    <div class="done-title">契約を更新しました</div>
+    <div id="doneContent"></div>
+    <button class="btn-primary" onclick="loadList();showScr('scrList')">契約一覧に戻る</button>
+    <button class="btn-secondary" style="margin-top:10px;" onclick="location.href='index.html'">ホームに戻る</button>
+  </div>
+  <div class="page-id">R-4 更新完了</div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+var currentContract = null;
+var currentVersion = null;
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+async function loadList() {
+  var result = await callAPI('contract_list', {});
+  if (handleAPIError(result)) return;
+  var contracts = result.data.contracts || [];
+  if (contracts.length === 0) {
+    document.getElementById('contractList').innerHTML =
+      '<div style="text-align:center;color:var(--text3);padding:20px;">有効な契約はありません</div>';
+    return;
+  }
+  var html = '<div class="section-label">有効な契約（' + contracts.length + '件）</div>';
+  for (var i = 0; i < contracts.length; i++) {
+    var c = contracts[i];
+    html += '<div class="wo-card" onclick="loadDetail(\'' + escapeHtml(c['契約番号']) + '\')">'
+      + '<div style="display:flex;justify-content:space-between;margin-bottom:4px;">'
+      + '<span style="font-size:13px;color:var(--text3);">' + escapeHtml(c['契約番号']) + '</span>'
+      + '<span class="status ' + getStatusClass(c['状態']) + '">' + escapeHtml(c['状態']) + '</span></div>'
+      + '<div style="font-size:16px;font-weight:600;margin-bottom:2px;">' + escapeHtml(c['顧客名'] || '') + '</div>'
+      + '<div class="wo-card-detail">' + escapeHtml(c['ナンバー'] || '') + ' / ' + escapeHtml(c['車種'] || '') + '</div>'
+      + '<div class="wo-card-detail">合計: ¥' + (Number(c['合計（税別）']) || 0).toLocaleString() + '</div>'
+      + '<div class="wo-card-detail">' + formatDate(c['預かり日']) + '〜' + formatDate(c['返却予定日']) + '</div></div>';
+  }
+  document.getElementById('contractList').innerHTML = html;
+}
+
+async function loadDetail(contractNumber) {
+  var result = await callAPI('contract_detail', { contractNumber: contractNumber });
+  if (handleAPIError(result)) return;
+  currentContract = result.data.contract;
+  currentVersion = currentContract['版番号'];
+  var c = currentContract;
+  var html = '<div class="confirm-box">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">契約情報</div>'
+    + '<div class="confirm-row"><span class="confirm-label">契約番号</span><span class="confirm-value">' + escapeHtml(c['契約番号']) + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">状態</span><span class="confirm-value">' + escapeHtml(c['状態']) + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">種別</span><span class="confirm-value">' + escapeHtml(c['種別'] || '') + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">期間</span><span class="confirm-value">' + formatDate(c['預かり日']) + '〜' + formatDate(c['返却予定日']) + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">更新回数</span><span class="confirm-value">' + (c['更新回数'] || 0) + '回</span></div>'
+    + '</div><div class="confirm-box">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">料金</div>'
+    + '<div class="confirm-row"><span class="confirm-label">保管料（税別）</span><span class="confirm-value">¥' + (Number(c['保管料（税別）']) || 0).toLocaleString() + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">割引</span><span class="confirm-value">¥' + (Number(c['割引額']) || 0).toLocaleString() + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">合計（税別）</span><span class="confirm-value" style="color:var(--orange);font-weight:700;">¥' + (Number(c['合計（税別）']) || 0).toLocaleString() + '</span></div></div>';
+  document.getElementById('detailContent').innerHTML = html;
+  document.getElementById('renewInfo').innerHTML = '<div class="confirm-box">'
+    + '<div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:6px;">現在の契約</div>'
+    + '<div class="confirm-row"><span class="confirm-label">契約番号</span><span class="confirm-value">' + escapeHtml(c['契約番号']) + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">保管料</span><span class="confirm-value">¥' + (Number(c['保管料（税別）']) || 0).toLocaleString() + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">更新回数</span><span class="confirm-value">' + (c['更新回数'] || 0) + '回</span></div></div>';
+  showScr('scrDetail');
+}
+
+async function saveContact() {
+  if (!currentContract) return;
+  startLoading(document.getElementById('contactSaveBtn'));
+  var result = await callAPI('contract_updateContact', {
+    contractNumber: currentContract['契約番号'],
+    contactStatus: getToggleValue('contactStatusGroup'),
+    contactMemo: document.getElementById('contactMemo').value.trim()
+  });
+  stopLoading(document.getElementById('contactSaveBtn'));
+  if (handleAPIError(result)) return;
+  showSuccess('連絡状況を保存しました');
+}
+
+async function doRenew() {
+  if (!currentContract) return;
+  startLoading(document.getElementById('renewBtn'));
+  var result = await callAPI('contract_renew', {
+    contractNumber: currentContract['契約番号'],
+    version: currentVersion,
+    idempotencyKey: generateIdempotencyKey(),
+    returnDate: document.getElementById('renewReturnDate').value,
+    renewMemo: document.getElementById('renewMemo').value.trim()
+  });
+  stopLoading(document.getElementById('renewBtn'));
+  if (handleAPIError(result)) return;
+  document.getElementById('doneContent').innerHTML = '<div class="confirm-box">'
+    + '<div class="confirm-row"><span class="confirm-label">契約番号</span><span class="confirm-value">'
+    + escapeHtml(currentContract['契約番号']) + '</span></div>'
+    + '<div class="confirm-row"><span class="confirm-label">更新日時</span><span class="confirm-value">'
+    + formatDateTime(new Date()) + '</span></div></div>';
+  showScr('scrDone');
+}
+
+async function closeContract() {
+  if (!currentContract) return;
+  if (!confirmAction('この契約を終了しますか？')) return;
+  startLoading(document.getElementById('closeBtn'));
+  var result = await callAPI('contract_close', {
+    contractNumber: currentContract['契約番号'],
+    version: currentVersion
+  });
+  stopLoading(document.getElementById('closeBtn'));
+  if (handleAPIError(result)) return;
+  showSuccess('契約を終了しました');
+  loadList();
+  showScr('scrList');
+}
+
+loadList();
+</script>
+</body>
+</html>

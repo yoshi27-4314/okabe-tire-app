@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>S. 作業計画 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.wo-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow-sm); }
+.wo-card:active { transform: scale(0.98); }
+.wo-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.wo-number { font-size: 15px; font-weight: 700; color: var(--brown); }
+.wo-card-customer { font-size: 17px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.wo-card-detail { font-size: 16px; color: var(--text2); line-height: 1.5; }
+.st-reserve { background: var(--gold); color: var(--brown); }
+.cart-box { background: #FFF8F0; border: 2px solid var(--orange); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; }
+.cart-title { font-size: 14px; font-weight: 700; color: var(--orange); margin-bottom: 8px; }
+.cart-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
+.cart-item:last-child { border-bottom: none; }
+.cart-remove { color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px 8px; }
+.pick-item { display: flex; align-items: center; gap: 10px; padding: 12px; background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; margin-bottom: 8px; }
+.pick-check { width: 24px; height: 24px; cursor: pointer; accent-color: var(--orange); }
+.pick-info { flex: 1; }
+.pick-customer { font-size: 14px; font-weight: 600; }
+.pick-detail { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.pick-rack { font-size: 14px; font-weight: 700; color: var(--brown); }
+</style>
+</head>
+<body>
+
+<!-- S-1 作業予定トップ -->
+<div id="scrTop" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="goBack()">&lt; 戻る</button>
+    <div class="header-title">S. 作業計画</div>
+  </div>
+  <div class="content">
+    <div style="background:var(--white);border:1px solid var(--border-light);border-radius:12px;padding:12px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:14px;cursor:pointer;color:var(--text3);" onclick="changeMonth(-1)">&#9664;</span>
+        <span style="font-size:15px;font-weight:700;color:var(--brown);" id="calTitle">-</span>
+        <span style="font-size:14px;cursor:pointer;color:var(--text3);" onclick="changeMonth(1)">&#9654;</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:var(--text3);margin-bottom:4px;">
+        <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
+      </div>
+      <div id="calGrid" style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;gap:2px;"></div>
+    </div>
+    <input type="hidden" id="scheduleDate">
+    <div class="confirm-box" id="summaryBox">
+      <div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:10px;" id="summaryTitle">読み込み中...</div>
+      <div id="summaryContent"></div>
+    </div>
+    <div class="section-label" id="unassignedLabel">未割当</div>
+    <div id="unassignedList"></div>
+    <div style="margin-top:16px;">
+      <button class="btn-primary" style="background:var(--green);" onclick="openPickScreen()">明日の準備</button>
+    </div>
+  </div>
+  <div class="page-id">S-1 作業予定</div>
+</div>
+
+<!-- S-2 予定の割当 -->
+<div id="scrAssign" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrTop')">&lt; 戻る</button>
+    <div class="header-title">予定の割当</div>
+  </div>
+  <div class="content">
+    <div class="info-bar" id="assignInfo"></div>
+    <div class="form-section">
+      <div class="form-section-title">予定開始時間</div>
+      <div class="form-row"><input class="form-input" type="text" id="assignTime" placeholder="9:00、午前、未定など"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">サービス担当</div>
+      <div class="form-row"><input class="form-input" type="text" id="assignStaff" placeholder="名前で検索"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">メモ</div>
+      <div class="form-row"><textarea class="form-input" rows="3" id="assignMemo" placeholder="作業予定メモ" style="resize:vertical;"></textarea></div>
+    </div>
+    <button class="btn-primary" id="assignSaveBtn" onclick="saveAssignment()">割当を保存</button>
+    <button class="btn-secondary" onclick="showScr('scrTop')">キャンセル</button>
+  </div>
+  <div class="page-id">S-2 予定の割当</div>
+</div>
+
+<!-- S-4 タイヤ準備 -->
+<div id="scrPickList" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrTop')">&lt; 戻る</button>
+    <div class="header-title">明日の準備</div>
+  </div>
+  <div class="content">
+    <div class="cart-box" id="pickCartBox" style="display:none;">
+      <div class="cart-title">出庫かご（<span id="pickCartCount">0</span>件）</div>
+      <div id="pickCartItems"></div>
+      <button class="btn-primary" style="margin-top:10px;font-size:16px;padding:14px;" onclick="doBulkRelease()">まとめて出庫する</button>
+    </div>
+    <div style="background:var(--white);border:1px solid var(--border-light);border-radius:12px;padding:12px;margin-bottom:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span style="font-size:14px;cursor:pointer;color:var(--text3);" onclick="changePickMonth(-1)">&#9664;</span>
+        <span style="font-size:15px;font-weight:700;color:var(--brown);" id="pickCalTitle">-</span>
+        <span style="font-size:14px;cursor:pointer;color:var(--text3);" onclick="changePickMonth(1)">&#9654;</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;font-size:11px;color:var(--text3);margin-bottom:4px;">
+        <div>日</div><div>月</div><div>火</div><div>水</div><div>木</div><div>金</div><div>土</div>
+      </div>
+      <div id="pickCalGrid" style="display:grid;grid-template-columns:repeat(7,1fr);text-align:center;gap:2px;"></div>
+    </div>
+    <div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:8px;" id="pickDateLabel">-</div>
+    <div class="hint-bar">チェックを入れると出庫かごに追加されます。日付を変えても保持されます。</div>
+    <div id="pickListContent" style="color:var(--text3);text-align:center;padding:20px;">日付を選んでください</div>
+  </div>
+  <div class="page-id">S-4 タイヤ準備</div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+var schedules = [];
+var currentOrderNumber = '';
+var currentScheduleId = '';
+
+function getCart() {
+  try { return JSON.parse(sessionStorage.getItem('release_cart') || '[]'); } catch(e) { return []; }
+}
+function saveCart(cart) {
+  sessionStorage.setItem('release_cart', JSON.stringify(cart));
+}
+function addToCart(setId, ver, label) {
+  var cart = getCart();
+  for (var i = 0; i < cart.length; i++) { if (cart[i].setId === setId) return; }
+  cart.push({ setId: setId, ver: ver, label: label });
+  saveCart(cart);
+  renderPickCart();
+}
+function removeFromCart(setId) {
+  saveCart(getCart().filter(function(c) { return c.setId !== setId; }));
+  renderPickCart();
+}
+function isInCart(setId) {
+  return getCart().some(function(c) { return c.setId === setId; });
+}
+function renderPickCart() {
+  var cart = getCart();
+  var box = document.getElementById('pickCartBox');
+  if (cart.length === 0) { box.style.display = 'none'; return; }
+  box.style.display = '';
+  document.getElementById('pickCartCount').textContent = cart.length;
+  var h = '';
+  for (var i = 0; i < cart.length; i++) {
+    h += '<div class="cart-item"><span>' + escapeHtml(cart[i].label) + '</span>'
+      + '<span class="cart-remove" onclick="removeFromCart(\'' + escapeHtml(cart[i].setId) + '\');loadPickForDate()">取消</span></div>';
+  }
+  document.getElementById('pickCartItems').innerHTML = h;
+}
+
+async function doBulkRelease() {
+  var cart = getCart();
+  if (cart.length === 0) return;
+  if (!confirmAction(cart.length + '件のタイヤを出庫しますか？')) return;
+  var ok = 0, ng = 0;
+  for (var i = 0; i < cart.length; i++) {
+    var r = await callAPI('warehouse_release', { tireSetId: cart[i].setId, version: cart[i].ver });
+    if (r && r.ok) ok++; else ng++;
+  }
+  sessionStorage.removeItem('release_cart');
+  if (ng > 0) showError(ok + '件出庫、' + ng + '件失敗');
+  else showSuccess(ok + '件を出庫しました');
+  setTimeout(function() { location.href = 'index.html'; }, 1500);
+}
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// S-1 カレンダー
+var calYear, calMonth;
+function initDate() {
+  var t = new Date(); calYear = t.getFullYear(); calMonth = t.getMonth();
+  document.getElementById('scheduleDate').value = calYear + '-' + String(calMonth+1).padStart(2,'0') + '-' + String(t.getDate()).padStart(2,'0');
+  renderCalendar();
+}
+function changeMonth(d) {
+  calMonth += d;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+function renderCalendar() {
+  document.getElementById('calTitle').textContent = calYear + '\u5E74' + (calMonth+1) + '\u6708';
+  var fd = new Date(calYear, calMonth, 1).getDay(), ld = new Date(calYear, calMonth+1, 0).getDate();
+  var t = new Date(), ts = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  var sel = document.getElementById('scheduleDate').value, h = '';
+  for (var i = 0; i < fd; i++) h += '<div></div>';
+  for (var d = 1; d <= ld; d++) {
+    var ds = calYear+'-'+String(calMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var st = 'padding:6px 2px;font-size:13px;font-weight:600;cursor:pointer;border-radius:6px;';
+    if (ds === sel) st += 'background:#FFF3EB;border:2px solid var(--orange);';
+    else if (ds === ts) st += 'background:#E8F5E9;';
+    h += '<div style="'+st+'" onclick="selectCalDay(\''+ds+'\')">'+d+'</div>';
+  }
+  document.getElementById('calGrid').innerHTML = h;
+}
+function selectCalDay(ds) { document.getElementById('scheduleDate').value = ds; renderCalendar(); loadScheduleForDate(); }
+
+async function loadScheduleForDate() {
+  var date = document.getElementById('scheduleDate').value; if (!date) return;
+  var r = await callAPI('admin_scheduleList', { date: date });
+  if (handleAPIError(r)) return;
+  schedules = r.data.schedules || [];
+  var d = new Date(date);
+  document.getElementById('summaryTitle').textContent = (d.getMonth()+1)+'/'+d.getDate()+' の作業予定';
+  var total = schedules.length, asgn = schedules.filter(function(s){return s['開始時間'];}).length;
+  document.getElementById('summaryContent').innerHTML =
+    '<div class="confirm-row"><span class="confirm-label">予約件数</span><span class="confirm-value">'+total+'件</span></div>'
+    +'<div class="confirm-row"><span class="confirm-label" style="color:var(--green);">予定組み済み</span><span class="confirm-value">'+asgn+'件</span></div>'
+    +'<div class="confirm-row"><span class="confirm-label" style="color:var(--red);">未割当</span><span class="confirm-value" style="color:var(--red);">'+(total-asgn)+'件</span></div>';
+  var ua = schedules.filter(function(s){return !s['開始時間'];});
+  document.getElementById('unassignedLabel').textContent = '未割当（'+ua.length+'件）';
+  if (!ua.length) { document.getElementById('unassignedList').innerHTML='<div style="color:var(--text3);text-align:center;padding:12px;">未割当なし</div>'; return; }
+  var h = '';
+  for (var i = 0; i < ua.length; i++) {
+    var s = ua[i];
+    h += '<div class="wo-card" onclick="openAssign(\''+escapeHtml(s['伝票番号']||'')+'\',\''+escapeHtml(s['予定ID']||'')+'\')">'
+      +'<div class="wo-card-top"><span class="wo-number">'+escapeHtml(s['伝票番号']||'')+'</span><span class="status st-reserve">未割当</span></div>'
+      +'<div class="wo-card-customer">'+escapeHtml(s['顧客名']||'')+'</div>'
+      +'<div class="wo-card-detail">'+escapeHtml(s['車両情報']||'')+'</div></div>';
+  }
+  document.getElementById('unassignedList').innerHTML = h;
+}
+
+function openAssign(on, sid) {
+  currentOrderNumber = on; currentScheduleId = sid;
+  var sc = schedules.find(function(s){return s['予定ID']===sid;});
+  document.getElementById('assignInfo').innerHTML = '<div><span class="info-bar-label">伝票番号: </span><span class="info-bar-value">'+escapeHtml(on)+'</span></div>'
+    +(sc?'<div><span class="info-bar-label">顧客: </span><span class="info-bar-value">'+escapeHtml(sc['顧客名']||'')+'</span></div>':'');
+  document.getElementById('assignTime').value=''; document.getElementById('assignStaff').value=''; document.getElementById('assignMemo').value='';
+  showScr('scrAssign');
+}
+async function saveAssignment() {
+  startLoading(document.getElementById('assignSaveBtn'));
+  var r = await callAPI('admin_assignSchedule', {
+    orderNumber: currentOrderNumber, scheduleId: currentScheduleId||undefined,
+    workDate: document.getElementById('scheduleDate').value,
+    startTime: document.getElementById('assignTime').value,
+    assignedStaff: document.getElementById('assignStaff').value,
+    memo: document.getElementById('assignMemo').value
+  });
+  stopLoading(document.getElementById('assignSaveBtn'));
+  if (handleAPIError(r)) return;
+  showSuccess('割当を保存しました'); await loadScheduleForDate(); showScr('scrTop');
+}
+
+// S-4 タイヤ準備
+var pickYear, pickMonth, pickSelectedDate = '';
+function openPickScreen() {
+  var tmr = new Date(); tmr.setDate(tmr.getDate()+1);
+  pickYear = tmr.getFullYear(); pickMonth = tmr.getMonth();
+  pickSelectedDate = pickYear+'-'+String(pickMonth+1).padStart(2,'0')+'-'+String(tmr.getDate()).padStart(2,'0');
+  renderPickCalendar();
+  loadPickForDate();
+  renderPickCart();
+  showScr('scrPickList');
+}
+function changePickMonth(d) {
+  pickMonth += d;
+  if (pickMonth < 0) { pickMonth = 11; pickYear--; }
+  if (pickMonth > 11) { pickMonth = 0; pickYear++; }
+  renderPickCalendar();
+}
+function renderPickCalendar() {
+  document.getElementById('pickCalTitle').textContent = pickYear+'\u5E74'+(pickMonth+1)+'\u6708';
+  var fd = new Date(pickYear,pickMonth,1).getDay(), ld = new Date(pickYear,pickMonth+1,0).getDate();
+  var t = new Date(), ts = t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');
+  var h = '';
+  for (var i = 0; i < fd; i++) h += '<div></div>';
+  for (var d = 1; d <= ld; d++) {
+    var ds = pickYear+'-'+String(pickMonth+1).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+    var st = 'padding:6px 2px;font-size:13px;font-weight:600;cursor:pointer;border-radius:6px;';
+    if (ds === pickSelectedDate) st += 'background:#FFF3EB;border:2px solid var(--orange);';
+    else if (ds === ts) st += 'background:#E8F5E9;';
+    h += '<div style="'+st+'" onclick="selectPickDay(\''+ds+'\')">'+d+'</div>';
+  }
+  document.getElementById('pickCalGrid').innerHTML = h;
+}
+function selectPickDay(ds) { pickSelectedDate = ds; renderPickCalendar(); loadPickForDate(); }
+
+async function loadPickForDate() {
+  var d = new Date(pickSelectedDate);
+  document.getElementById('pickDateLabel').textContent = (d.getMonth()+1)+'/'+d.getDate()+' のタイヤ準備';
+  var r = await callAPI('admin_preDayPickup', { date: pickSelectedDate });
+  if (handleAPIError(r)) return;
+  var picks = r.data.schedules || [];
+  if (!picks.length) {
+    document.getElementById('pickListContent').innerHTML = '<div style="color:var(--text3);text-align:center;padding:20px;">この日の出庫予定なし</div>';
+    return;
+  }
+  var h = '';
+  for (var i = 0; i < picks.length; i++) {
+    var p = picks[i];
+    var setId = p['タイヤセットID']||'', ver = Number(p['版番号']||0);
+    var label = (p['顧客名']||'')+' / '+(p['棚番']||'-');
+    h += '<div class="pick-item">'
+      +'<input type="checkbox" class="pick-check" onclick="onPickCheck(this,\''+escapeHtml(setId)+'\','+ver+',\''+escapeHtml(label)+'\')"'+(isInCart(setId)?' checked':'')+'>'
+      +'<div class="pick-info"><div class="pick-customer">'+escapeHtml(p['顧客名']||'')+'</div>'
+      +'<div class="pick-detail">'+escapeHtml(p['タイヤ情報']||'')+'</div></div>'
+      +'<div class="pick-rack">'+escapeHtml(p['棚番']||'')+'</div></div>';
+  }
+  document.getElementById('pickListContent').innerHTML = h;
+}
+function onPickCheck(cb, setId, ver, label) {
+  if (cb.checked) addToCart(setId, ver, label); else removeFromCart(setId);
+}
+
+initDate();
+loadScheduleForDate();
+</script>
+</body>
+</html>

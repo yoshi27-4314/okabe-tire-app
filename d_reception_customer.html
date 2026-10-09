@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>D. 顧客検索・登録 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.result-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; cursor: pointer; box-shadow: var(--shadow-sm); }
+.result-card:active { transform: scale(0.98); }
+.result-name { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 2px; }
+.result-info { font-size: 13px; color: var(--text2); }
+</style>
+</head>
+<body>
+
+<!-- D-2 顧客検索 -->
+<div id="scrSearch" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <button class="back-btn" onclick="location.href='d_reception_list.html'">&lt; 戻る</button>
+    <div class="header-title">顧客を探す</div>
+  </div>
+  <div class="content">
+    <div class="search-box">
+      <input class="search-input" type="text" id="searchInput" placeholder="検索ワードを入力" onkeydown="if(event.key==='Enter')doSearch()">
+      <button class="search-btn" id="searchBtn" onclick="doSearch()">検索</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-top:-12px;margin-bottom:12px;padding-left:4px;">電話 / 携帯 / 名前 / カナ / ナンバー / 車種 / 顧客コード / メール / 郵便番号</div>
+    <div id="searchResults"></div>
+    <div style="margin-top:24px;">
+      <div class="section-label">新規登録</div>
+      <button class="reg-btn" onclick="showScr('scrNewCustomer')">新規登録（手入力）</button>
+      <div class="section-label" style="margin-top:16px;">読み取りで新規登録</div>
+      <button class="reg-btn" style="background:var(--white);color:var(--text);border:1.5px solid var(--border);" onclick="document.getElementById('ocrShaken1').click()">車検証を読み取って新規登録<span style="display:block;font-size:11px;font-weight:400;color:var(--text3);margin-top:2px;">ファイル選択で読み取り</span></button>
+      <input type="file" id="ocrShaken1" accept="image/*" style="display:none;" onchange="doOcr(this,'車検証','customer')">
+      <button class="reg-btn" style="background:var(--white);color:var(--text);border:1.5px solid var(--border);" onclick="document.getElementById('ocrWork1').click()">作業指示書を読み取って新規登録<span style="display:block;font-size:11px;font-weight:400;color:var(--text3);margin-top:2px;">ファイル選択で読み取り</span></button>
+      <input type="file" id="ocrWork1" accept="image/*" style="display:none;" onchange="doOcr(this,'作業指示書','customer')">
+    </div>
+  </div>
+  <div class="page-id">D-2 顧客検索</div>
+</div>
+
+<!-- D-3 新規顧客登録 -->
+<div id="scrNewCustomer" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrSearch')">&lt; 戻る</button>
+    <div class="header-title">新規顧客登録</div>
+  </div>
+  <div class="content">
+    <div class="form-section">
+      <div class="form-section-title">お客様情報</div>
+      <div class="form-row"><label class="form-label">お客さんの区分</label>
+        <div class="toggle-group" id="ncCategory">
+          <span class="toggle-btn checked" data-value="個人" onclick="toggleCheck(this)">個人</span>
+          <span class="toggle-btn" data-value="法人・団体" onclick="toggleCheck(this)">法人</span>
+        </div>
+      </div>
+      <div class="form-row"><label class="form-label">氏名 <span class="form-required">*</span></label><input class="form-input" type="text" id="ncName" placeholder="山田太郎"></div>
+      <div class="form-row"><label class="form-label">フリガナ</label><input class="form-input" type="text" id="ncKana" placeholder="ヤマダタロウ"></div>
+      <div class="form-row"><label class="form-label">電話番号 <span class="form-required">*どちらか1つ以上</span></label><input class="form-input" type="tel" id="ncTel" placeholder="058-XXX-XXXX"></div>
+      <div class="form-row"><label class="form-label">携帯番号</label><input class="form-input" type="tel" id="ncMobile" placeholder="090-XXXX-XXXX"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">ご住所</div>
+      <div class="form-row"><label class="form-label">郵便番号</label><input class="form-input" type="text" id="ncZip" placeholder="500-8000"></div>
+      <div class="form-row"><label class="form-label">住所</label><input class="form-input" type="text" id="ncAddress" placeholder="岐阜県岐阜市XX町1-2-3"></div>
+      <div class="form-row"><label class="form-label">住所フリガナ</label><input class="form-input" type="text" id="ncAddressFuri" placeholder="ギフケンギフシ"></div>
+      <div class="form-row"><label class="form-label">Eメール</label><input class="form-input" type="email" id="ncEmail" placeholder="example@mail.com"></div>
+    </div>
+    <div class="form-section">
+      <div class="form-section-title">その他</div>
+      <div class="form-row"><label class="form-label">顧客コード</label><input class="form-input" type="text" id="ncCode" placeholder="基幹の番号（任意）"></div>
+      <div class="form-row"><label class="form-label">営業担当</label><input class="form-input" type="text" id="ncSalesRep" placeholder="担当者名"></div>
+      <div class="form-row"><label class="form-label">メモ（社内専用）</label><textarea class="form-input" rows="3" id="ncMemo" placeholder="特記事項" style="resize:vertical;"></textarea></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="showScr('scrSearch')">キャンセル</button>
+      <button class="btn-primary" id="ncSaveBtn" onclick="createCustomer()">登録して車両選択へ</button>
+    </div>
+  </div>
+  <div class="page-id">D-3 新規顧客登録</div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+async function doSearch() {
+  var query = document.getElementById('searchInput').value.trim();
+  if (!query) { showError('検索語を入力してください'); return; }
+  startLoading(document.getElementById('searchBtn'));
+  var result = await callAPI('customer_search', { query: query });
+  stopLoading(document.getElementById('searchBtn'));
+  if (handleAPIError(result)) return;
+  var customers = result.data.customers || [];
+  var html = '<div class="section-label">検索結果（' + customers.length + '件）</div>';
+  if (customers.length === 0) html += '<div style="text-align:center;color:var(--text3);padding:20px;">該当なし</div>';
+  for (var i = 0; i < customers.length; i++) {
+    var c = customers[i];
+    html += '<div class="result-card" onclick="selectCustomer(\'' + escapeHtml(c['顧客ID']) + '\')">'
+      + '<div class="result-name">' + escapeHtml(c['氏名']) + '</div>'
+      + '<div class="result-info">' + escapeHtml(c['電話'] || '') + (c['携帯'] ? ' / ' + escapeHtml(c['携帯']) : '') + '</div>'
+      + '<div class="result-info">' + escapeHtml(c['顧客コード'] || '') + '</div></div>';
+  }
+  document.getElementById('searchResults').innerHTML = html;
+}
+
+function selectCustomer(customerId) {
+  sessionStorage.setItem('reception_customerId', customerId);
+  location.href = 'd_reception_vehicle?customerId=' + encodeURIComponent(customerId);
+}
+
+async function createCustomer() {
+  var name = document.getElementById('ncName').value.trim();
+  var phone = document.getElementById('ncTel').value.trim();
+  var mobile = document.getElementById('ncMobile').value.trim();
+  if (!name) { showError('氏名を入力してください'); return; }
+  if (!phone && !mobile) { showError('電話か携帯のどちらか1つ以上を入力してください'); return; }
+  startLoading(document.getElementById('ncSaveBtn'));
+  var result = await callAPI('customer_create', {
+    name: name,
+    furigana: document.getElementById('ncKana').value.trim(),
+    phone: phone,
+    mobile: mobile,
+    zip: document.getElementById('ncZip').value.trim(),
+    address: document.getElementById('ncAddress').value.trim(),
+    addressFurigana: document.getElementById('ncAddressFuri').value.trim(),
+    email: document.getElementById('ncEmail').value.trim(),
+    customerCode: document.getElementById('ncCode').value.trim(),
+    salesRep: document.getElementById('ncSalesRep').value.trim(),
+    memo: document.getElementById('ncMemo').value.trim(),
+    category: getToggleValue('ncCategory')
+  });
+  stopLoading(document.getElementById('ncSaveBtn'));
+  if (handleAPIError(result)) return;
+  showSuccess('顧客を登録しました');
+  selectCustomer(result.data.customerId);
+}
+
+function initFromReservation() {
+  if (getParam('fromReservation') !== '1') return;
+  var name = sessionStorage.getItem('reservation_name') || '';
+  var phone = sessionStorage.getItem('reservation_phone') || '';
+  if (name || phone) {
+    if (name) document.getElementById('searchInput').value = name;
+    else if (phone) document.getElementById('searchInput').value = phone;
+    doSearch();
+  }
+  sessionStorage.removeItem('reservation_name');
+  sessionStorage.removeItem('reservation_phone');
+  sessionStorage.removeItem('reservation_orderNumber');
+}
+initFromReservation();
+
+async function doOcr(input, docType, target) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    showSuccess('読み取り中...');
+    var result = await callAPI('ocr_read', { imageData: e.target.result, docType: docType });
+    if (handleAPIError(result)) return;
+    var ex = result.data.extracted || {};
+    showScr('scrNewCustomer');
+    if (ex['顧客名']) document.getElementById('ncName').value = ex['顧客名'];
+    if (ex['電話']) document.getElementById('ncTel').value = ex['電話'];
+    showSuccess(docType + 'を読み取りました');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+</script>
+</body>
+</html>
