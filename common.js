@@ -37,7 +37,7 @@ function goHome() {
 
 // 画面遷移（パラメータつき）
 function navigateTo(page, params) {
-  var url = page.replace(/\.html$/, '');
+  var url = page;
   if (params) {
     var query = Object.keys(params).map(function(key) {
       return encodeURIComponent(key) + '=' + encodeURIComponent(params[key]);
