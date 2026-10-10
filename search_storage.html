@@ -79,6 +79,9 @@ input[type=number] { -moz-appearance: textfield; }
     <div style="display:flex;gap:8px;margin-bottom:10px;">
       <button class="btn-secondary" style="flex:1;" id="detailAddCartBtn" onclick="addToCartFromDetail()">出庫かごに入れる</button>
     </div>
+    <div id="detailRevertBtn" style="display:none;margin-bottom:10px;">
+      <button class="btn-secondary" style="color:var(--blue);border-color:var(--blue);" onclick="revertRelease()">保管中に戻す</button>
+    </div>
     <div style="text-align:right;margin-top:16px;">
       <a href="#" style="font-size:13px;color:var(--red);text-decoration:underline;" onclick="event.preventDefault();navigateTo('g_warehouse_special.html',{tireSetId:curSetId})">廃棄する</a>
     </div>
@@ -314,15 +317,22 @@ async function loadDetail(setId) {
   }
 
   var btn = document.getElementById('detailAddCartBtn');
+  var revertBtn = document.getElementById('detailRevertBtn');
   if (isStored && !isInCart(setId)) {
     btn.style.display = '';
     btn.textContent = '出庫かごに入れる';
+    if (revertBtn) revertBtn.style.display = 'none';
   } else if (isStored && isInCart(setId)) {
     btn.style.display = '';
     btn.textContent = '出庫かごに入っています';
     btn.disabled = true;
+    if (revertBtn) revertBtn.style.display = 'none';
+  } else if (String(loc['状態']) === '出庫済み') {
+    btn.style.display = 'none';
+    if (revertBtn) revertBtn.style.display = '';
   } else {
     btn.style.display = 'none';
+    if (revertBtn) revertBtn.style.display = 'none';
   }
   showScr('scrDetail');
 }
@@ -374,6 +384,15 @@ function showEditScreen() {
 }
 function tgl(val, cur) {
   return '<span class="toggle-btn' + (val === cur ? ' checked' : '') + '" data-value="' + val + '" onclick="toggleCheck(this)">' + val + '</span>';
+}
+
+async function revertRelease() {
+  if (!curSetId) return;
+  if (!confirmAction('このタイヤを保管中に戻しますか？')) return;
+  var r = await callAPI('warehouse_revertRelease', { tireSetId: curSetId });
+  if (handleAPIError(r)) return;
+  showSuccess('保管中に戻しました');
+  loadDetail(curSetId);
 }
 
 function adjGroove(btn, delta) {
