@@ -233,6 +233,33 @@ async function doEndOwnership() {
   loadDetail(currentVehicle['車両ID']);
 }
 
+async function loadTires(vehicleId) {
+  document.getElementById('tireList').innerHTML = '<div style="color:var(--text3);padding:20px;text-align:center;">読み込み中...</div>';
+  var r = await callAPI('warehouse_searchTires', { vehicleId: vehicleId });
+  if (!r || !r.ok) {
+    document.getElementById('tireList').innerHTML = '<div style="color:var(--text3);padding:20px;text-align:center;">取得できませんでした</div>';
+    return;
+  }
+  var items = r.data.results || [];
+  if (items.length === 0) {
+    document.getElementById('tireList').innerHTML = '<div style="color:var(--text3);padding:20px;text-align:center;">預かりタイヤなし</div>';
+    return;
+  }
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var ts = items[i].tireSet || {}, loc = items[i].location || {};
+    var sc = getStatusClass(loc['状態'] || '');
+    var tireInfo = [ts['区分'], ts['メーカー'], ts['銘柄'], ts['サイズ']].filter(Boolean).join(' / ');
+    html += '<div class="wo-card" onclick="navigateTo(\'search_storage.html\',{tireSetId:\'' + escapeHtml(ts['タイヤセットID']) + '\'})">'
+      + '<div style="display:flex;justify-content:space-between;margin-bottom:6px;">'
+      + '<span style="font-size:15px;font-weight:700;color:var(--brown);">' + escapeHtml(loc['棚'] || '棚未定') + '</span>'
+      + '<span class="status ' + sc + '">' + escapeHtml(loc['状態'] || '') + '</span></div>'
+      + (tireInfo ? '<div class="wo-card-detail">' + escapeHtml(tireInfo) + '</div>' : '')
+      + '</div>';
+  }
+  document.getElementById('tireList').innerHTML = html;
+}
+
 var paramId = getParam('vehicleId');
 if (paramId) loadDetail(paramId);
 </script>
