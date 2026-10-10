@@ -175,9 +175,11 @@ async function loadDetail(customerId) {
   for (var v = 0; v < vehicles.length; v++) {
     var vh = vehicles[v];
     var plate = [vh['地名'], vh['分類番号'], vh['かな'], vh['下4桁']].filter(Boolean).join(' ');
+    var memo = vh['メモ'] ? ' [' + vh['メモ'] + ']' : '';
+    var detail = [vh['車種名'], vh['メーカー']].filter(Boolean).join(' / ');
     vhtml += '<div class="wo-card" onclick="navigateTo(\'c_vehicle.html\',{vehicleId:\'' + vh['車両ID'] + '\'})">'
-      + '<div style="font-size:16px;font-weight:700;">' + escapeHtml(plate || '（ナンバー未登録）') + '</div>'
-      + '<div class="wo-card-detail">' + escapeHtml(vh['車種名'] || '') + ' / ' + escapeHtml(vh['輪数'] || '') + '</div></div>';
+      + '<div style="font-size:16px;font-weight:700;">' + escapeHtml(plate || '（ナンバー未登録）') + escapeHtml(memo) + '</div>'
+      + (detail ? '<div class="wo-card-detail">' + escapeHtml(detail) + '</div>' : '') + '</div>';
   }
   document.getElementById('vehicleList').innerHTML = vhtml;
   document.getElementById('memoField').value = c['社内メモ'] || '';
