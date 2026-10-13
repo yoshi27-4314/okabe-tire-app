@@ -39,6 +39,25 @@
 </div>
 <script>
 if (!requireLogin()) {}
+var permLabels = {
+  'can_admin_staff': 'スタッフ管理',
+  'can_early_release_apply': '早期返却申請',
+  'can_early_release_confirm': '早期返却確認',
+  'can_edit_capacity': '収容数変更',
+  'can_edit_master_facility': '設備マスタ編集',
+  'can_edit_master_location': '棚マスタ編集',
+  'can_edit_master_price': '料金マスタ編集',
+  'can_edit_master_staff': 'スタッフマスタ編集',
+  'can_edit_pit_record': '検品記録の編集',
+  'can_manage_permission': '権限管理',
+  'can_pit_pause': '作業中断・再開',
+  'can_pit_work': 'サービス作業',
+  'can_quick_lookup': '検索・閲覧',
+  'can_reception': '来店受付',
+  'can_schedule_dispatch': '作業計画',
+  'can_signature': '署名・契約',
+  'can_warehouse_storage': '倉庫作業'
+};
 var allStaff = [];
 function showScr(id) { var s = document.querySelectorAll('.screen'); for (var i = 0; i < s.length; i++) s[i].classList.remove('active'); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 async function loadStaff() {
@@ -65,7 +84,7 @@ async function openPerm(staffId) {
   for (var i = 0; i < keys.length; i++) {
     var k = keys[i];
     var on = perms[k] === true || perms[k] === 'はい';
-    html += '<div class="perm-row"><div class="perm-info"><div class="perm-name">' + escapeHtml(k) + '</div></div>'
+    html += '<div class="perm-row"><div class="perm-info"><div class="perm-name">' + escapeHtml(permLabels[k] || k) + '</div></div>'
       + '<button class="perm-toggle ' + (on ? 'on' : 'off') + '" onclick="togglePerm(\'' + escapeHtml(staffId) + '\',\'' + escapeHtml(k) + '\',this)"></button></div>';
   }
   document.getElementById('permList').innerHTML = html;
