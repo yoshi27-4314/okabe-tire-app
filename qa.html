@@ -38,45 +38,184 @@
   </div>
 
   <div id="tabGuide" style="flex:1;overflow-y:auto;padding:12px 16px;">
+
+    <!-- 全体フロー図 -->
+    <div class="guide-sec" style="border-color:var(--orange);">
+      <div class="guide-title" onclick="tgl(this)" style="background:#FFF3EB;color:var(--orange);">全体の流れ <span>▼</span></div>
+      <div class="guide-body open" style="padding:14px;">
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;background:var(--blue);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">1</div>
+            <div style="flex:1;background:var(--white);border:1.5px solid var(--blue);border-radius:8px;padding:8px 12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--blue);">フロント</div>
+              <div style="font-size:13px;font-weight:600;">作業指示書を発行</div>
+            </div>
+          </div>
+          <div style="text-align:center;color:var(--orange);font-size:14px;">▼</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;background:var(--orange);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">2</div>
+            <div style="flex:1;background:var(--white);border:1.5px solid var(--orange);border-radius:8px;padding:8px 12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--orange);">サービス</div>
+              <div style="font-size:13px;font-weight:600;">指示書を撮影 → 顧客・車両を自動入力</div>
+            </div>
+          </div>
+          <div style="text-align:center;color:var(--orange);font-size:14px;">▼</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;background:#8B5CF6;color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">3</div>
+            <div style="flex:1;background:var(--white);border:1.5px solid #8B5CF6;border-radius:8px;padding:8px 12px;">
+              <div style="font-size:12px;font-weight:700;color:#8B5CF6;">自動</div>
+              <div style="font-size:13px;font-weight:600;">預かりタイヤの有無を判定</div>
+              <div style="font-size:11px;color:var(--text3);margin-top:2px;">あり → 出庫準備へ ／ なし → 作業予定へ</div>
+            </div>
+          </div>
+          <div style="text-align:center;color:var(--orange);font-size:14px;">▼</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">4</div>
+            <div style="flex:1;background:var(--white);border:1.5px solid var(--green);border-radius:8px;padding:8px 12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--green);">倉庫</div>
+              <div style="font-size:13px;font-weight:600;">タイヤを出庫して作業場へ準備</div>
+            </div>
+          </div>
+          <div style="text-align:center;color:var(--orange);font-size:12px;">── 作業当日 ──</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;background:var(--orange);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">5</div>
+            <div style="flex:1;background:var(--white);border:1.5px solid var(--orange);border-radius:8px;padding:8px 12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--orange);">サービス</div>
+              <div style="font-size:13px;font-weight:600;">タイヤを撮影 → 情報を自動入力 → 残溝・傷チェック</div>
+            </div>
+          </div>
+          <div style="text-align:center;color:var(--orange);font-size:14px;">▼</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;background:var(--orange);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">6</div>
+            <div style="flex:1;background:var(--white);border:1.5px solid var(--orange);border-radius:8px;padding:8px 12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--orange);">サービス</div>
+              <div style="font-size:13px;font-weight:600;">タイヤ交換作業 → 完了</div>
+            </div>
+          </div>
+          <div style="text-align:center;color:var(--orange);font-size:14px;">▼</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;background:var(--blue);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">7</div>
+            <div style="flex:1;background:var(--white);border:1.5px solid var(--blue);border-radius:8px;padding:8px 12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--blue);">フロント</div>
+              <div style="font-size:13px;font-weight:600;">契約書を確認・編集 → PDF印刷 → サイン</div>
+            </div>
+          </div>
+          <div style="text-align:center;color:var(--orange);font-size:14px;">▼</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:28px;height:28px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0;">8</div>
+            <div style="flex:1;background:var(--white);border:1.5px solid var(--green);border-radius:8px;padding:8px 12px;">
+              <div style="font-size:12px;font-weight:700;color:var(--green);">倉庫</div>
+              <div style="font-size:13px;font-weight:600;">預かりタイヤを棚に格納</div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;font-size:10px;">
+          <span style="display:flex;align-items:center;gap:3px;"><span style="width:10px;height:10px;background:var(--blue);border-radius:2px;"></span>フロント</span>
+          <span style="display:flex;align-items:center;gap:3px;"><span style="width:10px;height:10px;background:var(--orange);border-radius:2px;"></span>サービス</span>
+          <span style="display:flex;align-items:center;gap:3px;"><span style="width:10px;height:10px;background:var(--green);border-radius:2px;"></span>倉庫</span>
+          <span style="display:flex;align-items:center;gap:3px;"><span style="width:10px;height:10px;background:#8B5CF6;border-radius:2px;"></span>自動</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 各画面の説明 -->
     <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">1. 作業開始（作業指示書の読み取り）<span>▼</span></div><div class="guide-body">
-      ホーム画面の「作業開始」をタップ → 作業指示書を撮影またはファイルを読み取る → 顧客名・ナンバー・車種が自動入力 → 間違いがあれば修正 → 預かりタイヤの有無を自動判定 → 作業予定日を入力してリストに追加
-      <br><br>作業指示書がない場合は「手入力で進める」からフォームに直接入力できます。
+      <div style="background:#FFF3EB;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:4px;">操作手順</div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span><span style="font-size:13px;">ホーム画面の「作業開始」をタップ</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span><span style="font-size:13px;">作業指示書を撮影 or 「手入力で進める」</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span><span style="font-size:13px;">読み取り結果を確認・修正して「確定して次へ」</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">4</span><span style="font-size:13px;">作業予定日を入力して「リストに追加する」</span></div>
+      </div>
+      <div style="background:#F0F7FF;border-left:3px solid var(--blue);padding:8px 10px;font-size:12px;color:var(--text2);">必須項目：氏名・連絡先（どちらか1つ）・ナンバー下4桁</div>
     </div></div>
+
     <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">2. ピット作業<span>▼</span></div><div class="guide-body">
-      カレンダーで日付を選ぶ → その日の作業予定が一覧表示 → カードをタップ → 「履き替え作業を開始する」でタイヤ情報入力画面へ
-      <br><br>作業予定日の変更や取り消しもここから行えます。
+      <div style="background:#FFF3EB;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:4px;">操作手順</div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span><span style="font-size:13px;">カレンダーで日付を選ぶ</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span><span style="font-size:13px;">対象のカードをタップ</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span><span style="font-size:13px;">「履き替え作業を開始する」をタップ</span></div>
+      </div>
+      <div style="background:#F0F7FF;border-left:3px solid var(--blue);padding:8px 10px;font-size:12px;color:var(--text2);">予定日の変更や取り消しも作業詳細画面から行えます。「今日」ボタンで今日に戻れます。</div>
     </div></div>
+
     <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">3. タイヤ情報入力<span>▼</span></div><div class="guide-body">
-      1本目のタイヤを撮影 → Geminiが自動でメーカー・パターン・サイズを読み取り → 結果が全本数にコピー → 各タイヤの残溝を+/-ボタンまたは手入力 → 傷チェック（傷なし/サイドウォール/トレッド面/リム）→ 傷がある場合のみ写真撮影 → 保存で作業完了
-      <br><br>残溝3mm未満は赤く「要交換」と表示されます。
+      <div style="background:#FFF3EB;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:4px;">操作手順</div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span><span style="font-size:13px;">1本目の「タイヤを読み取る」→ 撮影</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span><span style="font-size:13px;">メーカー・サイズ等が自動入力 → 全本数にコピー</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span><span style="font-size:13px;">各タイヤの残溝を入力（+/-ボタン or 手入力）</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">4</span><span style="font-size:13px;">傷チェック（傷なし or 場所を選択 → 写真撮影）</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">5</span><span style="font-size:13px;">「保存する」で作業完了</span></div>
+      </div>
+      <div style="background:#FFF5F5;border-left:3px solid var(--red);padding:8px 10px;font-size:12px;color:var(--text2);">残溝3mm未満は赤く「要交換」と表示されます。どの順番で入力しても大丈夫です。</div>
     </div></div>
+
     <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">4. 倉庫作業（出庫・格納・棚番変更）<span>▼</span></div><div class="guide-body">
-      <strong>出庫：</strong>出庫準備リストからタイヤを出庫。間違えたら「出庫を取り消す」で戻せます（72時間以内）。
-      <br><br><strong>格納：</strong>格納待ちリストから棚番号を入力して格納。前回の棚番号がヒントで表示されます。棚番号なしでは格納できません。
-      <br><br><strong>棚番変更：</strong>検索してタイヤを選び、新しい棚番号を入力。
+      <div style="margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:4px;">出庫</div>
+        <div style="font-size:13px;">出庫準備リストから「出庫する」をタップ。間違えたら「出庫を取り消す」（72時間以内）。</div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:4px;">格納</div>
+        <div style="font-size:13px;">格納待ちリストから棚番号を入力して「格納」。前回の棚番号がヒントで表示されます。<span style="color:var(--red);font-weight:600;">棚番号なしでは格納できません。</span></div>
+      </div>
+      <div>
+        <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:4px;">棚番変更</div>
+        <div style="font-size:13px;">検索してタイヤを選び、新しい棚番号を入力して「棚番変更を実行」。</div>
+      </div>
     </div></div>
+
     <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">5. 契約書発行<span>▼</span></div><div class="guide-body">
-      作業完了した車両が一覧表示 → カードをタップ → 顧客・車両・タイヤ情報を確認 → 間違いがあれば編集 → 料金プラン・割引を選択 → 返却予定日を入力 → 「契約書を発行する」
+      <div style="background:#FFF3EB;border-radius:8px;padding:10px;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--orange);margin-bottom:4px;">操作手順</div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">1</span><span style="font-size:13px;">作業完了した車両をタップ</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">2</span><span style="font-size:13px;">顧客・車両・タイヤ情報を確認（間違いは編集）</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">3</span><span style="font-size:13px;">料金プラン・割引を選択</span></div>
+        <div style="display:flex;align-items:flex-start;gap:6px;"><span style="background:var(--orange);color:#fff;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">4</span><span style="font-size:13px;">「契約書を発行する」→ お客様にサイン</span></div>
+      </div>
     </div></div>
+
     <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">6. 預かり検索<span>▼</span></div><div class="guide-body">
-      顧客名・電話・ナンバー・車種・タイヤサイズ・棚番号・営業担当者で検索。複数条件で絞り込みできます。ひらがなでもカタカナでも検索できます。
-      <br><br>「その他の検索条件」を開くとチェック者・顧客コード・メーカー・パターン・作業日・預かり日・返却予定日・申込日・割引区分・メモで検索できます。
+      <div style="font-size:13px;margin-bottom:8px;">顧客名・電話・ナンバー・車種・タイヤサイズ・棚番号・営業担当者で検索。複数条件で絞り込みできます。</div>
+      <div style="background:#F0F7FF;border-left:3px solid var(--blue);padding:8px 10px;font-size:12px;color:var(--text2);">ひらがなでもカタカナでも検索できます。「その他の検索条件」を開くとさらに詳しく検索できます。</div>
     </div></div>
+
     <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">7. 返却予定日<span>▼</span></div><div class="guide-body">
-      冬→夏（期日4/20）と夏→冬（期日1/20）の2タブ。3段階で表示：①返却予定日まで14日以内 ②返却予定日を過ぎた ③タイヤホテル期日を超えた
+      <div style="font-size:13px;margin-bottom:8px;">冬→夏（期日4/20）と夏→冬（期日1/20）の2タブ。</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <div style="background:#FFF3EB;border-left:3px solid var(--orange);padding:6px 10px;font-size:12px;">① 返却予定日まで14日以内 → そろそろ連絡</div>
+        <div style="background:#FFF5F5;border-left:3px solid var(--red);padding:6px 10px;font-size:12px;">② 返却予定日を過ぎた → 連絡が必要</div>
+        <div style="background:#FFF5F5;border-left:3px solid var(--red);padding:6px 10px;font-size:12px;font-weight:700;">③ タイヤホテル期日を超えた → 最優先で対応</div>
+      </div>
     </div></div>
+
     <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">8. トラブル対応<span>▼</span></div><div class="guide-body">
-      <strong>ログインできない：</strong>ID・パスワードを確認。5回間違えるとロック。管理者に解除依頼。
-      <br><br><strong>検索で見つからない：</strong>名前2〜3文字で検索。スペース区切りで絞り込み。
-      <br><br><strong>出庫を間違えた：</strong>倉庫作業の出庫タブで「出庫を取り消す」。72時間以内。
-      <br><br><strong>データ入力ミス：</strong>顧客台帳・車両台帳から「編集する」で修正。
+      <div style="margin-bottom:8px;padding:8px;background:var(--cream);border-radius:6px;">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:2px;">ログインできない</div>
+        <div style="font-size:12px;">ID・パスワードを確認。5回間違えるとロック。管理者に解除依頼。</div>
+      </div>
+      <div style="margin-bottom:8px;padding:8px;background:var(--cream);border-radius:6px;">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:2px;">検索で見つからない</div>
+        <div style="font-size:12px;">名前2〜3文字で検索。スペース区切りで絞り込み。</div>
+      </div>
+      <div style="margin-bottom:8px;padding:8px;background:var(--cream);border-radius:6px;">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:2px;">出庫を間違えた</div>
+        <div style="font-size:12px;">倉庫作業の出庫タブで「出庫を取り消す」。72時間以内。</div>
+      </div>
+      <div style="padding:8px;background:var(--cream);border-radius:6px;">
+        <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:2px;">データ入力ミス</div>
+        <div style="font-size:12px;">顧客台帳・車両台帳から「編集する」で修正。</div>
+      </div>
     </div></div>
+
     <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">9. お問い合わせ<span>▼</span></div><div class="guide-body">
       株式会社クリアメンテ 浅野<br>携帯 : 090-3449-1833
     </div></div>
   </div>
 
-  <div id="tabChat" class="chat-area" style="display:none;">
+  <div id="tabChat"  <div id="tabChat" class="chat-area" style="display:none;">
     <div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div>
   </div>
   <div id="chatInputArea" class="chat-input-area" style="display:none;">

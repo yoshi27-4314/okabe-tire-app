@@ -55,7 +55,7 @@ async function loadStaff() {
   document.getElementById('staffList').innerHTML = html || '<div style="text-align:center;color:var(--text3);padding:20px;">スタッフなし</div>';
 }
 async function openPerm(staffId) {
-  var r = await callAPI('admin_changePermission', { staffId: staffId, action: 'get' });
+  var r = await callAPI('admin_staffList', { staffId: staffId });
   if (handleAPIError(r)) return;
   var perms = r.data.permissions || {};
   var staff = allStaff.find(function(s){ return s['スタッフID'] === staffId; });
@@ -73,7 +73,7 @@ async function openPerm(staffId) {
 }
 async function togglePerm(staffId, perm, btn) {
   var newVal = btn.classList.contains('off');
-  var r = await callAPI('admin_changePermission', { staffId: staffId, action: 'set', permission: perm, value: newVal });
+  var r = await callAPI('admin_changePermission', { targetStaffId: staffId, permissionName: perm, newValue: newVal ? 'はい' : 'いいえ', reason: '権限変更' });
   if (handleAPIError(r)) return;
   btn.classList.toggle('on', newVal);
   btn.classList.toggle('off', !newVal);
