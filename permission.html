@@ -55,7 +55,7 @@ async function loadStaff() {
   document.getElementById('staffList').innerHTML = html || '<div style="text-align:center;color:var(--text3);padding:20px;">スタッフなし</div>';
 }
 async function openPerm(staffId) {
-  var r = await callAPI('admin_staffList', { staffId: staffId });
+  var r = await callAPI('admin_staffList', { targetStaffId: staffId });
   if (handleAPIError(r)) return;
   var perms = r.data.permissions || {};
   var staff = allStaff.find(function(s){ return s['スタッフID'] === staffId; });
