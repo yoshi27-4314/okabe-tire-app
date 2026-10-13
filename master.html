@@ -29,16 +29,16 @@
   </div>
   <div class="content">
     <div class="tab-bar" style="overflow-x:auto;">
-      <div class="tab-item active" onclick="showTab('tabPrice',this)">料金</div>
-      <div class="tab-item" onclick="showTab('tabDiscount',this)">割引</div>
-      <div class="tab-item" onclick="showTab('tabStaff',this)">スタッフ</div>
-      <div class="tab-item" onclick="showTab('tabWarehouse',this)">倉庫</div>
+      <div class="tab-item active" onclick="showTab('tabStaff',this)">スタッフ</div>
       <div class="tab-item" onclick="showTab('tabRack',this)">棚番</div>
+      <div class="tab-item" onclick="showTab('tabPrice',this)">料金</div>
+      <div class="tab-item" onclick="showTab('tabDiscount',this)">割引</div>
+      <div class="tab-item" onclick="showTab('tabWarehouse',this)">倉庫</div>
       <div class="tab-item" onclick="showTab('tabAssist',this)">入力補助</div>
     </div>
-    <div id="tabPrice"><div class="section-label">料金プラン</div><div id="priceList"></div><button class="btn-primary" onclick="openEdit('price','')">新しいプランを追加</button></div>
+    <div id="tabPrice" style="display:none;"><div class="section-label">料金プラン</div><div id="priceList"></div><button class="btn-primary" onclick="openEdit('price','')">新しいプランを追加</button></div>
     <div id="tabDiscount" style="display:none;"><div class="section-label">台数割引</div><div id="discountList"></div><button class="btn-primary" onclick="openEdit('discount','')">新しい割引ルールを追加</button></div>
-    <div id="tabStaff" style="display:none;"><div style="display:flex;gap:8px;margin-bottom:12px;"><input class="form-input" type="text" id="staffQuery" placeholder="スタッフ名で検索" style="flex:1;"><button style="padding:12px 16px;font-size:13px;font-weight:700;color:var(--white);background:var(--orange);border:none;border-radius:8px;cursor:pointer;" onclick="renderStaff()">検索</button></div><div class="section-label" id="staffCount">スタッフ</div><div id="staffList"></div><button class="btn-primary" onclick="openEdit('staff','')">新しいスタッフを追加</button></div>
+    <div id="tabStaff"><div style="display:flex;gap:8px;margin-bottom:12px;"><input class="form-input" type="text" id="staffQuery" placeholder="スタッフ名で検索" style="flex:1;"><button style="padding:12px 16px;font-size:13px;font-weight:700;color:var(--white);background:var(--orange);border:none;border-radius:8px;cursor:pointer;" onclick="renderStaff()">検索</button></div><div class="section-label" id="staffCount">スタッフ</div><div id="staffList"></div><button class="btn-primary" onclick="openEdit('staff','')">新しいスタッフを追加</button></div>
     <div id="tabWarehouse" style="display:none;"><div class="section-label">倉庫</div><div id="warehouseList"></div><button class="btn-primary" onclick="openEdit('warehouse','')">新しい倉庫を追加</button></div>
     <div id="tabRack" style="display:none;"><div class="section-label">棚番一覧</div><div id="rackList"></div><button class="btn-primary" onclick="openEdit('rack','')">新しい棚番を追加</button></div>
     <div id="tabAssist" style="display:none;"><div class="toggle-group" id="assistTypeGroup" style="margin-bottom:12px;"><span class="toggle-btn checked" data-value="tire_maker" onclick="toggleCheck(this);renderAssist()">メーカー</span><span class="toggle-btn" data-value="tire_size" onclick="toggleCheck(this);renderAssist()">サイズ</span><span class="toggle-btn" data-value="car_name" onclick="toggleCheck(this);renderAssist()">車名</span></div><div id="assistList"></div><button class="btn-primary" onclick="openEdit('assist','')">新しい入力補助を追加</button></div>
@@ -65,7 +65,7 @@ var editType = '', editId = '';
 
 function showScr(id) { var s = document.querySelectorAll('.screen'); for (var i = 0; i < s.length; i++) s[i].classList.remove('active'); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 function showTab(tabId, el) {
-  ['tabPrice','tabDiscount','tabStaff','tabWarehouse','tabRack','tabAssist'].forEach(function(t){ document.getElementById(t).style.display = 'none'; });
+  ['tabStaff','tabRack','tabPrice','tabDiscount','tabWarehouse','tabAssist'].forEach(function(t){ document.getElementById(t).style.display = 'none'; });
   document.getElementById(tabId).style.display = '';
   var tabs = document.querySelectorAll('.tab-item'); for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active'); el.classList.add('active');
   if (tabId === 'tabStaff' && allStaff.length === 0) loadStaff();
