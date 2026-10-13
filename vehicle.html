@@ -94,6 +94,7 @@ async function doSearch() {
     var plate = [v['地名'], v['分類番号'], v['かな'], v['下4桁']].filter(Boolean).join(' ');
     html += '<div class="card clickable" onclick="loadDetail(\'' + escapeHtml(v['車両ID']) + '\')">'
       + '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">' + escapeHtml(plate || '（ナンバー未登録）') + '</div>'
+      + '<div style="font-size:14px;font-weight:600;color:var(--brown);margin-bottom:2px;">' + escapeHtml(v['顧客名'] || '') + '</div>'
       + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(v['車種名'] || '') + ' / ' + escapeHtml(v['メーカー'] || '') + '</div></div>';
   }
   document.getElementById('searchResults').innerHTML = html;
