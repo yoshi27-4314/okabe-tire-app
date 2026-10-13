@@ -117,17 +117,18 @@ async function loadDetail(vehicleId) {
   }
   document.getElementById('vehicleInfo').innerHTML = html;
 
-  // 預かりタイヤ
+  // 預かりタイヤ（この車両に紐づくもののみ）
   var tireHtml = '';
-  var tr = await callAPI('warehouse_searchForMove', { query: v['下4桁'] || '' });
-  var tires = (tr && tr.ok && tr.data) ? tr.data.items || [] : [];
+  var tr = await callAPI('warehouse_searchTires', { vehicleId: vehicleId });
+  var tires = (tr && tr.ok && tr.data) ? tr.data.results || [] : [];
   if (tires.length === 0) {
     tireHtml = '<div style="text-align:center;color:var(--text3);padding:20px;">預かりタイヤなし</div>';
   } else {
     for (var t = 0; t < tires.length; t++) {
       var ti = tires[t];
-      tireHtml += '<div class="card"><div style="font-size:14px;font-weight:700;color:var(--orange);">' + escapeHtml(ti.rack || '棚未定') + '</div>'
-        + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(ti.tireType || '') + 'タイヤ ' + escapeHtml(ti.tireCount || '') + '本</div></div>';
+      tireHtml += '<div class="card"><div style="font-size:14px;font-weight:700;color:var(--orange);">' + escapeHtml(ti.location ? ti.location['棚'] : '棚未定') + '</div>'
+        + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(ti.tireSet ? ti.tireSet['区分'] || '' : '') + 'タイヤ ' + escapeHtml(ti.tireSet ? ti.tireSet['本数'] || '' : '') + '本</div>'
+        + '<div style="font-size:12px;color:var(--text3);">' + escapeHtml(ti.location ? ti.location['状態'] || '' : '') + '</div></div>';
     }
   }
   document.getElementById('tireList').innerHTML = tireHtml;
