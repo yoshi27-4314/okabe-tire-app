@@ -7,58 +7,313 @@
 <link rel="stylesheet" href="style.css">
 <script src="api.js"></script>
 <script src="common.js"></script>
+<style>
+.master-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; margin-bottom: 8px; }
+.master-item:active { transform: scale(0.98); }
+.master-name { font-size: 14px; font-weight: 600; }
+.master-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.master-actions { display: flex; gap: 6px; }
+.master-actions button { padding: 6px 10px; font-size: 11px; font-weight: 600; border-radius: 6px; cursor: pointer; border: none; }
+.master-actions button:active { transform: scale(0.95); }
+.edit-btn { background: var(--border-light); color: var(--text2); }
+.delete-btn { background: #FFF5F5; color: var(--red); }
+</style>
 </head>
 <body>
-<div class="header">
-  <button class="home-btn" onclick="goHome()">ホーム</button>
-  <div class="header-title">設定</div>
-</div>
-<div class="content">
-  <div class="tab-bar">
-    <div class="tab-item active" onclick="showTab('tabPrice',this)">料金</div>
-    <div class="tab-item" onclick="showTab('tabDiscount',this)">割引</div>
-    <div class="tab-item" onclick="showTab('tabStaff',this)">スタッフ</div>
+
+<!-- トップ -->
+<div id="scrTop" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <div class="header-title">設定</div>
   </div>
-  <div id="tabPrice" class="screen active"><div id="priceList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div></div>
-  <div id="tabDiscount" class="screen"><div id="discountList"></div></div>
-  <div id="tabStaff" class="screen"><div id="staffMasterList"></div></div>
+  <div class="content">
+    <div class="tab-bar" style="overflow-x:auto;">
+      <div class="tab-item active" onclick="showTab('tabPrice',this)">料金</div>
+      <div class="tab-item" onclick="showTab('tabDiscount',this)">割引</div>
+      <div class="tab-item" onclick="showTab('tabStaff',this)">スタッフ</div>
+      <div class="tab-item" onclick="showTab('tabWarehouse',this)">倉庫</div>
+      <div class="tab-item" onclick="showTab('tabRack',this)">棚番</div>
+      <div class="tab-item" onclick="showTab('tabAssist',this)">入力補助</div>
+    </div>
+    <div id="tabPrice"><div class="section-label">料金プラン</div><div id="priceList"></div><button class="btn-primary" onclick="openEdit('price','')">新しいプランを追加</button></div>
+    <div id="tabDiscount" style="display:none;"><div class="section-label">台数割引</div><div id="discountList"></div><button class="btn-primary" onclick="openEdit('discount','')">新しい割引ルールを追加</button></div>
+    <div id="tabStaff" style="display:none;"><div style="display:flex;gap:8px;margin-bottom:12px;"><input class="form-input" type="text" id="staffQuery" placeholder="スタッフ名で検索" style="flex:1;"><button style="padding:12px 16px;font-size:13px;font-weight:700;color:var(--white);background:var(--orange);border:none;border-radius:8px;cursor:pointer;" onclick="renderStaff()">検索</button></div><div class="section-label" id="staffCount">スタッフ</div><div id="staffList"></div><button class="btn-primary" onclick="openEdit('staff','')">新しいスタッフを追加</button></div>
+    <div id="tabWarehouse" style="display:none;"><div class="section-label">倉庫</div><div id="warehouseList"></div><button class="btn-primary" onclick="openEdit('warehouse','')">新しい倉庫を追加</button></div>
+    <div id="tabRack" style="display:none;"><div class="section-label">棚番一覧</div><div id="rackList"></div><button class="btn-primary" onclick="openEdit('rack','')">新しい棚番を追加</button></div>
+    <div id="tabAssist" style="display:none;"><div class="toggle-group" id="assistTypeGroup" style="margin-bottom:12px;"><span class="toggle-btn checked" data-value="tire_maker" onclick="toggleCheck(this);renderAssist()">メーカー</span><span class="toggle-btn" data-value="tire_size" onclick="toggleCheck(this);renderAssist()">サイズ</span><span class="toggle-btn" data-value="car_name" onclick="toggleCheck(this);renderAssist()">車名</span></div><div id="assistList"></div><button class="btn-primary" onclick="openEdit('assist','')">新しい入力補助を追加</button></div>
+  </div>
 </div>
+
+<!-- 編集画面 -->
+<div id="scrEdit" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrTop')">< 戻る</button>
+    <div class="header-title" id="editTitle">編集</div>
+  </div>
+  <div class="content" id="editContent"></div>
+</div>
+
 <script>
 if (!requireLogin()) {}
+var masterData = {};
+var allStaff = [];
+var allRacks = [];
+var allAssist = [];
+var editType = '', editId = '';
+
+function showScr(id) { var s = document.querySelectorAll('.screen'); for (var i = 0; i < s.length; i++) s[i].classList.remove('active'); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 function showTab(tabId, el) {
-  var screens = document.querySelectorAll('.screen'); for (var i = 0; i < screens.length; i++) screens[i].classList.remove('active');
-  document.getElementById(tabId).classList.add('active');
-  var tabs = document.querySelectorAll('.tab-item'); for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
-  el.classList.add('active');
+  ['tabPrice','tabDiscount','tabStaff','tabWarehouse','tabRack','tabAssist'].forEach(function(t){ document.getElementById(t).style.display = 'none'; });
+  document.getElementById(tabId).style.display = '';
+  var tabs = document.querySelectorAll('.tab-item'); for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active'); el.classList.add('active');
+  if (tabId === 'tabStaff' && allStaff.length === 0) loadStaff();
+  if (tabId === 'tabRack' && allRacks.length === 0) loadRacks();
+  if (tabId === 'tabAssist' && allAssist.length === 0) loadAssist();
 }
+
+// === データ読み込み ===
 async function loadMaster() {
   var r = await callAPI('admin_masterTop', {});
-  var data = (r && r.ok && r.data) ? r.data : { pricePlans: [], discountRules: [] };
-
-  var ph = '<div class="section-label">料金プラン</div>';
-  for (var i = 0; i < (data.pricePlans || []).length; i++) {
-    var p = data.pricePlans[i];
-    ph += '<div class="card"><div style="display:flex;justify-content:space-between;"><span style="font-weight:700;">' + escapeHtml(p['プラン名']) + '</span><span style="color:var(--orange);font-weight:700;">' + escapeHtml(p['保管料']) + '円</span></div><div style="font-size:12px;color:var(--text3);">サイズ区分: ' + escapeHtml(p['サイズの区分']) + '</div></div>';
-  }
-  document.getElementById('priceList').innerHTML = ph;
-
-  var dh = '<div class="section-label">割引ルール</div>';
-  for (var j = 0; j < (data.discountRules || []).length; j++) {
-    var d = data.discountRules[j];
-    dh += '<div class="card"><div style="display:flex;justify-content:space-between;"><span style="font-weight:700;">' + escapeHtml(d['割引名']) + '</span><span style="color:var(--green);font-weight:700;">' + escapeHtml(d['割引率']) + '%OFF</span></div><div style="font-size:12px;color:var(--text3);">最低台数: ' + escapeHtml(d['最低台数']) + '台</div></div>';
-  }
-  document.getElementById('discountList').innerHTML = dh;
-
-  var sr = await callAPI('admin_staffList', {});
-  var staff = (sr && sr.ok && sr.data) ? sr.data.staffList || [] : [];
-  staff.sort(function(a,b){ return (a['スタッフID']||'').localeCompare(b['スタッフID']||''); });
-  var sh = '<div class="section-label">スタッフ一覧</div>';
-  for (var k = 0; k < staff.length; k++) {
-    var s = staff[k];
-    sh += '<div class="card"><div style="display:flex;justify-content:space-between;"><span style="font-weight:700;">' + escapeHtml(s['氏名']) + '</span><span style="font-size:12px;color:var(--text3);">' + escapeHtml(s['スタッフID']) + '</span></div><div style="font-size:12px;color:var(--text2);">' + escapeHtml(s['役職'] || '') + ' / ' + escapeHtml(s['部門'] || '') + '</div></div>';
-  }
-  document.getElementById('staffMasterList').innerHTML = sh;
+  masterData = (r && r.ok && r.data) ? r.data : {};
+  renderPrice(); renderDiscount(); renderWarehouse();
 }
+async function loadStaff() {
+  var r = await callAPI('admin_staffList', {});
+  allStaff = (r && r.ok && r.data) ? r.data.staffList || [] : [];
+  allStaff.sort(function(a,b){ return (a['スタッフID']||'').localeCompare(b['スタッフID']||''); });
+  renderStaff();
+}
+async function loadRacks() {
+  var r = await callAPI('warehouse_rackList', {});
+  allRacks = (r && r.ok && r.data) ? r.data.racks || [] : [];
+  renderRacks();
+}
+async function loadAssist() {
+  var r = await callAPI('getInputAssist', { type: '' });
+  allAssist = (r && r.ok && r.data) ? r.data.items || [] : [];
+  renderAssist();
+}
+
+// === 一覧描画 ===
+function renderPrice() {
+  var list = masterData.pricePlans || [];
+  var h = '';
+  for (var i = 0; i < list.length; i++) {
+    var p = list[i];
+    h += '<div class="master-item"><div><div class="master-name">' + escapeHtml(p['プラン名']) + '</div><div class="master-sub">' + escapeHtml(p['保管料']) + '円（税別）</div></div><div class="master-actions"><button class="edit-btn" onclick="openEdit(\'price\',\'' + escapeHtml(p['プランID']) + '\')">編集</button></div></div>';
+  }
+  document.getElementById('priceList').innerHTML = h || '<div style="color:var(--text3);padding:8px;">データなし</div>';
+}
+function renderDiscount() {
+  var list = masterData.discountRules || [];
+  var h = '';
+  for (var i = 0; i < list.length; i++) {
+    var d = list[i];
+    h += '<div class="master-item"><div><div class="master-name">' + escapeHtml(d['割引名']) + '</div><div class="master-sub">' + escapeHtml(d['最低台数']) + '台以上 → ' + escapeHtml(d['割引率']) + '%OFF</div></div><div class="master-actions"><button class="edit-btn" onclick="openEdit(\'discount\',\'' + escapeHtml(d['割引ルールID']) + '\')">編集</button></div></div>';
+  }
+  document.getElementById('discountList').innerHTML = h || '<div style="color:var(--text3);padding:8px;">データなし</div>';
+}
+function renderStaff() {
+  var q = (document.getElementById('staffQuery').value || '').trim();
+  var list = allStaff.filter(function(s){ return !q || (s['氏名']||'').indexOf(q) >= 0; });
+  document.getElementById('staffCount').textContent = 'スタッフ（' + list.length + '名）';
+  var h = '';
+  for (var i = 0; i < list.length; i++) {
+    var s = list[i];
+    var disabled = s['有効'] === 'いいえ';
+    h += '<div class="master-item"' + (disabled ? ' style="opacity:0.4;"' : '') + '><div><div class="master-name">' + escapeHtml(s['氏名']) + (disabled ? ' <span style="color:var(--red);font-size:11px;">無効</span>' : '') + '</div><div class="master-sub">' + escapeHtml(s['スタッフID']) + ' / ' + escapeHtml(s['役職']||'') + ' / ' + escapeHtml(s['部門']||'') + '</div></div><div class="master-actions"><button class="edit-btn" onclick="openEdit(\'staff\',\'' + escapeHtml(s['スタッフID']) + '\')">編集</button></div></div>';
+  }
+  document.getElementById('staffList').innerHTML = h || '<div style="color:var(--text3);padding:8px;">データなし</div>';
+}
+function renderWarehouse() {
+  var list = masterData.warehouses || [];
+  var h = '';
+  for (var i = 0; i < list.length; i++) {
+    var w = list[i];
+    h += '<div class="master-item"><div><div class="master-name">' + escapeHtml(w['倉庫名']) + '</div><div class="master-sub">' + escapeHtml(w['倉庫コード']) + ' / ' + (w['収容セット数の上限']||0) + 'セット</div></div><div class="master-actions"><button class="edit-btn" onclick="openEdit(\'warehouse\',\'' + escapeHtml(w['倉庫コード']) + '\')">編集</button></div></div>';
+  }
+  document.getElementById('warehouseList').innerHTML = h || '<div style="color:var(--text3);padding:8px;">データなし</div>';
+}
+function renderRacks() {
+  var h = '';
+  for (var i = 0; i < allRacks.length; i++) {
+    var r = allRacks[i];
+    h += '<div class="master-item"><div><div class="master-name">' + escapeHtml(r['棚番']) + '</div><div class="master-sub">' + escapeHtml(r['倉庫コード']) + '</div></div><div class="master-actions"><button class="edit-btn" onclick="openEdit(\'rack\',\'' + escapeHtml(r['棚ID']) + '\')">編集</button></div></div>';
+  }
+  document.getElementById('rackList').innerHTML = h || '<div style="color:var(--text3);padding:8px;">データなし</div>';
+}
+function renderAssist() {
+  var type = getToggleValue('assistTypeGroup');
+  var list = allAssist.filter(function(a){ return !type || a['種類'] === type; });
+  var h = '';
+  for (var i = 0; i < list.length; i++) {
+    var a = list[i];
+    h += '<div class="master-item"><div><div class="master-name">' + escapeHtml(a['表記']) + '</div><div class="master-sub">' + escapeHtml(a['種類']) + '</div></div><div class="master-actions"><button class="edit-btn" onclick="openEdit(\'assist\',\'' + escapeHtml(a['入力補助ID']) + '\')">編集</button></div></div>';
+  }
+  document.getElementById('assistList').innerHTML = h || '<div style="color:var(--text3);padding:8px;">データなし</div>';
+}
+
+// === 編集画面 ===
+function openEdit(type, id) {
+  editType = type; editId = id;
+  var isNew = !id;
+  var h = '';
+
+  if (type === 'price') {
+    var p = (masterData.pricePlans||[]).find(function(x){ return x['プランID']===id; });
+    document.getElementById('editTitle').textContent = isNew ? 'プラン追加' : 'プラン編集';
+    h += '<div class="card"><div class="form-row"><label class="form-label">プラン名</label><input class="form-input" id="eName" value="' + escapeHtml(p?p['プラン名']:'') + '"></div>';
+    h += '<div class="form-row"><label class="form-label">サイズ区分</label><input class="form-input" id="eSize" value="' + escapeHtml(p?p['サイズの区分']:'') + '"></div>';
+    h += '<div class="form-row"><label class="form-label">保管料（税別・円）</label><input class="form-input" type="number" id="eFee" value="' + escapeHtml(p?p['保管料']:'') + '" style="font-size:20px;font-weight:700;"></div></div>';
+    h += '<button class="btn-primary" style="background:var(--green);" onclick="doSave()">保存</button>';
+    if (!isNew) h += '<button class="btn-danger" style="margin-top:8px;" onclick="doDelete()">このプランを削除</button>';
+
+  } else if (type === 'discount') {
+    var d = (masterData.discountRules||[]).find(function(x){ return x['割引ルールID']===id; });
+    document.getElementById('editTitle').textContent = isNew ? '割引追加' : '割引編集';
+    h += '<div class="card"><div class="form-row"><label class="form-label">割引名</label><input class="form-input" id="eName" value="' + escapeHtml(d?d['割引名']:'') + '"></div>';
+    h += '<div class="form-row"><label class="form-label">最低台数</label><input class="form-input" type="number" id="eMin" value="' + escapeHtml(d?d['最低台数']:'') + '"></div>';
+    h += '<div class="form-row"><label class="form-label">割引率（%）</label><input class="form-input" type="number" id="eRate" value="' + escapeHtml(d?d['割引率']:'') + '" style="font-size:20px;font-weight:700;"></div></div>';
+    h += '<button class="btn-primary" style="background:var(--green);" onclick="doSave()">保存</button>';
+    if (!isNew) h += '<button class="btn-danger" style="margin-top:8px;" onclick="doDelete()">この割引ルールを削除</button>';
+
+  } else if (type === 'staff') {
+    var s = allStaff.find(function(x){ return x['スタッフID']===id; });
+    document.getElementById('editTitle').textContent = isNew ? 'スタッフ追加' : 'スタッフ編集';
+    h += '<div class="card">';
+    if (isNew) {
+      h += '<div class="form-row"><label class="form-label">スタッフID <span style="color:var(--red);font-size:16px;font-weight:700;">*</span></label><input class="form-input" id="eStaffId" placeholder="S-XXXX"></div>';
+      h += '<div class="form-row"><label class="form-label">仮パスワード <span style="color:var(--red);font-size:16px;font-weight:700;">*</span></label><input class="form-input" id="eTempPw" placeholder="初回ログイン用"></div>';
+    } else {
+      h += '<div class="form-row"><label class="form-label">スタッフID</label><div style="background:var(--border-light);padding:10px 14px;border-radius:8px;font-size:14px;color:var(--text2);">' + escapeHtml(id) + '（変更不可）</div></div>';
+    }
+    h += '<div class="form-row"><label class="form-label">氏名</label><input class="form-input" id="eName" value="' + escapeHtml(s?s['氏名']:'') + '"></div>';
+    h += '<div class="form-row"><label class="form-label">役職</label><input class="form-input" id="eRole" value="' + escapeHtml(s?s['役職']:'') + '"></div>';
+    h += '<div class="form-row"><label class="form-label">部門</label><select class="form-input" id="eDept" style="padding:10px;"><option>フロント</option><option>サービス</option><option>営業</option><option>社長</option><option>ADMIN</option></select></div>';
+    h += '<div class="form-row"><label class="form-label">兼任</label><input class="form-input" id="eConcurrent" value="' + escapeHtml(s?s['兼任']:'') + '" placeholder="サービス、など"></div>';
+    h += '<div class="form-row"><label class="form-label">上長</label><input class="form-input" id="eSuperior" value="' + escapeHtml(s?s['上長']:'') + '"></div>';
+    h += '</div>';
+    h += '<button class="btn-primary" style="background:var(--green);" onclick="doSave()">保存</button>';
+    if (!isNew) {
+      h += '<button class="btn-secondary" style="margin-top:8px;color:var(--blue);border-color:var(--blue);" onclick="doResetPw()">パスワードをリセット</button>';
+      var isDisabled = s && s['有効'] === 'いいえ';
+      if (isDisabled) {
+        h += '<button class="btn-secondary" style="margin-top:8px;color:var(--green);border-color:var(--green);" onclick="doToggleStaff(true)">このスタッフを有効化</button>';
+      } else {
+        h += '<button class="btn-danger" style="margin-top:8px;" onclick="doToggleStaff(false)">このスタッフを無効化</button>';
+      }
+    }
+    if (s) setTimeout(function(){ document.getElementById('eDept').value = s['部門']||'フロント'; }, 0);
+
+  } else if (type === 'warehouse') {
+    var w = (masterData.warehouses||[]).find(function(x){ return x['倉庫コード']===id; });
+    document.getElementById('editTitle').textContent = isNew ? '倉庫追加' : '倉庫編集';
+    h += '<div class="card">';
+    if (!isNew) h += '<div class="form-row"><label class="form-label">倉庫コード</label><div style="background:var(--border-light);padding:10px 14px;border-radius:8px;font-size:14px;color:var(--text2);">' + escapeHtml(id) + '</div></div>';
+    h += '<div class="form-row"><label class="form-label">倉庫名</label><input class="form-input" id="eName" value="' + escapeHtml(w?w['倉庫名']:'') + '"></div>';
+    h += '<div class="form-row"><label class="form-label">収容セット数上限</label><input class="form-input" type="number" id="eCap" value="' + escapeHtml(w?w['収容セット数の上限']:'') + '"></div></div>';
+    h += '<button class="btn-primary" style="background:var(--green);" onclick="doSave()">保存</button>';
+    if (!isNew) h += '<button class="btn-danger" style="margin-top:8px;" onclick="doDelete()">この倉庫を削除</button>';
+
+  } else if (type === 'rack') {
+    var rk = allRacks.find(function(x){ return x['棚ID']===id; });
+    document.getElementById('editTitle').textContent = isNew ? '棚番追加' : '棚番編集';
+    h += '<div class="card"><div class="form-row"><label class="form-label">棚番</label><input class="form-input" id="eName" value="' + escapeHtml(rk?rk['棚番']:'') + '" style="font-size:18px;font-weight:700;"></div>';
+    h += '<div class="form-row"><label class="form-label">倉庫コード</label><input class="form-input" id="eWhCode" value="' + escapeHtml(rk?rk['倉庫コード']:'W-MAIN') + '"></div></div>';
+    h += '<button class="btn-primary" style="background:var(--green);" onclick="doSave()">保存</button>';
+    if (!isNew) h += '<button class="btn-danger" style="margin-top:8px;" onclick="doDelete()">この棚番を削除</button>';
+
+  } else if (type === 'assist') {
+    var as = allAssist.find(function(x){ return x['入力補助ID']===id; });
+    document.getElementById('editTitle').textContent = isNew ? '入力補助追加' : '入力補助編集';
+    h += '<div class="card"><div class="form-row"><label class="form-label">種類</label><select class="form-input" id="eAssistType" style="padding:10px;"><option value="tire_maker">メーカー</option><option value="tire_size">サイズ</option><option value="car_name">車名</option></select></div>';
+    h += '<div class="form-row"><label class="form-label">表記</label><input class="form-input" id="eName" value="' + escapeHtml(as?as['表記']:'') + '"></div></div>';
+    h += '<button class="btn-primary" style="background:var(--green);" onclick="doSave()">保存</button>';
+    if (!isNew) h += '<button class="btn-danger" style="margin-top:8px;" onclick="doDelete()">この入力補助を削除</button>';
+    if (as) setTimeout(function(){ document.getElementById('eAssistType').value = as['種類']||'tire_maker'; }, 0);
+  }
+
+  h += '<button class="btn-secondary" style="margin-top:8px;" onclick="showScr(\'scrTop\')">キャンセル</button>';
+  document.getElementById('editContent').innerHTML = h;
+  showScr('scrEdit');
+}
+
+// === 保存 ===
+async function doSave() {
+  var r;
+  if (editType === 'price') {
+    r = editId
+      ? await callAPI('admin_updatePricePlan', { planId: editId, updates: { 'プラン名': document.getElementById('eName').value, 'サイズの区分': document.getElementById('eSize').value, '保管料': document.getElementById('eFee').value } })
+      : await callAPI('admin_updatePricePlan', { planName: document.getElementById('eName').value, sizeCategory: document.getElementById('eSize').value, fee: document.getElementById('eFee').value });
+    if (handleAPIError(r)) return; await loadMaster();
+  } else if (editType === 'discount') {
+    r = editId
+      ? await callAPI('admin_updateDiscountRule', { ruleId: editId, updates: { '割引名': document.getElementById('eName').value, '最低台数': document.getElementById('eMin').value, '割引率': document.getElementById('eRate').value } })
+      : await callAPI('admin_updateDiscountRule', { ruleName: document.getElementById('eName').value, minCount: document.getElementById('eMin').value, rate: document.getElementById('eRate').value });
+    if (handleAPIError(r)) return; await loadMaster();
+  } else if (editType === 'staff') {
+    if (editId) {
+      r = await callAPI('admin_updateStaff', { staffId: editId, updates: { '氏名': document.getElementById('eName').value, '役職': document.getElementById('eRole').value, '部門': document.getElementById('eDept').value, '兼任': document.getElementById('eConcurrent').value, '上長': document.getElementById('eSuperior').value } });
+    } else {
+      var sid = document.getElementById('eStaffId').value.trim();
+      var pw = document.getElementById('eTempPw').value.trim();
+      if (!sid || !pw) { showError('スタッフIDと仮パスワードは必須です'); return; }
+      r = await callAPI('admin_updateStaff', { newStaffId: sid, name: document.getElementById('eName').value, role: document.getElementById('eRole').value, department: document.getElementById('eDept').value, concurrent: document.getElementById('eConcurrent').value, superior: document.getElementById('eSuperior').value, tempPassword: pw });
+    }
+    if (handleAPIError(r)) return; await loadStaff();
+  } else if (editType === 'warehouse') {
+    r = editId
+      ? await callAPI('admin_updateFacility', { type: 'warehouse', warehouseCode: editId, updates: { '倉庫名': document.getElementById('eName').value, '収容セット数の上限': document.getElementById('eCap').value } })
+      : await callAPI('admin_updateFacility', { type: 'warehouse', warehouseName: document.getElementById('eName').value, capacity: document.getElementById('eCap').value });
+    if (handleAPIError(r)) return; await loadMaster();
+  } else if (editType === 'rack') {
+    r = editId
+      ? await callAPI('admin_updateFacility', { type: 'rack', rackId: editId, updates: { '棚番': document.getElementById('eName').value } })
+      : await callAPI('admin_updateFacility', { type: 'rack', rackNumber: document.getElementById('eName').value, warehouseCode: document.getElementById('eWhCode').value });
+    if (handleAPIError(r)) return; await loadRacks();
+  } else if (editType === 'assist') {
+    r = editId
+      ? await callAPI('admin_manageInputAssist', { assistId: editId, updates: { '表記': document.getElementById('eName').value, '種類': document.getElementById('eAssistType').value } })
+      : await callAPI('admin_manageInputAssist', { label: document.getElementById('eName').value, assistType: document.getElementById('eAssistType').value });
+    if (handleAPIError(r)) return; await loadAssist();
+  }
+  showSuccess('保存しました');
+  showScr('scrTop');
+}
+
+// === 削除 ===
+async function doDelete() {
+  if (!confirmAction('削除しますか？')) return;
+  var r;
+  if (editType === 'price') { r = await callAPI('admin_updatePricePlan', { planId: editId, delete: true }); await loadMaster(); }
+  else if (editType === 'discount') { r = await callAPI('admin_updateDiscountRule', { ruleId: editId, delete: true }); await loadMaster(); }
+  else if (editType === 'warehouse') { r = await callAPI('admin_updateFacility', { type: 'warehouse', id: editId, delete: true }); await loadMaster(); }
+  else if (editType === 'rack') { r = await callAPI('admin_updateFacility', { type: 'rack', id: editId, delete: true }); await loadRacks(); }
+  else if (editType === 'assist') { r = await callAPI('admin_manageInputAssist', { assistId: editId, delete: true }); await loadAssist(); }
+  if (r && handleAPIError(r)) return;
+  showSuccess('削除しました');
+  showScr('scrTop');
+}
+
+// === スタッフ特殊操作 ===
+async function doResetPw() {
+  var pw = prompt('新しい仮パスワードを入力してください');
+  if (!pw) return;
+  var r = await callAPI('admin_updateStaff', { staffId: editId, resetPassword: true, tempPassword: pw });
+  if (handleAPIError(r)) return;
+  showSuccess('パスワードをリセットしました');
+}
+async function doToggleStaff(enable) {
+  if (!confirmAction(enable ? 'このスタッフを有効化しますか？' : 'このスタッフを無効化しますか？\nログインできなくなります。')) return;
+  var r = await callAPI('admin_updateStaff', { staffId: editId, updates: { '有効': enable ? 'はい' : 'いいえ' } });
+  if (handleAPIError(r)) return;
+  showSuccess(enable ? '有効化しました' : '無効化しました');
+  await loadStaff();
+  showScr('scrTop');
+}
+
 loadMaster();
 </script>
 </body>
