@@ -187,15 +187,8 @@ function renderList() {
   });
   if (!f.length) { document.getElementById('staffList').innerHTML = '<div style="color:var(--text3);text-align:center;padding:20px;">該当なし</div>'; return; }
   f.sort(function(a, b) {
-    var aRole = (a['役職'] || ''), bRole = (b['役職'] || '');
-    var aScore = 2, bScore = 2;
-    if (aRole.indexOf('社長') >= 0) aScore = 0;
-    else if (dept && aRole.indexOf(dept) >= 0 && aRole.indexOf('責任者') >= 0) aScore = 0;
-    else if (aRole.indexOf('責任者') >= 0) aScore = 1;
-    if (bRole.indexOf('社長') >= 0) bScore = 0;
-    else if (dept && bRole.indexOf(dept) >= 0 && bRole.indexOf('責任者') >= 0) bScore = 0;
-    else if (bRole.indexOf('責任者') >= 0) bScore = 1;
-    return aScore - bScore;
+    var aId = a['スタッフID'] || '', bId = b['スタッフID'] || '';
+    return aId.localeCompare(bId);
   });
   var h = '';
   for (var i = 0; i < f.length; i++) {
