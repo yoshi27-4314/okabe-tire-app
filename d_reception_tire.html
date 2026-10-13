@@ -49,9 +49,11 @@
     <div class="form-section">
       <div class="form-section-title">タイヤ共通情報（一括入力）</div>
       <div class="hint-bar">ここに入力すると全タイヤに反映されます。</div>
-      <div class="form-row"><label class="form-label">メーカー</label><input class="form-input" type="text" id="bulkMaker" placeholder="ブリヂストン"></div>
+      <div class="form-row"><label class="form-label">メーカー</label><input class="form-input" type="text" id="bulkMaker" placeholder="ブリヂストン" list="makerList"></div>
+      <datalist id="makerList"></datalist>
       <div class="form-row"><label class="form-label">銘柄</label><input class="form-input" type="text" id="bulkBrand" placeholder="ブリザック VRX3"></div>
-      <div class="form-row"><label class="form-label">サイズ</label><input class="form-input" type="text" id="bulkSize" placeholder="195/65R15"></div>
+      <div class="form-row"><label class="form-label">サイズ</label><input class="form-input" type="text" id="bulkSize" placeholder="195/65R15" list="sizeList"></div>
+      <datalist id="sizeList"></datalist>
       <div class="form-row"><label class="form-label">製造年月</label><input class="form-input" type="text" id="bulkMfgDate" placeholder="2024.20"></div>
       <div class="form-row"><label class="form-label">ホイール種別</label>
         <div class="toggle-group" id="bulkWheelType">
@@ -232,7 +234,27 @@ async function uploadPhoto(input) {
   input.value = '';
 }
 
+async function loadInputAssist() {
+  var r1 = await callAPI('getInputAssist', { type: 'tire_maker' });
+  if (r1 && r1.ok) {
+    var html = '';
+    for (var i = 0; i < (r1.data.items || []).length; i++) {
+      html += '<option value="' + escapeHtml(r1.data.items[i]['表記']) + '">';
+    }
+    document.getElementById('makerList').innerHTML = html;
+  }
+  var r2 = await callAPI('getInputAssist', { type: 'tire_size' });
+  if (r2 && r2.ok) {
+    var html2 = '';
+    for (var j = 0; j < (r2.data.items || []).length; j++) {
+      html2 += '<option value="' + escapeHtml(r2.data.items[j]['表記']) + '">';
+    }
+    document.getElementById('sizeList').innerHTML = html2;
+  }
+}
+
 initTireInfo();
+loadInputAssist();
 </script>
 </body>
 </html>

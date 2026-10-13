@@ -87,7 +87,8 @@
         <select class="form-select" id="nvWheelCount"><option value="未確認">未確認</option><option value="4輪" selected>4輪</option><option value="6輪">6輪</option></select>
       </div>
       <div class="form-row"><label class="form-label">メーカー（任意）</label><input class="form-input" type="text" id="nvMaker" placeholder="トヨタ"></div>
-      <div class="form-row"><label class="form-label">車種名（任意）</label><input class="form-input" type="text" id="nvModel" placeholder="プリウス"></div>
+      <div class="form-row"><label class="form-label">車種名（任意）</label><input class="form-input" type="text" id="nvModel" placeholder="プリウス" list="carNameList"></div>
+      <datalist id="carNameList"></datalist>
       <div class="form-row"><label class="form-label">車台番号 VIN（任意）</label><input class="form-input" type="text" id="nvVin"></div>
     </div>
     <div class="btn-row" style="flex-direction:column;gap:10px;">
@@ -289,7 +290,19 @@ async function doOcrVehicle(input, docType) {
   input.value = '';
 }
 
+async function loadCarNames() {
+  var r = await callAPI('getInputAssist', { type: 'car_name' });
+  if (r && r.ok) {
+    var html = '';
+    for (var i = 0; i < (r.data.items || []).length; i++) {
+      html += '<option value="' + escapeHtml(r.data.items[i]['表記']) + '">';
+    }
+    document.getElementById('carNameList').innerHTML = html;
+  }
+}
+
 loadCustomerVehicles();
+loadCarNames();
 </script>
 </body>
 </html>
