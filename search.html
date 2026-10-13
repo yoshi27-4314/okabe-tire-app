@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>預かり検索 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.search-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.search-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 12px; padding-bottom: 6px; border-bottom: 2px solid var(--orange); }
+.search-btn { width: 100%; padding: 16px; font-size: 16px; font-weight: 700; color: var(--white); background: var(--orange); border: none; border-radius: 12px; cursor: pointer; box-shadow: var(--shadow-md); }
+.search-btn:active { transform: scale(0.97); background: var(--orange-dark); }
+.clear-btn { width: 100%; padding: 12px; font-size: 13px; font-weight: 600; color: var(--text3); background: var(--white); border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; margin-top: 8px; }
+.clear-btn:active { transform: scale(0.97); }
+.extra-toggle { text-align: center; margin: 8px 0; font-size: 13px; color: var(--text3); cursor: pointer; }
+.extra-toggle:active { color: var(--orange); }
+.result-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow-sm); }
+.result-card:active { transform: scale(0.98); background: #FFF8F0; }
+.result-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.result-customer { font-size: 16px; font-weight: 700; }
+.result-plate { font-size: 15px; font-weight: 600; color: var(--brown); margin-bottom: 4px; }
+.result-detail { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.result-rack { font-size: 14px; font-weight: 700; color: var(--orange); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="home-btn" onclick="goHome()">ホーム</button>
+  <div class="header-title">預かり検索</div>
+</div>
+
+<div class="content">
+  <div class="search-card">
+    <div class="search-title">検索条件</div>
+    <div class="form-row"><label class="form-label">顧客名</label><input class="form-input" type="text" id="sName" placeholder="やまだ"></div>
+    <div class="form-row"><label class="form-label">電話番号</label><input class="form-input" type="tel" id="sPhone" placeholder="090-XXXX-XXXX"></div>
+    <div class="form-row"><label class="form-label">ナンバー（下4桁）</label><input class="form-input" type="text" id="sPlate" placeholder="1234"></div>
+    <div class="form-row"><label class="form-label">車種</label><input class="form-input" type="text" id="sModel" placeholder="プリウス"></div>
+    <div class="form-row"><label class="form-label">タイヤサイズ</label><input class="form-input" type="text" id="sSize" placeholder="195/65R15"></div>
+    <div class="form-row"><label class="form-label">棚番号</label><input class="form-input" type="text" id="sRack" placeholder="西1D-R"></div>
+    <div class="form-row"><label class="form-label">営業担当者</label><input class="form-input" type="text" id="sSalesRep" placeholder="藤井"></div>
+
+    <div class="extra-toggle" onclick="toggleExtra()">その他の検索条件 <span id="extraArrow">▼</span></div>
+    <div id="extraFields" style="display:none;">
+      <div class="form-row"><label class="form-label">チェック者</label><input class="form-input" type="text" id="sChecker" placeholder="山田"></div>
+      <div class="form-row"><label class="form-label">顧客コード</label><input class="form-input" type="text" id="sCode" placeholder="2423"></div>
+      <div class="form-row"><label class="form-label">メーカー</label><input class="form-input" type="text" id="sMaker" placeholder="ブリヂストン"></div>
+      <div class="form-row"><label class="form-label">パターン</label><input class="form-input" type="text" id="sPattern" placeholder="ブリザック VRX3"></div>
+      <div class="form-row"><label class="form-label">作業日</label><input class="form-input" type="date" id="sWorkDate" style="padding:10px 12px;"></div>
+      <div class="form-row"><label class="form-label">預かり日</label><input class="form-input" type="date" id="sDepositDate" style="padding:10px 12px;"></div>
+      <div class="form-row"><label class="form-label">返却予定日</label><input class="form-input" type="date" id="sReturnDate" style="padding:10px 12px;"></div>
+      <div class="form-row"><label class="form-label">申込日</label><input class="form-input" type="date" id="sAppDate" style="padding:10px 12px;"></div>
+      <div class="form-row"><label class="form-label">割引区分</label>
+        <div class="toggle-group" id="sDiscountGroup">
+          <span class="toggle-btn" data-value="なし" onclick="toggleCheck(this)">なし</span>
+          <span class="toggle-btn" data-value="10" onclick="toggleCheck(this)">10%</span>
+          <span class="toggle-btn" data-value="20" onclick="toggleCheck(this)">20%</span>
+          <span class="toggle-btn" data-value="30" onclick="toggleCheck(this)">30%</span>
+          <span class="toggle-btn" data-value="50" onclick="toggleCheck(this)">50%</span>
+        </div>
+      </div>
+      <div class="form-row"><label class="form-label">メモ（フリーテキスト）</label><input class="form-input" type="text" id="sMemo" placeholder="メモ内を検索"></div>
+    </div>
+
+    <button class="search-btn" id="searchBtn" onclick="doSearch()">検索する</button>
+    <button class="clear-btn" onclick="doClear()">条件をクリア</button>
+  </div>
+
+  <div id="resultArea"></div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+
+function toggleExtra() {
+  var el = document.getElementById('extraFields');
+  var arrow = document.getElementById('extraArrow');
+  if (el.style.display === 'none') { el.style.display = ''; arrow.textContent = '▲'; }
+  else { el.style.display = 'none'; arrow.textContent = '▼'; }
+}
+
+async function doSearch() {
+  startLoading(document.getElementById('searchBtn'));
+  var r = await callAPI('search_tires', {
+    customerName: document.getElementById('sName').value,
+    phone: document.getElementById('sPhone').value,
+    plateNumber: document.getElementById('sPlate').value,
+    carModel: document.getElementById('sModel').value,
+    tireSize: document.getElementById('sSize').value,
+    rack: document.getElementById('sRack').value,
+    salesRep: document.getElementById('sSalesRep').value,
+    checker: document.getElementById('sChecker').value,
+    customerCode: document.getElementById('sCode').value,
+    tireMaker: document.getElementById('sMaker').value,
+    tirePattern: document.getElementById('sPattern').value,
+    workDate: document.getElementById('sWorkDate').value,
+    depositDate: document.getElementById('sDepositDate').value,
+    returnDate: document.getElementById('sReturnDate').value,
+    applicationDate: document.getElementById('sAppDate').value,
+    discountType: getToggleValue('sDiscountGroup'),
+    memoSearch: document.getElementById('sMemo').value,
+  });
+  stopLoading(document.getElementById('searchBtn'));
+
+  if (handleAPIError(r)) return;
+  var results = r.data.results || [];
+
+  if (results.length === 0) {
+    document.getElementById('resultArea').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">該当なし</div>';
+    return;
+  }
+
+  var html = '<div class="section-label">検索結果（' + results.length + '件）</div>';
+  for (var i = 0; i < results.length; i++) {
+    var it = results[i];
+    var stClass = it.status === '保管中' ? 'st-ready' : it.status === '出庫済み' ? 'st-done' : 'st-waiting';
+    html += '<div class="result-card">';
+    html += '<div class="result-top"><span class="result-customer">' + escapeHtml(it.customerName) + '</span>';
+    html += '<span class="status ' + stClass + '">' + escapeHtml(it.status) + '</span></div>';
+    html += '<div class="result-plate">' + escapeHtml(it.plate) + '</div>';
+    html += '<div class="result-detail">' + escapeHtml(it.model) + '</div>';
+    html += '<div class="result-detail">' + escapeHtml(it.tireType || '') + 'タイヤ ' + escapeHtml(it.tireCount || '') + '本';
+    if (it.tireInfo) html += ' / ' + escapeHtml(it.tireInfo);
+    html += '</div>';
+    if (it.rack) html += '<div class="result-rack">棚 : ' + escapeHtml(it.rack) + '</div>';
+    html += '</div>';
+  }
+  document.getElementById('resultArea').innerHTML = html;
+}
+
+function doClear() {
+  var inputs = document.querySelectorAll('.search-card input');
+  for (var i = 0; i < inputs.length; i++) inputs[i].value = '';
+  var toggles = document.querySelectorAll('#sDiscountGroup .toggle-btn');
+  for (var j = 0; j < toggles.length; j++) toggles[j].classList.remove('checked');
+  document.getElementById('resultArea').innerHTML = '';
+}
+</script>
+</body>
+</html>

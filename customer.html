@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>顧客台帳 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+</head>
+<body>
+
+<!-- 検索 -->
+<div id="scrSearch" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <div class="header-title">顧客台帳</div>
+  </div>
+  <div class="content">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input class="form-input" type="text" id="searchQuery" placeholder="顧客名・電話・ナンバー" onkeydown="if(event.key==='Enter')doSearch()" style="flex:1;">
+      <button style="padding:12px 20px;font-size:14px;font-weight:700;color:var(--white);background:var(--orange);border:none;border-radius:8px;cursor:pointer;" id="searchBtn" onclick="doSearch()">検索</button>
+    </div>
+    <div id="searchResults"></div>
+  </div>
+</div>
+
+<!-- 詳細 -->
+<div id="scrDetail" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrSearch')">< 戻る</button>
+    <div class="header-title">顧客詳細</div>
+  </div>
+  <div class="content">
+    <div class="card" id="customerInfo"></div>
+    <button class="btn-primary" onclick="showScr('scrEdit')">顧客情報を編集する</button>
+    <div class="section-label">社内メモ</div>
+    <textarea class="form-input" rows="4" id="memoField" style="resize:vertical;font-size:15px;margin-bottom:10px;"></textarea>
+    <button class="btn-secondary" id="memoBtn" onclick="saveMemo()" style="color:var(--green);border-color:var(--green);">メモを保存</button>
+  </div>
+</div>
+
+<!-- 編集 -->
+<div id="scrEdit" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrDetail')">< 戻る</button>
+    <div class="header-title">顧客情報の編集</div>
+  </div>
+  <div class="content">
+    <div class="card">
+      <div class="form-row"><label class="form-label">区分</label>
+        <div class="toggle-group" id="categoryGroup">
+          <span class="toggle-btn" data-value="個人" onclick="toggleCheck(this)">個人</span>
+          <span class="toggle-btn" data-value="法人・団体" onclick="toggleCheck(this)">法人</span>
+        </div>
+      </div>
+      <div class="form-row"><label class="form-label">氏名</label><input class="form-input" type="text" id="editName"></div>
+      <div class="form-row"><label class="form-label">フリガナ</label><input class="form-input" type="text" id="editFurigana"></div>
+      <div class="form-row"><label class="form-label">電話番号</label><input class="form-input" type="tel" id="editPhone"></div>
+      <div class="form-row"><label class="form-label">携帯番号</label><input class="form-input" type="tel" id="editMobile"></div>
+      <div class="form-row"><label class="form-label">郵便番号</label><input class="form-input" type="text" id="editZip"></div>
+      <div class="form-row"><label class="form-label">住所</label><input class="form-input" type="text" id="editAddress"></div>
+      <div class="form-row"><label class="form-label">Eメール</label><input class="form-input" type="email" id="editEmail"></div>
+      <div class="form-row"><label class="form-label">顧客コード</label><input class="form-input" type="text" id="editCode"></div>
+      <div class="form-row"><label class="form-label">営業担当</label><input class="form-input" type="text" id="editSalesRep"></div>
+    </div>
+    <button class="btn-primary" id="saveBtn" onclick="saveCustomer()">変更を保存</button>
+    <button class="btn-secondary" onclick="showScr('scrDetail')">キャンセル</button>
+  </div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+var currentCustomer = null;
+var currentVersion = null;
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+async function doSearch() {
+  var query = document.getElementById('searchQuery').value.trim();
+  if (!query) { showError('検索語を入力してください'); return; }
+  startLoading(document.getElementById('searchBtn'));
+  var r = await callAPI('customer_search', { query: query });
+  stopLoading(document.getElementById('searchBtn'));
+  if (handleAPIError(r)) return;
+  var customers = r.data.customers || [];
+  var html = '<div class="section-label">検索結果（' + customers.length + '件）</div>';
+  if (customers.length === 0) html += '<div style="text-align:center;color:var(--text3);padding:20px;">該当なし</div>';
+  for (var i = 0; i < customers.length; i++) {
+    var c = customers[i];
+    html += '<div class="card clickable" onclick="loadDetail(\'' + escapeHtml(c['顧客ID']) + '\')">'
+      + '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">' + escapeHtml(c['氏名']) + '</div>'
+      + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(c['電話'] || '') + (c['携帯'] ? ' / ' + escapeHtml(c['携帯']) : '') + '</div>'
+      + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(c['顧客コード'] || '') + ' / ' + escapeHtml(c['区分'] || '') + '</div></div>';
+  }
+  document.getElementById('searchResults').innerHTML = html;
+}
+
+async function loadDetail(customerId) {
+  var r = await callAPI('customer_detail', { customerId: customerId });
+  if (handleAPIError(r)) return;
+  currentCustomer = r.data.customer;
+  currentVersion = currentCustomer['版番号'];
+  var c = currentCustomer;
+  var fields = [
+    ['氏名', c['氏名']], ['フリガナ', c['フリガナ']], ['電話', c['電話']],
+    ['携帯', c['携帯']], ['住所', (c['郵便番号'] ? '〒' + c['郵便番号'] + ' ' : '') + (c['住所'] || '')],
+    ['メール', c['Eメール']], ['顧客コード', c['顧客コード']],
+    ['営業担当', c['営業担当']], ['区分', c['区分']]
+  ];
+  var html = '';
+  for (var i = 0; i < fields.length; i++) {
+    if (fields[i][1]) html += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:13px;"><span style="color:var(--text3);">' + fields[i][0] + '</span><span style="font-weight:600;">' + escapeHtml(fields[i][1]) + '</span></div>';
+  }
+  document.getElementById('customerInfo').innerHTML = html;
+  document.getElementById('memoField').value = c['社内メモ'] || '';
+  showScr('scrDetail');
+}
+
+async function saveMemo() {
+  if (!currentCustomer) return;
+  startLoading(document.getElementById('memoBtn'));
+  var r = await callAPI('customer_update', {
+    customerId: currentCustomer['顧客ID'], version: currentVersion,
+    updates: { '社内メモ': document.getElementById('memoField').value }
+  });
+  stopLoading(document.getElementById('memoBtn'));
+  if (handleAPIError(r)) return;
+  currentVersion = r.data.newVersion;
+  showSuccess('メモを保存しました');
+}
+
+function showEditScreen() {
+  if (!currentCustomer) return;
+  var c = currentCustomer;
+  document.getElementById('editName').value = c['氏名'] || '';
+  document.getElementById('editFurigana').value = c['フリガナ'] || '';
+  document.getElementById('editPhone').value = c['電話'] || '';
+  document.getElementById('editMobile').value = c['携帯'] || '';
+  document.getElementById('editZip').value = c['郵便番号'] || '';
+  document.getElementById('editAddress').value = c['住所'] || '';
+  document.getElementById('editEmail').value = c['Eメール'] || '';
+  document.getElementById('editCode').value = c['顧客コード'] || '';
+  document.getElementById('editSalesRep').value = c['営業担当'] || '';
+  var btns = document.querySelectorAll('#categoryGroup .toggle-btn');
+  for (var i = 0; i < btns.length; i++) btns[i].classList.toggle('checked', btns[i].dataset.value === (c['区分'] || '個人'));
+  showScr('scrEdit');
+}
+
+async function saveCustomer() {
+  if (!currentCustomer) return;
+  startLoading(document.getElementById('saveBtn'));
+  var r = await callAPI('customer_update', {
+    customerId: currentCustomer['顧客ID'], version: currentVersion,
+    updates: {
+      '氏名': document.getElementById('editName').value,
+      'フリガナ': document.getElementById('editFurigana').value,
+      '電話': document.getElementById('editPhone').value,
+      '携帯': document.getElementById('editMobile').value,
+      '郵便番号': document.getElementById('editZip').value,
+      '住所': document.getElementById('editAddress').value,
+      'Eメール': document.getElementById('editEmail').value,
+      '顧客コード': document.getElementById('editCode').value,
+      '営業担当': document.getElementById('editSalesRep').value,
+      '区分': getToggleValue('categoryGroup'),
+      '社内メモ': document.getElementById('memoField').value
+    }
+  });
+  stopLoading(document.getElementById('saveBtn'));
+  if (handleAPIError(r)) return;
+  currentVersion = r.data.newVersion;
+  showSuccess('変更を保存しました');
+  loadDetail(currentCustomer['顧客ID']);
+}
+
+// 編集ボタンのonclick修正
+document.querySelector('.btn-primary[onclick*="showScr(\'scrEdit\')"]') ||
+  document.querySelector('.btn-primary').addEventListener('click', function(){});
+</script>
+</body>
+</html>

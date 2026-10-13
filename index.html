@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-192.png">
@@ -11,220 +12,310 @@
 <script src="api.js"></script>
 <script src="common.js"></script>
 <style>
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif; background: #FAF8F5; color: #2C2C2C; min-height: 100dvh; }
-:root {
-  --orange: #E86A2A; --orange-dark: #C4551E; --gold: #C9A96E;
-  --cream: #FAF8F5; --brown: #5C4033; --brown-light: #8B7355;
-  --green: #006B3F; --red: #C41E3A; --blue: #2563EB;
-  --text: #2C2C2C; --text2: #6B6B6B; --text3: #9B9B9B;
-  --border: #E0D6C8; --border-light: #F0EBE3; --white: #FFFFFF;
-  --shadow-sm: 0 1px 3px rgba(92,64,51,0.08);
-  --shadow-md: 0 4px 12px rgba(92,64,51,0.12);
-  --shadow-lg: 0 8px 24px rgba(92,64,51,0.16);
-}
-.screen { display: none; min-height: 100dvh; max-width: 480px; margin: 0 auto; }
-.screen.active { display: flex; flex-direction: column; }
-@media (min-width: 481px) { body { background: #E8E2DA; } .screen { background: var(--cream); box-shadow: 0 0 20px rgba(0,0,0,0.1); } }
-#loginScreen { justify-content: center; align-items: center; padding: 24px; background: linear-gradient(160deg, #FAF8F5 0%, #F0EBE3 100%); }
-.login-container { width: 100%; max-width: 360px; }
-.login-logo { text-align: center; margin-bottom: 40px; }
-.login-title { font-size: 22px; font-weight: 700; color: var(--brown); letter-spacing: 2px; }
-.login-title .brand-name { font-size: 24px; }
-.login-card { background: var(--white); border-radius: 16px; padding: 32px 24px; box-shadow: var(--shadow-lg); border: 1px solid var(--border-light); }
-.form-group { margin-bottom: 20px; }
-.form-label { display: block; font-size: 13px; font-weight: 600; color: var(--brown); margin-bottom: 6px; }
-.form-input { width: 100%; padding: 14px 16px; font-size: 16px; border: 1.5px solid var(--border); border-radius: 10px; background: var(--cream); color: var(--text); outline: none; -webkit-appearance: none; }
-.form-input:focus { border-color: var(--orange); background: var(--white); }
-.form-input::placeholder { color: var(--text3); }
+.login-screen { display: flex; justify-content: center; align-items: center; min-height: 100dvh; padding: 24px; background: linear-gradient(160deg, #FAF8F5 0%, #F0EBE3 100%); }
+.login-box { width: 100%; max-width: 360px; }
+.login-logo { text-align: center; margin-bottom: 40px; font-size: 22px; font-weight: 700; color: var(--brown); letter-spacing: 2px; }
+.login-logo span { font-size: 24px; }
+.login-card { background: var(--white); border-radius: 16px; padding: 32px 24px; box-shadow: var(--shadow-md); border: 1px solid var(--border-light); }
 .login-btn { width: 100%; padding: 16px; font-size: 16px; font-weight: 700; color: var(--white); background: var(--orange); border: none; border-radius: 10px; cursor: pointer; }
 .login-btn:active { background: var(--orange-dark); transform: scale(0.98); }
-.login-error { display: none; margin-top: 16px; padding: 12px 16px; background: #FFF5F5; border: 1px solid #F5C6CB; border-radius: 8px; color: var(--red); font-size: 13px; text-align: center; }
+.login-error { display: none; margin-top: 16px; padding: 12px; background: #FFF5F5; border: 1px solid #F5C6CB; border-radius: 8px; color: var(--red); font-size: 13px; text-align: center; }
 .login-error.show { display: block; }
-.error-message { display: none; margin-bottom: 12px; padding: 10px; background: #FFF5F5; border: 1px solid #F5C6CB; border-radius: 8px; color: var(--red); font-size: 13px; }
-.error-message.show { display: block; }
-#topScreen { background: var(--cream); }
+.pw-toggle { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; font-size: 18px; }
+
 .top-header { background: var(--white); border-bottom: 1px solid var(--border-light); padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
-.header-title { font-size: 15px; font-weight: 700; color: var(--brown); }
-.header-user { display: flex; align-items: center; gap: 8px; }
-.header-user-name { font-size: 13px; color: var(--text2); text-align: right; line-height: 1.3; }
-.header-user-name strong { color: var(--text); display: block; }
-.logout-btn { padding: 6px 12px; font-size: 12px; color: var(--text2); background: var(--cream); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; transition: all 0.1s; }
+.staff-bar { background: var(--white); border-bottom: 1px solid var(--border-light); padding: 10px 16px; display: flex; align-items: center; gap: 8px; }
+.role-badge { padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 4px; color: var(--white); background: var(--orange); }
+.user-name { font-size: 13px; color: var(--text2); }
+.user-name strong { color: var(--text); display: block; }
+.logout-btn { padding: 6px 12px; font-size: 12px; color: var(--text2); background: var(--cream); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
 .logout-btn:active { background: var(--border); transform: scale(0.95); }
-.staff-bar { background: var(--white); border-bottom: 1px solid var(--border-light); padding: 12px 16px; display: flex; align-items: center; gap: 8px; }
-.staff-role-badge { padding: 4px 10px; font-size: 11px; font-weight: 600; border-radius: 4px; color: var(--white); background: var(--orange); }
-.top-content { flex: 1; padding: 16px; overflow-y: auto; }
-.menu-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 12px; padding: 16px 8px; text-align: center; cursor: pointer; box-shadow: var(--shadow-sm); }
-.menu-card:active { transform: scale(0.96); }
-.menu-card-icon { font-size: 28px; margin-bottom: 6px; }
-.menu-card-label { font-size: 12px; font-weight: 600; color: var(--text); line-height: 1.3; }
-.menu-card.disabled { display: none; }
-.quick-action-btn { flex: 1; padding: 14px 8px; background: var(--orange); color: var(--white); border: none; border-radius: 12px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: var(--shadow-md); }
-.quick-action-btn:active { transform: scale(0.97); }
-.quick-action-btn.secondary { background: var(--white); color: var(--orange); border: 2px solid var(--orange); box-shadow: var(--shadow-sm); }
-.quick-action-btn.disabled { display: none; }
-.bottom-nav { background: var(--white); border-top: 1px solid var(--border-light); padding: 8px 16px; padding-bottom: max(8px, env(safe-area-inset-bottom)); display: flex; justify-content: space-around; }
-.nav-item { display: flex; flex-direction: column; align-items: center; font-size: 10px; color: var(--text3); cursor: pointer; padding: 4px 8px; }
-.nav-item.active { color: var(--orange); }
-.nav-item-icon { font-size: 22px; margin-bottom: 2px; }
-.btn-secondary { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; color: var(--text2); background: var(--white); border: 1.5px solid var(--border); border-radius: 10px; cursor: pointer; }
+
+.quick-btn { flex: 1; padding: 20px 8px; font-size: 17px; font-weight: 700; border: none; border-radius: 12px; cursor: pointer; box-shadow: var(--shadow-md); display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.quick-btn:active { transform: scale(0.97); }
+.quick-btn.primary { background: var(--orange); color: var(--white); }
+.quick-btn.primary:active { background: var(--orange-dark); }
+.quick-btn.secondary { background: var(--white); color: var(--orange); border: 2.5px solid var(--orange); box-shadow: var(--shadow-sm); }
+.quick-sub { font-size: 10px; font-weight: 400; opacity: 0.8; }
+
+.status-card { background: var(--white); border: 1px solid var(--border-light); border-radius: 12px; padding: 14px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.status-title { font-size: 13px; font-weight: 600; color: var(--brown); margin-bottom: 10px; }
+.status-row { display: flex; justify-content: space-around; text-align: center; }
+.status-item { flex: 1; }
+.status-num { font-size: 24px; font-weight: 700; }
+.status-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.alert-card { background: #FFF5F5; border: 1.5px solid var(--red); border-radius: 12px; padding: 12px 16px; margin-bottom: 12px; cursor: pointer; }
+.alert-card:active { transform: scale(0.98); }
+.alert-title { font-size: 13px; font-weight: 700; color: var(--red); margin-bottom: 2px; }
+.alert-desc { font-size: 12px; color: var(--text2); }
 </style>
 </head>
 <body>
-<!-- パスワード設定画面 -->
-<div id="pwSetupScreen" class="screen">
-  <div class="login-container">
-    <div class="login-logo"><div class="login-title">タイヤホテル<span class="brand-name">OKABE</span> DX</div></div>
-    <div class="login-card">
-      <div style="font-size:15px;font-weight:600;color:var(--brown);margin-bottom:12px;text-align:center;">パスワードの設定</div>
-      <div style="font-size:12px;color:var(--text2);margin-bottom:16px;">新しいパスワードを入力してください。</div>
-      <div class="form-group"><label class="form-label">現在のパスワード（仮パスワード）</label><div style="position:relative;"><input class="form-input" type="password" id="currentPw" placeholder="仮パスワード"><span onclick="togglePw(this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:18px;">&#x1F441;</span></div></div>
-      <div class="form-group"><label class="form-label">新しいパスワード</label><div style="position:relative;"><input class="form-input" type="password" id="newPw" placeholder="8文字以上"><span onclick="togglePw(this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:18px;">&#x1F441;</span></div></div>
-      <div class="form-group"><label class="form-label">確認入力</label><div style="position:relative;"><input class="form-input" type="password" id="confirmPw" placeholder="もう一度入力"><span onclick="togglePw(this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:18px;">&#x1F441;</span></div></div>
-      <div id="pwSetupError" class="error-message"></div>
-      <button class="login-btn" id="pwSetupBtn" onclick="doPwSetup()">設定する</button>
-      <button class="btn-secondary" style="margin-top:8px;" onclick="showScr('loginScreen')">戻る</button>
+
+<!-- ===== ログイン画面 ===== -->
+<div id="scrLogin" class="screen active">
+  <div class="login-screen">
+    <div class="login-box">
+      <div class="login-logo">タイヤホテル<span>OKABE</span> DX</div>
+      <div class="login-card" onkeydown="if(event.key==='Enter')doLogin()">
+        <div class="form-row">
+          <label class="form-label">スタッフID</label>
+          <input class="form-input" type="text" id="staffIdInput" placeholder="S-0001" autocomplete="off" autocapitalize="off">
+        </div>
+        <div class="form-row">
+          <label class="form-label">パスワード</label>
+          <div style="position:relative;">
+            <input class="form-input" type="password" id="pwInput" placeholder="パスワードを入力">
+            <span class="pw-toggle" onclick="togglePw(this)">&#x1F441;</span>
+          </div>
+        </div>
+        <button class="login-btn" id="loginBtn" onclick="doLogin()">ログイン</button>
+        <div class="login-error" id="loginError"></div>
+        <div style="text-align:center;margin-top:12px;">
+          <a href="#" style="font-size:12px;color:var(--blue);" onclick="event.preventDefault();showScr('scrPwSetup')">パスワードを変更する</a>
+        </div>
+      </div>
     </div>
   </div>
 </div>
-<!-- ログイン画面 -->
-<div id="loginScreen" class="screen active">
-  <div class="login-container">
-    <div class="login-logo"><div class="login-title">タイヤホテル<span class="brand-name">OKABE</span> DX</div></div>
-    <div class="login-card" onkeydown="if(event.key==='Enter')doLogin()">
-      <div class="form-group"><label class="form-label" for="staffId">スタッフID</label><input class="form-input" type="text" id="staffId" placeholder="S-0001" autocomplete="off" autocapitalize="off"></div>
-      <div class="form-group"><label class="form-label" for="pw">パスワード</label><div style="position:relative;"><input class="form-input" type="password" id="pw" placeholder="パスワードを入力"><span onclick="togglePw(this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);cursor:pointer;font-size:18px;">&#x1F441;</span></div></div>
-      <button class="login-btn" id="loginBtn" onclick="doLogin()">ログイン</button>
-      <div class="login-error" id="loginError"></div>
-      <div style="text-align:center;margin-top:12px;"><a href="#" style="font-size:12px;color:var(--blue);" onclick="event.preventDefault();showScr('pwSetupScreen')">パスワードを変更する</a></div>
+
+<!-- ===== パスワード設定画面 ===== -->
+<div id="scrPwSetup" class="screen">
+  <div class="login-screen">
+    <div class="login-box">
+      <div class="login-logo">タイヤホテル<span>OKABE</span> DX</div>
+      <div class="login-card">
+        <div style="font-size:15px;font-weight:600;color:var(--brown);margin-bottom:12px;text-align:center;">パスワードの設定</div>
+        <div class="form-row">
+          <label class="form-label">スタッフID</label>
+          <input class="form-input" type="text" id="pwStaffId" placeholder="S-0001">
+        </div>
+        <div class="form-row">
+          <label class="form-label">現在のパスワード</label>
+          <div style="position:relative;">
+            <input class="form-input" type="password" id="currentPw" placeholder="仮パスワード">
+            <span class="pw-toggle" onclick="togglePw(this)">&#x1F441;</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">新しいパスワード</label>
+          <div style="position:relative;">
+            <input class="form-input" type="password" id="newPw" placeholder="8文字以上">
+            <span class="pw-toggle" onclick="togglePw(this)">&#x1F441;</span>
+          </div>
+        </div>
+        <div class="form-row">
+          <label class="form-label">確認入力</label>
+          <div style="position:relative;">
+            <input class="form-input" type="password" id="confirmPw" placeholder="もう一度入力">
+            <span class="pw-toggle" onclick="togglePw(this)">&#x1F441;</span>
+          </div>
+        </div>
+        <button class="login-btn" id="pwSetupBtn" onclick="doPwSetup()">設定する</button>
+        <button class="btn-secondary" style="margin-top:8px;" onclick="showScr('scrLogin')">戻る</button>
+      </div>
     </div>
   </div>
 </div>
-<!-- トップページ -->
-<div id="topScreen" class="screen">
+
+<!-- ===== トップ画面 ===== -->
+<div id="scrTop" class="screen">
   <div class="top-header">
     <div class="header-title">タイヤホテルOKABE DX</div>
-    <div class="header-user"><div class="header-user-name"><strong id="hName">-</strong><span id="hRole">-</span></div><button class="logout-btn" onclick="doLogout()" style="cursor:pointer;">ログアウト</button></div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="user-name"><strong id="hName">-</strong><span id="hRole">-</span></div>
+      <button class="logout-btn" onclick="doLogout()">ログアウト</button>
+    </div>
   </div>
-  <div class="staff-bar"><span class="staff-role-badge" id="roleBadge">-</span><span id="branchLabel" style="font-size:12px;color:var(--text3);">-</span></div>
-  <div class="top-content">
+  <div class="staff-bar">
+    <span class="role-badge" id="roleBadge">-</span>
+    <span style="font-size:12px;color:var(--text3);" id="branchLabel">-</span>
+  </div>
+
+  <div class="content" style="padding-bottom:80px;">
+
+    <!-- アラート -->
+    <div id="alertArea"></div>
+
     <!-- メインボタン -->
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:16px;">
-      <button class="quick-action-btn" data-perm="can_reception" onclick="location.href='d_reception_list.html'">受付・予約</button>
-      <button class="quick-action-btn secondary" data-perm="can_quick_lookup" onclick="location.href='search_storage.html'">預かり検索</button>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;">
+      <button class="quick-btn primary" onclick="navigateTo('scan_workorder.html')">作業開始<span class="quick-sub">作業指示書の読み取り</span></button>
+      <button class="quick-btn secondary" onclick="navigateTo('search.html')">預かり検索<span class="quick-sub">顧客 / 車両 / タイヤ / 担当</span></button>
     </div>
-    <!-- 今日の状況 -->
-    <div data-perm="can_reception" style="background:var(--white);border:1px solid var(--border-light);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;" onclick="location.href='d_reception_list.html'" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-    <!-- 本日の来店受付: 受付・予約ボタンと重複するため非表示 -->
-        <div style="font-size:14px;font-weight:600;color:var(--brown);">本日のサービス作業</div>
-        <div style="font-size:20px;font-weight:700;color:var(--orange);" id="todayServiceCount">-</div>
+
+    <!-- 今日の作業状況 -->
+    <div class="status-card">
+      <div class="status-title">今日の作業状況</div>
+      <div class="status-row">
+        <div class="status-item">
+          <div class="status-num" style="color:var(--orange);" id="countExchange">-</div>
+          <div class="status-label">交換予定</div>
+        </div>
+        <div class="status-item">
+          <div class="status-num" style="color:var(--green);" id="countOutbound">-</div>
+          <div class="status-label">出庫準備</div>
+        </div>
+        <div class="status-item">
+          <div class="status-num" style="color:var(--red);" id="countStore">-</div>
+          <div class="status-label">格納待ち</div>
+        </div>
       </div>
-      <div style="font-size:12px;color:var(--text3);margin-top:4px;" id="todayServiceSub">-</div>
     </div>
-    <div data-perm="can_schedule_dispatch" style="background:var(--white);border:1px solid var(--border-light);border-radius:12px;padding:14px;margin-bottom:16px;cursor:pointer;" onclick="location.href='s_schedule.html'" onmousedown="this.style.transform='scale(0.98)'" onmouseup="this.style.transform=''">
-      <div style="display:flex;justify-content:space-between;align-items:center;">
-        <div style="font-size:14px;font-weight:600;color:var(--brown);">明日の作業予定</div>
-        <div style="font-size:20px;font-weight:700;color:var(--green);" id="tomorrowCount">-</div>
-      </div>
-      <div style="font-size:12px;color:var(--text3);margin-top:4px;" id="tomorrowSub">-</div>
-    </div>
+
     <!-- メニュー -->
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;">
-      <div class="menu-card" data-perm="can_quick_lookup" onclick="location.href='b_customer.html'"><div class="menu-card-icon">&#x1F464;</div><div class="menu-card-label">顧客台帳</div></div>
-      <div class="menu-card" data-perm="can_quick_lookup" onclick="location.href='c_vehicle.html'"><div class="menu-card-icon">&#x1F697;</div><div class="menu-card-label">車両台帳</div></div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px;">
+      <div class="menu-card" onclick="navigateTo('pit_work.html')">
+        <div class="menu-card-icon">&#x1F527;</div>
+        <div class="menu-card-label">ピット作業</div>
+      </div>
+      <div class="menu-card" onclick="navigateTo('warehouse.html')">
+        <div class="menu-card-icon">&#x1F4E6;</div>
+        <div class="menu-card-label">倉庫作業</div>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;">
-      <div class="menu-card" data-perm="can_pit_work" onclick="location.href='f_service.html'"><div class="menu-card-icon">&#x1F527;</div><div class="menu-card-label">サービス作業</div></div>
-      <div class="menu-card" data-perm="can_warehouse_storage" onclick="location.href='g_warehouse.html'"><div class="menu-card-icon">&#x1F4E6;</div><div class="menu-card-label">倉庫作業</div></div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px;">
+      <div class="menu-card" onclick="navigateTo('contract.html')">
+        <div class="menu-card-icon">&#x1F4DD;</div>
+        <div class="menu-card-label">契約書発行</div>
+      </div>
+      <div class="menu-card" onclick="navigateTo('overdue.html')">
+        <div class="menu-card-icon">&#x1F4C5;</div>
+        <div class="menu-card-label">返却予定日</div>
+      </div>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:10px;">
-      <div class="menu-card" data-perm="can_schedule_dispatch" onclick="location.href='s_schedule.html'"><div class="menu-card-icon">&#x1F4C5;</div><div class="menu-card-label">作業計画</div></div>
-      <div class="menu-card" data-perm="can_reception" onclick="location.href='contract_renewal.html'"><div class="menu-card-icon">&#x1F4DD;</div><div class="menu-card-label">契約・督促</div></div>
+    <div style="font-size:12px;font-weight:600;color:var(--text3);margin:16px 0 8px;padding-left:4px;">各種台帳</div>
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:12px;">
+      <div class="menu-card" onclick="navigateTo('customer.html')">
+        <div class="menu-card-icon">&#x1F464;</div>
+        <div class="menu-card-label">顧客台帳</div>
+      </div>
+      <div class="menu-card" onclick="navigateTo('vehicle.html')">
+        <div class="menu-card-icon">&#x1F697;</div>
+        <div class="menu-card-label">車両台帳</div>
+      </div>
     </div>
   </div>
+
   <div class="bottom-nav">
-    <div class="nav-item" data-perm="can_edit_master_price" onclick="location.href='m_master.html'"><div class="nav-item-icon">&#x2699;&#xFE0F;</div><div>マスタ管理</div></div>
-    <div class="nav-item" data-perm="can_manage_permission" onclick="location.href='a_permission.html'"><div class="nav-item-icon">&#x1F512;</div><div>権限管理</div></div>
-    <div class="nav-item" onclick="location.href='export.html'"><div class="nav-item-icon">📥</div><div>データ出力</div></div>
-    <div class="nav-item" onclick="location.href='chat.html'"><div class="nav-item-icon">&#x1F4AC;</div><div>Q&A</div></div>
+    <div class="nav-item" onclick="navigateTo('master.html')"><div class="nav-item-icon">&#x2699;&#xFE0F;</div><div>設定</div></div>
+    <div class="nav-item" onclick="navigateTo('permission.html')"><div class="nav-item-icon">&#x1F512;</div><div>権限管理</div></div>
+    <div class="nav-item" onclick="navigateTo('export.html')"><div class="nav-item-icon">&#x1F4E5;</div><div>CSV出力</div></div>
+    <div class="nav-item" onclick="navigateTo('qa.html')"><div class="nav-item-icon">&#x1F4AC;</div><div>Q&A</div></div>
   </div>
 </div>
+
 <script>
-function togglePw(el) {
-  var input = el.parentNode.querySelector('input');
-  input.type = input.type === 'password' ? 'text' : 'password';
-}
-function getPermissions() {
-  try { return JSON.parse(sessionStorage.getItem('permissions') || '{}'); } catch(e) { return {}; }
-}
+// --- 画面切り替え ---
 function showScr(id) {
   var s = document.querySelectorAll('.screen');
   for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
   document.getElementById(id).classList.add('active');
 }
-function toggleMenu() {
-  var m = document.getElementById('subMenu');
-  m.style.display = m.style.display === 'none' ? '' : 'none';
+
+// --- パスワード表示切り替え ---
+function togglePw(el) {
+  var input = el.parentNode.querySelector('input');
+  input.type = input.type === 'password' ? 'text' : 'password';
 }
+
+// --- ログイン ---
 async function doLogin() {
-  var sid = document.getElementById('staffId').value.trim().toUpperCase();
-  var p = document.getElementById('pw').value;
-  var e = document.getElementById('loginError');
-  if (!sid || !p) { e.textContent = 'スタッフIDとパスワードを入力してください'; e.classList.add('show'); return; }
-  e.classList.remove('show');
-  var btn = document.getElementById('loginBtn');
-  startLoading(btn);
-  var result = await callAPI('login', { staffId: sid, password: p });
-  stopLoading(btn);
-  if (!result.ok) {
-    if (result.code === 'PASSWORD_CHANGE_REQUIRED') { sessionStorage.setItem('pwSetupStaffId', sid); showScr('pwSetupScreen'); return; }
-    e.textContent = result.message || 'ログインに失敗しました'; e.classList.add('show'); return;
+  var staffId = document.getElementById('staffIdInput').value.trim();
+  var pw = document.getElementById('pwInput').value;
+  if (!staffId || !pw) { showLoginError('スタッフIDとパスワードを入力してください'); return; }
+
+  startLoading(document.getElementById('loginBtn'));
+  var r = await callAPI('login', { staffId: staffId, password: pw });
+  stopLoading(document.getElementById('loginBtn'));
+
+  if (!r || !r.ok) {
+    if (r && r.code === 'PASSWORD_CHANGE_REQUIRED') {
+      document.getElementById('pwStaffId').value = staffId;
+      document.getElementById('currentPw').value = pw;
+      showScr('scrPwSetup');
+      return;
+    }
+    showLoginError(r ? r.message : 'ログインに失敗しました');
+    return;
   }
-  var d = result.data;
-  setSession(d.sessionId, d.staffId, d.staffName, d.branchCode);
-  sessionStorage.setItem('permissions', JSON.stringify(d.permissions || {}));
-  sessionStorage.setItem('role', d.role || '');
-  renderTop(d.staffName, d.staffId, d.role, d.branchCode, d.permissions);
-  showScr('topScreen');
+
+  localStorage.setItem('sessionId', r.data.sessionId);
+  localStorage.setItem('staffId', r.data.staffId);
+  localStorage.setItem('staffName', r.data.staffName);
+  localStorage.setItem('role', r.data.role);
+  localStorage.setItem('branch', r.data.branchCode);
+  showTop();
 }
-async function doLogout() {
-  await callAPI('logout', { sessionId: getSessionId() });
-  clearSession(); sessionStorage.removeItem('permissions'); sessionStorage.removeItem('role');
-  document.getElementById('staffId').value = ''; document.getElementById('pw').value = '';
-  showScr('loginScreen');
+
+function showLoginError(msg) {
+  var el = document.getElementById('loginError');
+  el.textContent = msg;
+  el.classList.add('show');
 }
+
+// --- パスワード設定 ---
 async function doPwSetup() {
+  var staffId = document.getElementById('pwStaffId').value.trim();
   var cur = document.getElementById('currentPw').value;
   var np = document.getElementById('newPw').value;
   var cp = document.getElementById('confirmPw').value;
-  var e = document.getElementById('pwSetupError');
-  var sid = sessionStorage.getItem('pwSetupStaffId') || document.getElementById('staffId').value.trim().toUpperCase();
-  if (!cur) { e.textContent = '現在のパスワードを入力してください'; e.classList.add('show'); return; }
-  if (!np || np.length < 8) { e.textContent = '8文字以上で入力してください'; e.classList.add('show'); return; }
-  if (np !== cp) { e.textContent = '確認入力が一致しません'; e.classList.add('show'); return; }
-  e.classList.remove('show');
+  if (!staffId || !cur || !np) { showError('全項目を入力してください'); return; }
+  if (np.length < 8) { showError('新しいパスワードは8文字以上にしてください'); return; }
+  if (np !== cp) { showError('確認入力が一致しません'); return; }
+
   startLoading(document.getElementById('pwSetupBtn'));
-  var result = await callAPI('setInitialPassword', { staffId: sid, currentPassword: cur, newPassword: np });
+  var r = await callAPI('setInitialPassword', { staffId: staffId, currentPassword: cur, newPassword: np });
   stopLoading(document.getElementById('pwSetupBtn'));
-  if (!result.ok) { e.textContent = result.message; e.classList.add('show'); return; }
-  showSuccess('パスワードを設定しました'); showScr('loginScreen');
+
+  if (handleAPIError(r)) return;
+  showSuccess('パスワードを設定しました。ログインしてください');
+  showScr('scrLogin');
 }
-function renderTop(name, staffId, role, branch, perms) {
-  document.getElementById('hName').textContent = name;
-  document.getElementById('hRole').textContent = staffId + ' / ' + (role || '');
-  document.getElementById('roleBadge').textContent = role || '';
-  document.getElementById('branchLabel').textContent = branch || '';
-  if (!perms) perms = getPermissions();
-  var cards = document.querySelectorAll('[data-perm]');
-  for (var i = 0; i < cards.length; i++) {
-    var p = cards[i].getAttribute('data-perm');
-    cards[i].classList.toggle('disabled', !perms[p]);
+
+// --- ログアウト ---
+async function doLogout() {
+  await callAPI('logout', {});
+  localStorage.clear();
+  showScr('scrLogin');
+}
+
+// --- トップ画面表示 ---
+function showTop() {
+  document.getElementById('hName').textContent = getStaffName();
+  document.getElementById('hRole').textContent = localStorage.getItem('role') || '';
+  document.getElementById('roleBadge').textContent = localStorage.getItem('role') || '';
+  document.getElementById('branchLabel').textContent = localStorage.getItem('branch') || '';
+  showScr('scrTop');
+  loadSummary();
+}
+
+// --- 今日の作業状況 ---
+async function loadSummary() {
+  var r = await callAPI('home_summary', {});
+  if (!r || !r.ok) {
+    document.getElementById('countExchange').textContent = '-';
+    document.getElementById('countOutbound').textContent = '-';
+    document.getElementById('countStore').textContent = '-';
+    return;
   }
+  var d = r.data;
+  document.getElementById('countExchange').textContent = d.exchange || 0;
+  document.getElementById('countOutbound').textContent = d.outbound || 0;
+  document.getElementById('countStore').textContent = d.store || 0;
+
+  var alertHtml = '';
+  if (d.store > 0) {
+    alertHtml += '<div class="alert-card" onclick="navigateTo(\'warehouse.html\')"><div class="alert-title">&#x26A0; 格納待ち ' + d.store + '件</div><div class="alert-desc">棚番号を入力して格納してください</div></div>';
+  }
+  document.getElementById('alertArea').innerHTML = alertHtml;
 }
+
+// --- 起動時 ---
 if (getSessionId()) {
-  renderTop(getStaffName(), getStaffId(), sessionStorage.getItem('role'), sessionStorage.getItem('branchCode'));
-  showScr('topScreen');
+  showTop();
+} else {
+  showScr('scrLogin');
 }
 </script>
 </body>

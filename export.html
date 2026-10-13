@@ -3,66 +3,39 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>データ出力 - タイヤホテルOKABE DX</title>
+<title>CSV出力 - タイヤホテルOKABE DX</title>
 <link rel="stylesheet" href="style.css">
 <script src="api.js"></script>
 <script src="common.js"></script>
 </head>
 <body>
-<div class="page">
-  <div class="header">
-    <button class="home-btn" onclick="location.href='index.html'">ホーム</button>
-    <button class="back-btn" onclick="goBack()">&lt; 戻る</button>
-    <div class="header-title">データ出力</div>
-  </div>
-  <div class="content">
-    <div class="hint-bar">アプリのデータをCSVファイルでダウンロードできます。Googleスプレッドシートやエクセルで開けます。</div>
-    <div style="display:flex;flex-direction:column;gap:12px;margin-top:16px;">
-      <button class="btn-primary" onclick="exportTable('customer','顧客一覧')">顧客一覧をダウンロード</button>
-      <button class="btn-primary" onclick="exportTable('vehicle','車両一覧')">車両一覧をダウンロード</button>
-      <button class="btn-primary" style="background:var(--green);" onclick="exportTireList()">預かりタイヤ一覧をダウンロード</button>
-      <button class="btn-primary" style="background:var(--blue);" onclick="exportTable('work_order','受付伝票一覧')">受付伝票一覧をダウンロード</button>
-      <button class="btn-primary" style="background:var(--brown);" onclick="exportTable('contract','契約一覧')">契約一覧をダウンロード</button>
-    </div>
-    <div id="exportStatus" style="margin-top:16px;text-align:center;color:var(--text3);"></div>
-  </div>
-  <div class="page-id">データ出力</div>
+<div class="header">
+  <button class="home-btn" onclick="goHome()">ホーム</button>
+  <div class="header-title">CSV出力</div>
 </div>
-
+<div class="content">
+  <div class="section-label">データをCSVでダウンロード</div>
+  <div class="card clickable" onclick="downloadCsv('customer')"><div style="font-size:15px;font-weight:700;">顧客一覧</div><div style="font-size:12px;color:var(--text3);">氏名・電話・住所・顧客コード</div></div>
+  <div class="card clickable" onclick="downloadCsv('vehicle')"><div style="font-size:15px;font-weight:700;">車両一覧</div><div style="font-size:12px;color:var(--text3);">ナンバー・車種・メーカー</div></div>
+  <div class="card clickable" onclick="downloadCsv('tire_list')"><div style="font-size:15px;font-weight:700;">タイヤ一覧（預かり中）</div><div style="font-size:12px;color:var(--text3);">顧客名・ナンバー・サイズ・棚番号</div></div>
+  <div class="card clickable" onclick="downloadCsv('work_order')"><div style="font-size:15px;font-weight:700;">作業伝票一覧</div><div style="font-size:12px;color:var(--text3);">伝票番号・状態・作業予定日</div></div>
+  <div class="card clickable" onclick="downloadCsv('contract')"><div style="font-size:15px;font-weight:700;">契約一覧</div><div style="font-size:12px;color:var(--text3);">契約番号・状態・料金</div></div>
+</div>
 <script>
 if (!requireLogin()) {}
-
-async function exportTable(table, label) {
-  document.getElementById('exportStatus').textContent = label + 'を取得中...';
-  var result = await callAPI('admin_exportCsv', { table: table });
-  if (handleAPIError(result)) { document.getElementById('exportStatus').textContent = ''; return; }
-  var csv = result.data.csv || '';
-  if (!csv) { showError('データがありません'); document.getElementById('exportStatus').textContent = ''; return; }
-  downloadCsv(csv, table + '.csv');
-  document.getElementById('exportStatus').textContent = '';
-  showSuccess(label + 'をダウンロードしました');
-}
-
-async function exportTireList() {
-  document.getElementById('exportStatus').textContent = '預かりタイヤ一覧を取得中...';
-  var result = await callAPI('admin_exportTireCsv', {});
-  if (handleAPIError(result)) { document.getElementById('exportStatus').textContent = ''; return; }
-  var csv = result.data.csv || '';
-  if (!csv) { showError('データがありません'); document.getElementById('exportStatus').textContent = ''; return; }
-  downloadCsv(csv, 'tire_list.csv');
-  document.getElementById('exportStatus').textContent = '';
-  showSuccess('預かりタイヤ一覧をダウンロードしました');
-}
-
-function downloadCsv(csv, filename) {
+async function downloadCsv(table) {
+  showSuccess('ダウンロード準備中...');
+  var r = await callAPI('admin_exportCsv', { table: table });
+  if (handleAPIError(r)) return;
   var bom = '\uFEFF';
-  var blob = new Blob([bom + csv], { type: 'text/csv;charset=utf-8;' });
+  var blob = new Blob([bom + r.data.csv], { type: 'text/csv;charset=utf-8;' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  a.download = filename;
+  a.download = table + '_' + new Date().toISOString().slice(0,10) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
+  showSuccess('ダウンロードしました');
 }
 </script>
 </body>

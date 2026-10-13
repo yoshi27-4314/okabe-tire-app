@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>権限管理 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.perm-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-light); }
+.perm-info { flex: 1; }
+.perm-name { font-size: 13px; color: var(--text); }
+.perm-toggle { width: 48px; height: 28px; border-radius: 14px; border: none; cursor: pointer; position: relative; transition: background 0.2s; flex-shrink: 0; }
+.perm-toggle.on { background: var(--green); }
+.perm-toggle.off { background: var(--border); }
+.perm-toggle::after { content: ''; position: absolute; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: var(--white); transition: left 0.2s; }
+.perm-toggle.on::after { left: 23px; }
+.perm-toggle.off::after { left: 3px; }
+</style>
+</head>
+<body>
+<div id="scrList" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <div class="header-title">権限管理</div>
+  </div>
+  <div class="content">
+    <div id="staffList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+  </div>
+</div>
+<div id="scrPerm" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrList');loadStaff();">< 戻る</button>
+    <div class="header-title" id="permTitle">権限設定</div>
+  </div>
+  <div class="content" id="permList"></div>
+</div>
+<script>
+if (!requireLogin()) {}
+var allStaff = [];
+function showScr(id) { var s = document.querySelectorAll('.screen'); for (var i = 0; i < s.length; i++) s[i].classList.remove('active'); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
+async function loadStaff() {
+  var r = await callAPI('admin_staffList', {});
+  var list = (r && r.ok && r.data) ? r.data.staffList || [] : [];
+  list.sort(function(a,b){ return (a['スタッフID']||'').localeCompare(b['スタッフID']||''); });
+  allStaff = list;
+  var html = '';
+  for (var i = 0; i < list.length; i++) {
+    html += '<div class="card clickable" onclick="openPerm(\'' + escapeHtml(list[i]['スタッフID']) + '\')">'
+      + '<div style="font-size:15px;font-weight:700;">' + escapeHtml(list[i]['氏名'] || '') + '</div>'
+      + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(list[i]['役職'] || '') + '</div></div>';
+  }
+  document.getElementById('staffList').innerHTML = html || '<div style="text-align:center;color:var(--text3);padding:20px;">スタッフなし</div>';
+}
+async function openPerm(staffId) {
+  var r = await callAPI('admin_changePermission', { staffId: staffId, action: 'get' });
+  if (handleAPIError(r)) return;
+  var perms = r.data.permissions || {};
+  var staff = allStaff.find(function(s){ return s['スタッフID'] === staffId; });
+  document.getElementById('permTitle').textContent = (staff ? staff['氏名'] : staffId) + ' の権限';
+  var keys = Object.keys(perms).sort();
+  var html = '';
+  for (var i = 0; i < keys.length; i++) {
+    var k = keys[i];
+    var on = perms[k] === true || perms[k] === 'はい';
+    html += '<div class="perm-row"><div class="perm-info"><div class="perm-name">' + escapeHtml(k) + '</div></div>'
+      + '<button class="perm-toggle ' + (on ? 'on' : 'off') + '" onclick="togglePerm(\'' + escapeHtml(staffId) + '\',\'' + escapeHtml(k) + '\',this)"></button></div>';
+  }
+  document.getElementById('permList').innerHTML = html;
+  showScr('scrPerm');
+}
+async function togglePerm(staffId, perm, btn) {
+  var newVal = btn.classList.contains('off');
+  var r = await callAPI('admin_changePermission', { staffId: staffId, action: 'set', permission: perm, value: newVal });
+  if (handleAPIError(r)) return;
+  btn.classList.toggle('on', newVal);
+  btn.classList.toggle('off', !newVal);
+}
+loadStaff();
+</script>
+</body>
+</html>

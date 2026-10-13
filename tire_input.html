@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>タイヤ情報入力 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.info-bar { background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+.info-bar-name { font-weight: 700; color: var(--brown); }
+.info-bar-plate { color: var(--text2); }
+.tire-count-bar { display: flex; gap: 6px; margin-bottom: 16px; }
+.tire-count-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: 600; text-align: center; border: 1.5px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text3); cursor: pointer; }
+.tire-count-btn:active { transform: scale(0.95); }
+.tire-count-btn.active { border-color: var(--orange); background: #FFF3EB; color: var(--orange); }
+.tire-section { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+.tire-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--orange); }
+.tire-pos { font-size: 15px; font-weight: 700; color: var(--brown); }
+.tire-badge { font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: 600; }
+.tire-badge.done { background: #E8F5E9; color: var(--green); }
+.tire-badge.empty { background: #F5F5F5; color: var(--text3); }
+.scan-btn { width: 100%; padding: 14px; font-size: 14px; font-weight: 600; color: var(--blue); background: #F0F7FF; border: 1.5px solid var(--blue); border-radius: 10px; cursor: pointer; margin-bottom: 12px; text-align: center; }
+.scan-btn:active { background: #D0E7FF; transform: scale(0.97); }
+.groove-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.pm-btn { height: 48px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 8px; background: var(--white); cursor: pointer; color: var(--orange); display: flex; align-items: center; justify-content: center; }
+.pm-btn:active { background: #FFF3EB; transform: scale(0.9); }
+.groove-input { width: 70px; height: 48px; text-align: center; padding: 8px; font-size: 24px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 8px; }
+.groove-alert { color: var(--red); font-size: 13px; font-weight: 700; text-align: center; margin-top: 4px; }
+.scratch-checks { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.scratch-check { display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
+.scratch-check input { width: 20px; height: 20px; accent-color: var(--orange); }
+.scratch-photos { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+.scratch-thumb { width: 70px; height: 70px; background: #D0E7D0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 10px; color: var(--green); font-weight: 700; border: 1px solid var(--green); cursor: pointer; }
+.scratch-thumb:active { transform: scale(0.95); }
+.scratch-add { width: 70px; height: 70px; background: var(--white); border: 2px dashed var(--blue); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 24px; color: var(--blue); cursor: pointer; }
+.scratch-add:active { background: #F0F7FF; transform: scale(0.95); }
+.memo-input { width: 100%; padding: 8px 12px; font-size: 14px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--cream); resize: vertical; min-height: 40px; }
+.memo-input:focus { border-color: var(--orange); background: var(--white); }
+.nut-section { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+.nut-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--brown); }
+.overall-memo { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+.overall-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--brown); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="home-btn" onclick="goHome()">ホーム</button>
+  <button class="back-btn" onclick="location.href='pit_work.html'">< 戻る</button>
+  <div class="header-title">タイヤ情報入力</div>
+</div>
+
+<div class="content" style="padding-bottom:40px;">
+  <div class="info-bar">
+    <span class="info-bar-name" id="infoName">-</span>
+    <span class="info-bar-plate" id="infoPlate">-</span>
+  </div>
+
+  <!-- 本数 -->
+  <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">タイヤ本数</div>
+  <div class="tire-count-bar" id="countBar"></div>
+
+  <!-- 預かり区分 -->
+  <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">預かり区分</div>
+  <div class="toggle-group" id="tireTypeGroup" style="margin-bottom:16px;">
+    <span class="toggle-btn" data-value="夏" onclick="toggleCheck(this)">夏タイヤ預かり</span>
+    <span class="toggle-btn" data-value="冬" onclick="toggleCheck(this)">冬タイヤ預かり</span>
+  </div>
+
+  <!-- タイヤ個別入力 -->
+  <div id="tireInputs"></div>
+
+  <!-- ナット -->
+  <div class="nut-section">
+    <div class="nut-title">ナット（共通）</div>
+    <div class="toggle-group" id="nutGroup">
+      <span class="toggle-btn" data-value="お客様保管" onclick="toggleCheck(this)">お客様保管</span>
+      <span class="toggle-btn" data-value="車載" onclick="toggleCheck(this)">車載</span>
+      <span class="toggle-btn" data-value="共用" onclick="toggleCheck(this)">共用</span>
+    </div>
+  </div>
+
+  <!-- 全体メモ -->
+  <div class="overall-memo">
+    <div class="overall-title">全体メモ</div>
+    <textarea class="memo-input" rows="3" id="overallMemo" placeholder="タイヤ全体に対するメモ"></textarea>
+  </div>
+
+  <button class="btn-primary" id="saveBtn" onclick="doSave()">保存する</button>
+  <button class="btn-secondary" onclick="location.href='pit_work.html'">戻る</button>
+</div>
+
+<script>
+if (!requireLogin()) {}
+
+var orderNumber = getParam('orderNumber');
+var tireSetId = getParam('tireSetId');
+var tireCount = 4;
+var positions = ['左前', '右前', '左後', '右後', '5本目', '6本目'];
+
+// 本数バー
+function renderCountBar() {
+  var html = '';
+  for (var i = 1; i <= 6; i++) {
+    html += '<div class="tire-count-btn' + (i === tireCount ? ' active' : '') + '" onclick="setCount(' + i + ')">' + i + '</div>';
+  }
+  document.getElementById('countBar').innerHTML = html;
+}
+
+function setCount(n) {
+  tireCount = n;
+  renderCountBar();
+  renderTireInputs();
+}
+
+// タイヤ入力欄を生成
+function renderTireInputs() {
+  var html = '';
+  for (var i = 0; i < tireCount; i++) {
+    var pos = positions[i];
+    var id = 't' + i;
+    html += '<div class="tire-section">';
+    html += '<div class="tire-header"><span class="tire-pos">' + (i+1) + '本目 : ' + pos + '</span><span class="tire-badge empty" id="' + id + '_badge">未入力</span></div>';
+    html += '<div class="scan-btn" onclick="doOcr(' + i + ')">📷 タイヤを読み取る</div>';
+    html += '<input type="file" id="' + id + '_file" accept="image/*" capture="environment" style="display:none;" onchange="onTireCapture(this,' + i + ')">';
+    html += '<div class="form-row"><label class="form-label">メーカー</label><input class="form-input" id="' + id + '_maker" placeholder="ブリヂストン"></div>';
+    html += '<div class="form-row"><label class="form-label">パターン</label><input class="form-input" id="' + id + '_pattern" placeholder="ブリザック VRX3"></div>';
+    html += '<div class="form-row"><label class="form-label">サイズ</label><input class="form-input" id="' + id + '_size" placeholder="195/65R15"></div>';
+    html += '<div class="form-row"><label class="form-label">製造年月</label><input class="form-input" id="' + id + '_mfg" placeholder="2024.20"></div>';
+    html += '<div class="form-row"><label class="form-label">ホイール</label><div class="toggle-group" id="' + id + '_wheel"><span class="toggle-btn" data-value="アルミ" onclick="toggleCheck(this)">アルミ</span><span class="toggle-btn" data-value="スチール" onclick="toggleCheck(this)">スチール</span></div></div>';
+    html += '<div class="form-row"><label class="form-label">キャップ</label><div class="toggle-group" id="' + id + '_cap"><span class="toggle-btn" data-value="あり" onclick="toggleCheck(this)">あり</span><span class="toggle-btn" data-value="なし" onclick="toggleCheck(this)">なし</span></div></div>';
+    html += '<div class="form-row"><label class="form-label">残溝</label><div class="groove-row">';
+    html += '<button class="pm-btn" style="width:48px;font-size:22px;" onclick="adjGroove(' + i + ',1)">+</button>';
+    html += '<button class="pm-btn" style="width:40px;font-size:16px;" onclick="adjGroove(' + i + ',0.1)">+</button>';
+    html += '<input class="groove-input" type="text" id="' + id + '_groove" value="5.0">';
+    html += '<button class="pm-btn" style="width:40px;font-size:16px;" onclick="adjGroove(' + i + ',-0.1)">&minus;</button>';
+    html += '<button class="pm-btn" style="width:48px;font-size:22px;" onclick="adjGroove(' + i + ',-1)">&minus;</button>';
+    html += '<span style="font-size:14px;color:var(--text2);margin-left:4px;">mm</span></div>';
+    html += '<div id="' + id + '_grooveAlert"></div></div>';
+    html += '<div class="form-row"><label class="form-label">傷チェック</label>';
+    html += '<div class="scratch-checks">';
+    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sNone" onchange="onScratchNone(' + i + ')"> 傷なし</label>';
+    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sSide" onchange="onScratchCheck(' + i + ')"> サイドウォール</label>';
+    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sTread" onchange="onScratchCheck(' + i + ')"> トレッド面</label>';
+    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sRim" onchange="onScratchCheck(' + i + ')"> リム</label>';
+    html += '</div>';
+    html += '<div id="' + id + '_scratchPhotos" style="display:none;"><label class="form-label" style="margin-top:6px;">傷の写真</label><div class="scratch-photos"><div class="scratch-add" onclick="document.getElementById(\'' + id + '_sFile\').click()">+</div></div><input type="file" id="' + id + '_sFile" accept="image/*" capture="environment" style="display:none;"></div>';
+    html += '</div>';
+    html += '<div class="form-row" style="margin-top:10px;"><label class="form-label">メモ（この1本）</label><textarea class="memo-input" id="' + id + '_memo" placeholder="この1本に対するメモ"></textarea></div>';
+    html += '</div>';
+  }
+  document.getElementById('tireInputs').innerHTML = html;
+}
+
+// 残溝調整
+function adjGroove(idx, delta) {
+  var el = document.getElementById('t' + idx + '_groove');
+  var val = parseFloat(el.value) || 0;
+  val = Math.round((val + delta) * 10) / 10;
+  if (val < 0) val = 0;
+  if (val > 20) val = 20;
+  el.value = val.toFixed(1);
+  var alertEl = document.getElementById('t' + idx + '_grooveAlert');
+  alertEl.innerHTML = val < 3 ? '<div class="groove-alert">⚠ 要交換（3mm未満）</div>' : '';
+}
+
+// 傷チェック排他
+function onScratchNone(idx) {
+  var id = 't' + idx;
+  if (document.getElementById(id + '_sNone').checked) {
+    document.getElementById(id + '_sSide').checked = false;
+    document.getElementById(id + '_sTread').checked = false;
+    document.getElementById(id + '_sRim').checked = false;
+    document.getElementById(id + '_scratchPhotos').style.display = 'none';
+  }
+}
+function onScratchCheck(idx) {
+  var id = 't' + idx;
+  var hasScratch = document.getElementById(id + '_sSide').checked || document.getElementById(id + '_sTread').checked || document.getElementById(id + '_sRim').checked;
+  if (hasScratch) {
+    document.getElementById(id + '_sNone').checked = false;
+    document.getElementById(id + '_scratchPhotos').style.display = '';
+  } else {
+    document.getElementById(id + '_scratchPhotos').style.display = 'none';
+  }
+}
+
+// OCR読み取り
+function doOcr(idx) {
+  document.getElementById('t' + idx + '_file').click();
+}
+async function onTireCapture(input, idx) {
+  if (!input.files || !input.files[0]) return;
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    showSuccess('読み取り中...');
+    var r = await callAPI('tire_ocrRead', { imageData: e.target.result });
+    if (handleAPIError(r)) return;
+    var f = r.data.fields || {};
+    var id = 't' + idx;
+    if (f['メーカー']) document.getElementById(id + '_maker').value = f['メーカー'];
+    if (f['パターン']) document.getElementById(id + '_pattern').value = f['パターン'];
+    if (f['サイズ']) document.getElementById(id + '_size').value = f['サイズ'];
+    if (f['製造年月']) document.getElementById(id + '_mfg').value = f['製造年月'];
+    showSuccess('読み取り完了');
+
+    // 1本目なら全本数にコピー
+    if (idx === 0) {
+      for (var i = 1; i < tireCount; i++) {
+        var tid = 't' + i;
+        if (!document.getElementById(tid + '_maker').value) document.getElementById(tid + '_maker').value = f['メーカー'] || '';
+        if (!document.getElementById(tid + '_pattern').value) document.getElementById(tid + '_pattern').value = f['パターン'] || '';
+        if (!document.getElementById(tid + '_size').value) document.getElementById(tid + '_size').value = f['サイズ'] || '';
+        if (!document.getElementById(tid + '_mfg').value) document.getElementById(tid + '_mfg').value = f['製造年月'] || '';
+      }
+    }
+  };
+  reader.readAsDataURL(input.files[0]);
+  input.value = '';
+}
+
+// 保存
+async function doSave() {
+  var records = [];
+  for (var i = 0; i < tireCount; i++) {
+    var id = 't' + i;
+    records.push({
+      position: positions[i],
+      maker: document.getElementById(id + '_maker').value.trim(),
+      pattern: document.getElementById(id + '_pattern').value.trim(),
+      size: document.getElementById(id + '_size').value.trim(),
+      mfgDate: document.getElementById(id + '_mfg').value.trim(),
+      groove: document.getElementById(id + '_groove').value,
+      wheelType: getToggleValue(id + '_wheel'),
+      cap: getToggleValue(id + '_cap'),
+      scratchNone: document.getElementById(id + '_sNone').checked ? 'はい' : '',
+      scratchSidewall: document.getElementById(id + '_sSide').checked ? 'はい' : '',
+      scratchTread: document.getElementById(id + '_sTread').checked ? 'はい' : '',
+      scratchRim: document.getElementById(id + '_sRim').checked ? 'はい' : '',
+      memo: document.getElementById(id + '_memo').value.trim(),
+    });
+  }
+
+  startLoading(document.getElementById('saveBtn'));
+  var r = await callAPI('tire_save', {
+    orderNumber: orderNumber,
+    tireCount: tireCount,
+    tireType: getToggleValue('tireTypeGroup'),
+    nut: getToggleValue('nutGroup'),
+    overallMemo: document.getElementById('overallMemo').value.trim(),
+    records: records,
+  });
+  stopLoading(document.getElementById('saveBtn'));
+  if (handleAPIError(r)) return;
+
+  showSuccess('保存しました');
+
+  // 作業完了にする
+  await callAPI('pit_complete', { orderNumber: orderNumber });
+
+  setTimeout(function() { location.href = 'pit_work.html'; }, 1500);
+}
+
+// 初期化
+async function init() {
+  if (!orderNumber) { goHome(); return; }
+
+  // 伝票から顧客・車両情報を取得
+  var r = await callAPI('pit_listByDate', { date: '' });
+  // 簡易的に伝票番号で検索（全日検索はAPIを改修する必要があるため、表示名はセッションから）
+  document.getElementById('infoName').textContent = '';
+  document.getElementById('infoPlate').textContent = orderNumber;
+
+  renderCountBar();
+  renderTireInputs();
+
+  // 既存記録があれば読み込み
+  if (tireSetId) {
+    var tr = await callAPI('tire_getRecords', { tireSetId: tireSetId });
+    if (tr && tr.ok && tr.data.records.length > 0) {
+      var recs = tr.data.records;
+      var ts = tr.data.tireSet;
+      if (ts) {
+        if (ts['本数']) { tireCount = Number(ts['本数']); renderCountBar(); renderTireInputs(); }
+        document.getElementById('overallMemo').value = ts['全体メモ'] || '';
+      }
+      for (var i = 0; i < recs.length && i < 6; i++) {
+        var rec = recs[i];
+        var tid = 't' + i;
+        document.getElementById(tid + '_maker').value = rec['メーカー'] || '';
+        document.getElementById(tid + '_pattern').value = rec['パターン'] || '';
+        document.getElementById(tid + '_size').value = rec['サイズ'] || '';
+        document.getElementById(tid + '_mfg').value = rec['製造年月'] || '';
+        document.getElementById(tid + '_groove').value = rec['残溝'] || '5.0';
+      }
+    }
+  }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>返却予定日 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.summary-box { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 14px; margin-bottom: 16px; box-shadow: var(--shadow-sm); }
+.summary-title { font-size: 13px; font-weight: 700; color: var(--brown); margin-bottom: 8px; }
+.summary-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.summary-label { color: var(--text2); }
+.summary-value { font-weight: 700; }
+.overdue-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+.overdue-card.alert { border-color: var(--red); border-width: 2px; }
+.overdue-card.warn { border-color: var(--orange); }
+.overdue-card.critical { border: 3px solid var(--red); background: #FFF5F5; }
+.overdue-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.overdue-customer { font-size: 15px; font-weight: 700; }
+.overdue-plate { font-size: 14px; font-weight: 600; color: var(--brown); margin-bottom: 4px; }
+.overdue-detail { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.overdue-date { font-size: 13px; font-weight: 700; margin-top: 4px; }
+.overdue-date.red { color: var(--red); }
+.overdue-date.orange { color: var(--orange); }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="home-btn" onclick="goHome()">ホーム</button>
+  <div class="header-title">返却予定日</div>
+</div>
+
+<div class="content">
+  <div class="tab-bar">
+    <div class="tab-item active" onclick="loadTab('冬',this)">冬→夏</div>
+    <div class="tab-item" onclick="loadTab('夏',this)">夏→冬</div>
+  </div>
+
+  <div id="summaryArea"></div>
+  <div id="listArea"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+
+function loadTab(type, el) {
+  var tabs = document.querySelectorAll('.tab-item');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+  el.classList.add('active');
+  loadOverdue(type);
+}
+
+async function loadOverdue(type) {
+  var r = await callAPI('overdue_list', { tireType: type });
+  var data = (r && r.ok && r.data) ? r.data : { approaching: [], overdue: [], exceeded: [], counts: { approaching: 0, overdue: 0, exceeded: 0, total: 0 }, deadlineDate: '' };
+
+  var deadlineLabel = type === '冬' ? '冬タイヤ → 夏タイヤ（タイヤホテル期日：4月20日）' : '夏タイヤ → 冬タイヤ（タイヤホテル期日：1月20日）';
+
+  var shtml = '<div class="summary-box"><div class="summary-title">' + escapeHtml(deadlineLabel) + '</div>';
+  shtml += '<div class="summary-row"><span class="summary-label">① 返却予定日まで14日以内</span><span class="summary-value" style="color:var(--orange);">' + data.counts.approaching + '件</span></div>';
+  shtml += '<div class="summary-row"><span class="summary-label">② 返却予定日を過ぎた</span><span class="summary-value" style="color:var(--red);">' + data.counts.overdue + '件</span></div>';
+  shtml += '<div class="summary-row"><span class="summary-label">③ タイヤホテル期日を超えた</span><span class="summary-value" style="color:var(--red);">' + data.counts.exceeded + '件</span></div>';
+  shtml += '<div class="summary-row"><span class="summary-label">預かり中（全体）</span><span class="summary-value" style="color:var(--green);">' + data.counts.total + '件</span></div>';
+  shtml += '</div>';
+  document.getElementById('summaryArea').innerHTML = shtml;
+
+  var lhtml = '';
+
+  if (data.approaching.length > 0) {
+    lhtml += '<div class="section-label" style="color:var(--orange);">① 返却予定日まで14日以内（' + data.approaching.length + '件）</div>';
+    for (var i = 0; i < data.approaching.length; i++) {
+      var it = data.approaching[i];
+      lhtml += '<div class="overdue-card warn"><div class="overdue-top"><span class="overdue-customer">' + escapeHtml(it.customerName) + '</span><span class="status st-waiting">あと' + it.daysLeft + '日</span></div>';
+      lhtml += '<div class="overdue-plate">' + escapeHtml(it.plate) + '</div>';
+      lhtml += '<div class="overdue-detail">' + escapeHtml(it.tireInfo) + '</div>';
+      lhtml += '<div class="overdue-detail">棚 : ' + escapeHtml(it.rack) + '</div>';
+      lhtml += '<div class="overdue-date orange">返却予定日 : ' + escapeHtml(it.returnDate) + '</div></div>';
+    }
+  }
+
+  if (data.overdue.length > 0) {
+    lhtml += '<div class="section-label" style="color:var(--red);">② 返却予定日を過ぎた（' + data.overdue.length + '件）</div>';
+    for (var j = 0; j < data.overdue.length; j++) {
+      var it2 = data.overdue[j];
+      lhtml += '<div class="overdue-card alert"><div class="overdue-top"><span class="overdue-customer">' + escapeHtml(it2.customerName) + '</span><span class="status st-alert">予定日超過</span></div>';
+      lhtml += '<div class="overdue-plate">' + escapeHtml(it2.plate) + '</div>';
+      lhtml += '<div class="overdue-detail">' + escapeHtml(it2.tireInfo) + '</div>';
+      lhtml += '<div class="overdue-detail">棚 : ' + escapeHtml(it2.rack) + '</div>';
+      lhtml += '<div class="overdue-date red">返却予定日 : ' + escapeHtml(it2.returnDate) + '（' + it2.daysOver + '日超過）</div></div>';
+    }
+  }
+
+  if (data.exceeded.length > 0) {
+    lhtml += '<div class="section-label" style="color:var(--red);font-size:14px;">③ タイヤホテル期日を超えた（' + data.exceeded.length + '件）</div>';
+    for (var k = 0; k < data.exceeded.length; k++) {
+      var it3 = data.exceeded[k];
+      lhtml += '<div class="overdue-card critical"><div class="overdue-top"><span class="overdue-customer">' + escapeHtml(it3.customerName) + '</span><span class="status st-alert" style="background:var(--red);color:var(--white);">期日超過</span></div>';
+      lhtml += '<div class="overdue-plate">' + escapeHtml(it3.plate) + '</div>';
+      lhtml += '<div class="overdue-detail">' + escapeHtml(it3.tireInfo) + '</div>';
+      lhtml += '<div class="overdue-detail">棚 : ' + escapeHtml(it3.rack) + '</div>';
+      lhtml += '<div class="overdue-date red">返却予定日 : ' + escapeHtml(it3.returnDate) + '<br>タイヤホテル期日を' + it3.daysOver + '日超過</div></div>';
+    }
+  }
+
+  if (!lhtml) lhtml = '<div style="text-align:center;color:var(--text3);padding:30px;">期限間近・超過の預かりはありません</div>';
+
+  document.getElementById('listArea').innerHTML = lhtml;
+}
+
+loadOverdue('冬');
+</script>
+</body>
+</html>

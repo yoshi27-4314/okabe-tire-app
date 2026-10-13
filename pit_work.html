@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ピット作業 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.cal-arrow { width: 40px; height: 40px; font-size: 18px; font-weight: 700; color: var(--orange); background: var(--white); border: 1.5px solid var(--orange); border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.cal-arrow:active { background: #FFF3EB; transform: scale(0.95); }
+.cal-month { font-size: 15px; font-weight: 700; color: var(--brown); }
+.cal-grid { display: grid; grid-template-columns: repeat(7,1fr); text-align: center; gap: 2px; }
+.cal-dow { font-size: 11px; color: var(--text3); padding: 4px; }
+.cal-day { padding: 6px; border-radius: 6px; cursor: pointer; font-size: 13px; min-height: 36px; }
+.cal-day:active { transform: scale(0.95); }
+.cal-day.today { background: var(--orange); color: var(--white); font-weight: 700; }
+.cal-day.selected { background: #FFF3EB; color: var(--orange); font-weight: 700; border: 2px solid var(--orange); }
+.cal-day.has-work { font-weight: 700; color: var(--orange); }
+.cal-day .cal-count { font-size: 8px; display: block; }
+.cal-day.sun { color: var(--red); }
+.cal-selected-label { text-align: center; margin-top: 8px; font-size: 13px; font-weight: 700; color: var(--brown); }
+
+.summary-bar { display: flex; justify-content: space-around; background: var(--white); border: 1px solid var(--border-light); border-radius: 12px; padding: 12px; margin-bottom: 16px; text-align: center; }
+.summary-item { flex: 1; }
+.summary-num { font-size: 20px; font-weight: 700; }
+.summary-label { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.pit-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow-sm); }
+.pit-card:active { transform: scale(0.98); background: #FFF8F0; }
+.pit-card.completed { opacity: 0.5; }
+.pit-card.working { border-color: var(--blue); border-width: 2px; }
+.pit-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.pit-customer { font-size: 15px; font-weight: 700; }
+.pit-plate { font-size: 14px; font-weight: 600; color: var(--brown); margin-bottom: 4px; }
+.pit-detail { font-size: 13px; color: var(--text2); }
+.pit-outbound { font-size: 12px; font-weight: 600; margin-top: 6px; }
+.pit-outbound.yes { color: var(--green); }
+.pit-outbound.no { color: var(--red); }
+
+.detail-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+.detail-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--orange); }
+.detail-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
+.detail-row:last-child { border-bottom: none; }
+.detail-label { color: var(--text3); }
+.detail-value { font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- 一覧画面 -->
+<div id="scrList" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <div class="header-title">ピット作業</div>
+  </div>
+  <div class="content">
+    <!-- カレンダー -->
+    <div class="card" style="padding:12px;">
+      <div class="cal-header">
+        <div class="cal-arrow" onclick="changeMonth(-1)">◀</div>
+        <div class="cal-month" id="calMonth">-</div>
+        <div class="cal-arrow" onclick="changeMonth(1)">▶</div>
+      </div>
+      <div style="text-align:center;margin-bottom:6px;"><span onclick="goToday()" style="font-size:12px;color:var(--blue);cursor:pointer;text-decoration:underline;">今日</span></div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="cal-selected-label" id="calLabel">-</div>
+    </div>
+
+    <!-- サマリー -->
+    <div class="summary-bar">
+      <div class="summary-item"><div class="summary-num" style="color:var(--orange);" id="sumPending">-</div><div class="summary-label">予定</div></div>
+      <div class="summary-item"><div class="summary-num" style="color:var(--blue);" id="sumWorking">-</div><div class="summary-label">作業中</div></div>
+      <div class="summary-item"><div class="summary-num" style="color:var(--green);" id="sumDone">-</div><div class="summary-label">完了</div></div>
+    </div>
+
+    <!-- 一覧 -->
+    <div class="section-label" style="font-size:15px;">作業予定（タップで履き替え作業へ）</div>
+    <div id="orderList"></div>
+  </div>
+</div>
+
+<!-- 詳細画面 -->
+<div id="scrDetail" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrList')">< 戻る</button>
+    <div class="header-title">作業詳細</div>
+  </div>
+  <div class="content">
+    <div class="detail-card">
+      <div class="detail-title">作業情報</div>
+      <div class="detail-row"><span class="detail-label">顧客</span><span class="detail-value" id="dCustomer">-</span></div>
+      <div class="detail-row"><span class="detail-label">ナンバー</span><span class="detail-value" id="dPlate">-</span></div>
+      <div class="detail-row"><span class="detail-label">車種</span><span class="detail-value" id="dModel">-</span></div>
+      <div class="detail-row"><span class="detail-label">出庫状況</span><span class="detail-value" id="dOutbound">-</span></div>
+    </div>
+
+    <div class="detail-card">
+      <div class="detail-title">作業予定日</div>
+      <input class="form-input" type="date" id="dDate" style="padding:10px 12px;">
+      <button class="btn-secondary" style="margin-top:10px;background:var(--blue);color:var(--white);border-color:var(--blue);" id="dateBtn" onclick="doUpdateDate()">作業予定日を変更する</button>
+    </div>
+
+    <button class="btn-primary" id="startBtn" onclick="doStart()">履き替え作業を開始する</button>
+    <button class="btn-danger" onclick="doCancel()">この作業を取り消す</button>
+  </div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+
+var currentYear, currentMonth, selectedDate;
+var currentOrders = [];
+var selectedOrder = null;
+var monthCounts = {};
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// --- カレンダー ---
+function todayStr() {
+  var now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
+}
+
+function initCalendar() {
+  var now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = now.getMonth() + 1;
+  selectedDate = todayStr();
+  loadMonth();
+}
+
+function goToday() {
+  var now = new Date();
+  currentYear = now.getFullYear();
+  currentMonth = now.getMonth() + 1;
+  selectedDate = todayStr();
+  loadMonth();
+}
+
+function changeMonth(delta) {
+  currentMonth += delta;
+  if (currentMonth > 12) { currentMonth = 1; currentYear++; }
+  if (currentMonth < 1) { currentMonth = 12; currentYear--; }
+  loadMonth();
+}
+
+async function loadMonth() {
+  document.getElementById('calMonth').textContent = currentYear + '年' + currentMonth + '月';
+  var r = await callAPI('pit_monthSummary', { year: currentYear, month: currentMonth });
+  monthCounts = (r && r.ok && r.data) ? r.data.counts || {} : {};
+  renderCalendar();
+  loadDay(selectedDate);
+}
+
+function renderCalendar() {
+  var firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+  var daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+  var today = todayStr();
+
+  var html = '<div class="cal-dow">日</div><div class="cal-dow">月</div><div class="cal-dow">火</div><div class="cal-dow">水</div><div class="cal-dow">木</div><div class="cal-dow">金</div><div class="cal-dow">土</div>';
+
+  for (var i = 0; i < firstDay; i++) html += '<div class="cal-day"></div>';
+
+  for (var d = 1; d <= daysInMonth; d++) {
+    var dateStr = currentYear + '-' + String(currentMonth).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    var count = monthCounts[dateStr] || 0;
+    var dayOfWeek = new Date(currentYear, currentMonth - 1, d).getDay();
+    var cls = 'cal-day';
+    if (dateStr === today) cls += ' today';
+    if (dateStr === selectedDate) cls += ' selected';
+    if (count > 0) cls += ' has-work';
+    if (dayOfWeek === 0) cls += ' sun';
+    html += '<div class="' + cls + '" onclick="selectDay(\'' + dateStr + '\')">' + d;
+    if (count > 0) html += '<span class="cal-count">' + count + '件</span>';
+    html += '</div>';
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+function selectDay(dateStr) {
+  selectedDate = dateStr;
+  renderCalendar();
+  loadDay(dateStr);
+}
+
+// --- 日別一覧 ---
+async function loadDay(date) {
+  var d = new Date(date);
+  var dow = ['日','月','火','水','木','金','土'][d.getDay()];
+  document.getElementById('calLabel').textContent = (d.getMonth()+1) + '月' + d.getDate() + '日（' + dow + '）の作業';
+
+  var r = await callAPI('pit_listByDate', { date: date });
+  currentOrders = (r && r.ok && r.data) ? r.data.orders || [] : [];
+
+  var pending = 0, working = 0, done = 0;
+  for (var i = 0; i < currentOrders.length; i++) {
+    var st = currentOrders[i].status;
+    if (st === '作業完了' || st === '契約発行済み') done++;
+    else if (st === '作業中') working++;
+    else pending++;
+  }
+  document.getElementById('sumPending').textContent = pending;
+  document.getElementById('sumWorking').textContent = working;
+  document.getElementById('sumDone').textContent = done;
+
+  renderOrderList();
+}
+
+function renderOrderList() {
+  if (currentOrders.length === 0) {
+    document.getElementById('orderList').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">この日の作業予定はありません</div>';
+    return;
+  }
+
+  var html = '';
+  var hasCompleted = false;
+
+  // 未着手・作業中を先に
+  for (var i = 0; i < currentOrders.length; i++) {
+    var o = currentOrders[i];
+    if (o.status === '作業完了' || o.status === '契約発行済み') continue;
+
+    var stClass = o.status === '作業中' ? 'working' : '';
+    var stLabel = o.status === '作業中' ? '作業中' : '未着手';
+    var stBadge = o.status === '作業中' ? 'st-working' : 'st-waiting';
+
+    var obClass = o.outboundStatus === '出庫済み' ? 'yes' : 'no';
+    var obText = o.outboundStatus === '出庫済み' ? '✓ 出庫済み' :
+                 o.outboundStatus === '出庫準備' ? '出庫準備中' :
+                 o.hasStoredTires ? '✗ 出庫まだ' : '';
+
+    html += '<div class="pit-card ' + stClass + '" onclick="openDetail(\'' + escapeHtml(o.orderNumber) + '\')">'
+      + '<div class="pit-top"><span class="pit-customer">' + escapeHtml(o.customerName) + '</span>'
+      + '<span class="status ' + stBadge + '">' + stLabel + '</span></div>'
+      + '<div class="pit-plate">' + escapeHtml(o.plate) + '</div>'
+      + '<div class="pit-detail">' + escapeHtml(o.model) + '</div>';
+    if (obText) html += '<div class="pit-outbound ' + obClass + '">' + obText + '</div>';
+    html += '</div>';
+  }
+
+  // 完了
+  for (var j = 0; j < currentOrders.length; j++) {
+    var o2 = currentOrders[j];
+    if (o2.status !== '作業完了' && o2.status !== '契約発行済み') continue;
+    if (!hasCompleted) {
+      html += '<div class="section-label" style="color:var(--text3);margin-top:16px;">完了</div>';
+      hasCompleted = true;
+    }
+    html += '<div class="pit-card completed">'
+      + '<div class="pit-top"><span class="pit-customer">' + escapeHtml(o2.customerName) + '</span>'
+      + '<span class="status st-done">完了</span></div>'
+      + '<div class="pit-plate">' + escapeHtml(o2.plate) + '</div>'
+      + '<div class="pit-detail">' + escapeHtml(o2.model) + '</div></div>';
+  }
+
+  document.getElementById('orderList').innerHTML = html;
+}
+
+// --- 詳細 ---
+function openDetail(orderNumber) {
+  for (var i = 0; i < currentOrders.length; i++) {
+    if (currentOrders[i].orderNumber === orderNumber) {
+      selectedOrder = currentOrders[i];
+      break;
+    }
+  }
+  if (!selectedOrder) return;
+
+  document.getElementById('dCustomer').textContent = selectedOrder.customerName;
+  document.getElementById('dPlate').textContent = selectedOrder.plate;
+  document.getElementById('dModel').textContent = selectedOrder.model;
+
+  var obEl = document.getElementById('dOutbound');
+  if (selectedOrder.outboundStatus === '出庫済み') {
+    obEl.textContent = '出庫済み ✓';
+    obEl.style.color = 'var(--green)';
+  } else if (selectedOrder.hasStoredTires) {
+    obEl.textContent = '出庫まだ ✗';
+    obEl.style.color = 'var(--red)';
+  } else {
+    obEl.textContent = '新規（預かりなし）';
+    obEl.style.color = 'var(--text3)';
+  }
+
+  document.getElementById('dDate').value = selectedOrder.scheduledDate || '';
+  showScr('scrDetail');
+}
+
+// --- 予定日変更 ---
+async function doUpdateDate() {
+  if (!selectedOrder) return;
+  var newDate = document.getElementById('dDate').value;
+  if (!newDate) { showError('日付を選んでください'); return; }
+
+  startLoading(document.getElementById('dateBtn'));
+  var r = await callAPI('pit_updateDate', { orderNumber: selectedOrder.orderNumber, newDate: newDate });
+  stopLoading(document.getElementById('dateBtn'));
+  if (handleAPIError(r)) return;
+
+  showSuccess('作業予定日を変更しました');
+  selectedOrder.scheduledDate = newDate;
+  selectedDate = newDate;
+  loadMonth();
+  showScr('scrList');
+}
+
+// --- 作業開始 ---
+async function doStart() {
+  if (!selectedOrder) return;
+
+  startLoading(document.getElementById('startBtn'));
+  var r = await callAPI('pit_start', { orderNumber: selectedOrder.orderNumber });
+  stopLoading(document.getElementById('startBtn'));
+  if (handleAPIError(r)) return;
+
+  navigateTo('tire_input.html', {
+    orderNumber: selectedOrder.orderNumber,
+    tireSetId: selectedOrder.tireSetId
+  });
+}
+
+// --- 取り消し ---
+async function doCancel() {
+  if (!selectedOrder) return;
+  if (!confirmAction('この作業を取り消しますか？')) return;
+
+  var r = await callAPI('pit_cancel', { orderNumber: selectedOrder.orderNumber });
+  if (handleAPIError(r)) return;
+
+  showSuccess('取り消しました');
+  loadDay(selectedDate);
+  showScr('scrList');
+}
+
+initCalendar();
+</script>
+</body>
+</html>

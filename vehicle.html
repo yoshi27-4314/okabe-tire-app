@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>車両台帳 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+</head>
+<body>
+
+<!-- 検索 -->
+<div id="scrSearch" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <div class="header-title">車両台帳</div>
+  </div>
+  <div class="content">
+    <div style="display:flex;gap:8px;margin-bottom:12px;">
+      <input class="form-input" type="text" id="searchQuery" placeholder="ナンバー・車種・メーカー・顧客名" onkeydown="if(event.key==='Enter')doSearch()" style="flex:1;">
+      <button style="padding:12px 20px;font-size:14px;font-weight:700;color:var(--white);background:var(--orange);border:none;border-radius:8px;cursor:pointer;" id="searchBtn" onclick="doSearch()">検索</button>
+    </div>
+    <div id="searchResults"></div>
+  </div>
+</div>
+
+<!-- 詳細 -->
+<div id="scrDetail" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrSearch')">< 戻る</button>
+    <div class="header-title">車両詳細</div>
+  </div>
+  <div class="content">
+    <div class="card" id="vehicleInfo"></div>
+    <button class="btn-primary" onclick="showEditScreen()">車両情報を編集する</button>
+    <div class="section-label">預かりタイヤ</div>
+    <div id="tireList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- 編集 -->
+<div id="scrEdit" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrDetail')">< 戻る</button>
+    <div class="header-title">車両情報の編集</div>
+  </div>
+  <div class="content">
+    <div class="card">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">ナンバー</div>
+      <div class="form-row"><label class="form-label">地名</label><input class="form-input" type="text" id="editArea" style="width:150px;"></div>
+      <div class="form-row"><label class="form-label">分類番号</label><input class="form-input" type="text" id="editClassNo" style="width:120px;"></div>
+      <div class="form-row"><label class="form-label">かな</label><input class="form-input" type="text" id="editKana" style="width:80px;"></div>
+      <div class="form-row"><label class="form-label">下4桁</label><input class="form-input" type="text" id="editPlateNum" style="width:120px;font-size:20px;font-weight:700;text-align:center;"></div>
+      <div style="margin-top:12px;"></div>
+      <div class="form-row"><label class="form-label">メーカー</label><input class="form-input" type="text" id="editMaker"></div>
+      <div class="form-row"><label class="form-label">車種名</label><input class="form-input" type="text" id="editModel"></div>
+      <div class="form-row"><label class="form-label">輪数</label>
+        <select class="form-input" id="editWheelCount" style="padding:10px;"><option value="未確認">未確認</option><option value="4輪">4輪</option><option value="6輪">6輪</option></select>
+      </div>
+      <div class="form-row"><label class="form-label">車台番号</label><input class="form-input" type="text" id="editVin"></div>
+    </div>
+    <button class="btn-primary" id="saveBtn" onclick="saveVehicle()">変更を保存</button>
+    <button class="btn-secondary" onclick="showScr('scrDetail')">キャンセル</button>
+  </div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+var currentVehicle = null;
+var currentVersion = null;
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+async function doSearch() {
+  var query = document.getElementById('searchQuery').value.trim();
+  if (!query) { showError('検索語を入力してください'); return; }
+  startLoading(document.getElementById('searchBtn'));
+  var r = await callAPI('vehicle_search', { query: query });
+  stopLoading(document.getElementById('searchBtn'));
+  if (handleAPIError(r)) return;
+  var vehicles = r.data.vehicles || [];
+  var html = '<div class="section-label">検索結果（' + vehicles.length + '件）</div>';
+  if (vehicles.length === 0) html += '<div style="text-align:center;color:var(--text3);padding:20px;">該当なし</div>';
+  for (var i = 0; i < vehicles.length; i++) {
+    var v = vehicles[i];
+    var plate = [v['地名'], v['分類番号'], v['かな'], v['下4桁']].filter(Boolean).join(' ');
+    html += '<div class="card clickable" onclick="loadDetail(\'' + escapeHtml(v['車両ID']) + '\')">'
+      + '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">' + escapeHtml(plate || '（ナンバー未登録）') + '</div>'
+      + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(v['車種名'] || '') + ' / ' + escapeHtml(v['メーカー'] || '') + '</div></div>';
+  }
+  document.getElementById('searchResults').innerHTML = html;
+}
+
+async function loadDetail(vehicleId) {
+  var r = await callAPI('vehicle_detail', { vehicleId: vehicleId });
+  if (handleAPIError(r)) return;
+  currentVehicle = r.data.vehicle;
+  currentVersion = currentVehicle['版番号'];
+  var v = currentVehicle;
+  var plate = [v['地名'], v['分類番号'], v['かな'], v['下4桁']].filter(Boolean).join(' ');
+  var fields = [
+    ['ナンバー', plate || '（未登録）'], ['車種', v['車種名']],
+    ['メーカー', v['メーカー']], ['輪数', v['輪数']],
+    ['車台番号', v['車台番号']]
+  ];
+  var html = '';
+  for (var i = 0; i < fields.length; i++) {
+    if (fields[i][1]) html += '<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border-light);font-size:13px;"><span style="color:var(--text3);">' + fields[i][0] + '</span><span style="font-weight:600;">' + escapeHtml(fields[i][1]) + '</span></div>';
+  }
+  document.getElementById('vehicleInfo').innerHTML = html;
+
+  // 預かりタイヤ
+  var tireHtml = '';
+  var tr = await callAPI('warehouse_searchForMove', { query: v['下4桁'] || '' });
+  var tires = (tr && tr.ok && tr.data) ? tr.data.items || [] : [];
+  if (tires.length === 0) {
+    tireHtml = '<div style="text-align:center;color:var(--text3);padding:20px;">預かりタイヤなし</div>';
+  } else {
+    for (var t = 0; t < tires.length; t++) {
+      var ti = tires[t];
+      tireHtml += '<div class="card"><div style="font-size:14px;font-weight:700;color:var(--orange);">' + escapeHtml(ti.rack || '棚未定') + '</div>'
+        + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(ti.tireType || '') + 'タイヤ ' + escapeHtml(ti.tireCount || '') + '本</div></div>';
+    }
+  }
+  document.getElementById('tireList').innerHTML = tireHtml;
+  showScr('scrDetail');
+}
+
+function showEditScreen() {
+  if (!currentVehicle) return;
+  var v = currentVehicle;
+  document.getElementById('editArea').value = v['地名'] || '';
+  document.getElementById('editClassNo').value = v['分類番号'] || '';
+  document.getElementById('editKana').value = v['かな'] || '';
+  document.getElementById('editPlateNum').value = v['下4桁'] || '';
+  document.getElementById('editMaker').value = v['メーカー'] || '';
+  document.getElementById('editModel').value = v['車種名'] || '';
+  document.getElementById('editWheelCount').value = v['輪数'] || '未確認';
+  document.getElementById('editVin').value = v['車台番号'] || '';
+  showScr('scrEdit');
+}
+
+async function saveVehicle() {
+  if (!currentVehicle) return;
+  startLoading(document.getElementById('saveBtn'));
+  var r = await callAPI('vehicle_update', {
+    vehicleId: currentVehicle['車両ID'], version: currentVersion,
+    updates: {
+      '地名': document.getElementById('editArea').value,
+      '分類番号': document.getElementById('editClassNo').value,
+      'かな': document.getElementById('editKana').value,
+      '下4桁': document.getElementById('editPlateNum').value,
+      'メーカー': document.getElementById('editMaker').value,
+      '車種名': document.getElementById('editModel').value,
+      '輪数': document.getElementById('editWheelCount').value,
+      '車台番号': document.getElementById('editVin').value
+    }
+  });
+  stopLoading(document.getElementById('saveBtn'));
+  if (handleAPIError(r)) return;
+  currentVersion = r.data.newVersion;
+  showSuccess('変更を保存しました');
+  loadDetail(currentVehicle['車両ID']);
+}
+
+var paramId = getParam('vehicleId');
+if (paramId) loadDetail(paramId);
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>設定 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+</head>
+<body>
+<div class="header">
+  <button class="home-btn" onclick="goHome()">ホーム</button>
+  <div class="header-title">設定</div>
+</div>
+<div class="content">
+  <div class="tab-bar">
+    <div class="tab-item active" onclick="showTab('tabPrice',this)">料金</div>
+    <div class="tab-item" onclick="showTab('tabDiscount',this)">割引</div>
+    <div class="tab-item" onclick="showTab('tabStaff',this)">スタッフ</div>
+  </div>
+  <div id="tabPrice" class="screen active"><div id="priceList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div></div>
+  <div id="tabDiscount" class="screen"><div id="discountList"></div></div>
+  <div id="tabStaff" class="screen"><div id="staffMasterList"></div></div>
+</div>
+<script>
+if (!requireLogin()) {}
+function showTab(tabId, el) {
+  var screens = document.querySelectorAll('.screen'); for (var i = 0; i < screens.length; i++) screens[i].classList.remove('active');
+  document.getElementById(tabId).classList.add('active');
+  var tabs = document.querySelectorAll('.tab-item'); for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+  el.classList.add('active');
+}
+async function loadMaster() {
+  var r = await callAPI('admin_masterTop', {});
+  var data = (r && r.ok && r.data) ? r.data : { pricePlans: [], discountRules: [] };
+
+  var ph = '<div class="section-label">料金プラン</div>';
+  for (var i = 0; i < (data.pricePlans || []).length; i++) {
+    var p = data.pricePlans[i];
+    ph += '<div class="card"><div style="display:flex;justify-content:space-between;"><span style="font-weight:700;">' + escapeHtml(p['プラン名']) + '</span><span style="color:var(--orange);font-weight:700;">' + escapeHtml(p['保管料']) + '円</span></div><div style="font-size:12px;color:var(--text3);">サイズ区分: ' + escapeHtml(p['サイズの区分']) + '</div></div>';
+  }
+  document.getElementById('priceList').innerHTML = ph;
+
+  var dh = '<div class="section-label">割引ルール</div>';
+  for (var j = 0; j < (data.discountRules || []).length; j++) {
+    var d = data.discountRules[j];
+    dh += '<div class="card"><div style="display:flex;justify-content:space-between;"><span style="font-weight:700;">' + escapeHtml(d['割引名']) + '</span><span style="color:var(--green);font-weight:700;">' + escapeHtml(d['割引率']) + '%OFF</span></div><div style="font-size:12px;color:var(--text3);">最低台数: ' + escapeHtml(d['最低台数']) + '台</div></div>';
+  }
+  document.getElementById('discountList').innerHTML = dh;
+
+  var sr = await callAPI('admin_staffList', {});
+  var staff = (sr && sr.ok && sr.data) ? sr.data.staffList || [] : [];
+  staff.sort(function(a,b){ return (a['スタッフID']||'').localeCompare(b['スタッフID']||''); });
+  var sh = '<div class="section-label">スタッフ一覧</div>';
+  for (var k = 0; k < staff.length; k++) {
+    var s = staff[k];
+    sh += '<div class="card"><div style="display:flex;justify-content:space-between;"><span style="font-weight:700;">' + escapeHtml(s['氏名']) + '</span><span style="font-size:12px;color:var(--text3);">' + escapeHtml(s['スタッフID']) + '</span></div><div style="font-size:12px;color:var(--text2);">' + escapeHtml(s['役職'] || '') + ' / ' + escapeHtml(s['部門'] || '') + '</div></div>';
+  }
+  document.getElementById('staffMasterList').innerHTML = sh;
+}
+loadMaster();
+</script>
+</body>
+</html>

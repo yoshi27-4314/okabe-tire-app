@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>倉庫作業 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.task-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: var(--shadow-sm); }
+.task-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.task-customer { font-size: 15px; font-weight: 700; }
+.task-plate { font-size: 14px; font-weight: 600; color: var(--brown); margin-bottom: 4px; }
+.task-detail { font-size: 13px; color: var(--text2); line-height: 1.5; }
+.task-rack { font-size: 14px; font-weight: 700; color: var(--orange); margin-top: 4px; }
+.task-date { font-size: 12px; font-weight: 600; color: var(--blue); margin-top: 4px; }
+.store-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; }
+.store-input { flex: 1; padding: 12px 14px; font-size: 16px; font-weight: 700; border: 2px solid var(--orange); border-radius: 8px; background: var(--white); text-align: center; }
+.store-btn { padding: 12px 20px; font-size: 14px; font-weight: 700; color: var(--white); background: var(--green); border: none; border-radius: 8px; cursor: pointer; }
+.store-btn:active { transform: scale(0.95); }
+.outbound-btn { width: 100%; padding: 14px; font-size: 14px; font-weight: 700; color: var(--white); background: var(--blue); border: none; border-radius: 10px; cursor: pointer; margin-top: 10px; }
+.outbound-btn:active { transform: scale(0.97); }
+.revert-btn { width: 100%; padding: 10px; font-size: 12px; font-weight: 600; color: var(--red); background: var(--white); border: 1px solid var(--red); border-radius: 8px; cursor: pointer; margin-top: 8px; }
+.revert-btn:active { transform: scale(0.97); }
+.prev-rack { margin-top: 8px; font-size: 13px; color: var(--blue); cursor: pointer; }
+.prev-rack:active { color: var(--orange); }
+.move-section { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+.move-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 10px; }
+.move-current { font-size: 12px; color: var(--text3); }
+.move-value { font-size: 16px; font-weight: 700; color: var(--brown); }
+.move-arrow { text-align: center; color: var(--orange); font-size: 20px; margin: 6px 0; }
+.move-input { width: 100%; padding: 12px 14px; font-size: 16px; font-weight: 700; border: 2px solid var(--orange); border-radius: 8px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="home-btn" onclick="goHome()">ホーム</button>
+  <div class="header-title">倉庫作業</div>
+</div>
+
+<div class="content">
+  <div class="tab-bar">
+    <div class="tab-item active" id="tabOutBtn" onclick="showTab('tabOut',this)">出庫<span class="tab-badge" id="outCount" style="display:none;">0</span></div>
+    <div class="tab-item" id="tabStoreBtn" onclick="showTab('tabStore',this)">格納<span class="tab-badge" id="storeCount" style="display:none;">0</span></div>
+    <div class="tab-item" onclick="showTab('tabMove',this)">棚番変更</div>
+  </div>
+
+  <!-- 出庫タブ -->
+  <div id="tabOut" class="screen active">
+    <div class="section-label">出庫準備</div>
+    <div id="outList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+  </div>
+
+  <!-- 格納タブ -->
+  <div id="tabStore" class="screen">
+    <div class="section-label">格納待ち</div>
+    <div class="warn-box">棚番号を入力しないと格納完了できません。</div>
+    <div id="storeList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+  </div>
+
+  <!-- 棚番変更タブ -->
+  <div id="tabMove" class="screen">
+    <div class="section-label">棚番変更</div>
+    <div class="move-section">
+      <div class="move-title">移動するタイヤを検索</div>
+      <div style="display:flex;gap:8px;">
+        <input class="form-input" type="text" id="moveQuery" placeholder="顧客名・ナンバー・車種" style="flex:1;" onkeydown="if(event.key==='Enter')doMoveSearch()">
+        <button style="padding:12px 20px;font-size:14px;font-weight:700;color:var(--white);background:var(--orange);border:none;border-radius:8px;cursor:pointer;" onclick="doMoveSearch()">検索</button>
+      </div>
+    </div>
+    <div id="moveResults"></div>
+    <div id="moveForm" style="display:none;"></div>
+  </div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+
+function showTab(tabId, el) {
+  var screens = document.querySelectorAll('.screen');
+  for (var i = 0; i < screens.length; i++) screens[i].classList.remove('active');
+  document.getElementById(tabId).classList.add('active');
+  var tabs = document.querySelectorAll('.tab-item');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+  el.classList.add('active');
+}
+
+// --- 出庫 ---
+async function loadOutbound() {
+  var r = await callAPI('warehouse_outboundList', {});
+  var items = (r && r.ok && r.data) ? r.data.items || [] : [];
+  document.getElementById('outCount').textContent = items.length;
+  document.getElementById('outCount').style.display = items.length > 0 ? '' : 'none';
+
+  if (items.length === 0) {
+    document.getElementById('outList').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">出庫準備のタイヤはありません</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    var isOut = it.status === '出庫済み';
+    html += '<div class="task-card"' + (isOut ? ' style="opacity:0.5;"' : '') + '>';
+    html += '<div class="task-top"><span class="task-customer">' + escapeHtml(it.customerName) + '</span>';
+    html += '<span class="status ' + (isOut ? 'st-done' : 'st-ready') + '">' + (isOut ? '出庫済み' : '出庫準備') + '</span></div>';
+    html += '<div class="task-plate">' + escapeHtml(it.plate) + '</div>';
+    html += '<div class="task-detail">' + escapeHtml(it.model) + '</div>';
+    html += '<div class="task-detail">' + escapeHtml(it.tireType || '') + 'タイヤ ' + escapeHtml(it.tireCount || '') + '本</div>';
+    html += '<div class="task-rack">棚 : ' + escapeHtml(it.rack) + '</div>';
+    if (it.scheduledDate) html += '<div class="task-date">作業予定日 : ' + escapeHtml(it.scheduledDate) + '</div>';
+    if (!isOut) {
+      html += '<button class="outbound-btn" onclick="doOutbound(\'' + escapeHtml(it.tireSetId) + '\')">出庫する</button>';
+    } else {
+      html += '<button class="revert-btn" onclick="doRevertOutbound(\'' + escapeHtml(it.tireSetId) + '\')">出庫を取り消す</button>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('outList').innerHTML = html;
+}
+
+async function doOutbound(tireSetId) {
+  if (!confirmAction('出庫しますか？')) return;
+  var r = await callAPI('warehouse_outbound', { tireSetId: tireSetId });
+  if (handleAPIError(r)) return;
+  showSuccess('出庫しました');
+  loadOutbound();
+}
+
+async function doRevertOutbound(tireSetId) {
+  if (!confirmAction('出庫を取り消しますか？')) return;
+  var r = await callAPI('warehouse_revertOutbound', { tireSetId: tireSetId });
+  if (handleAPIError(r)) return;
+  showSuccess('取り消しました');
+  loadOutbound();
+}
+
+// --- 格納 ---
+async function loadStore() {
+  var r = await callAPI('warehouse_storeList', {});
+  var items = (r && r.ok && r.data) ? r.data.items || [] : [];
+  document.getElementById('storeCount').textContent = items.length;
+  document.getElementById('storeCount').style.display = items.length > 0 ? '' : 'none';
+
+  if (items.length === 0) {
+    document.getElementById('storeList').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">格納待ちのタイヤはありません</div>';
+    return;
+  }
+
+  var html = '';
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    html += '<div class="task-card">';
+    html += '<div class="task-top"><span class="task-customer">' + escapeHtml(it.customerName) + '</span>';
+    html += '<span class="status st-waiting">格納待ち</span></div>';
+    html += '<div class="task-plate">' + escapeHtml(it.plate) + '</div>';
+    html += '<div class="task-detail">' + escapeHtml(it.model) + '</div>';
+    html += '<div class="task-detail">' + escapeHtml(it.tireType || '') + 'タイヤ ' + escapeHtml(it.tireCount || '') + '本</div>';
+    if (it.prevRack) {
+      html += '<div class="prev-rack" onclick="document.getElementById(\'rack_' + i + '\').value=\'' + escapeHtml(it.prevRack) + '\'">前回の棚 : <strong>' + escapeHtml(it.prevRack) + '</strong> ← タップで入力</div>';
+    }
+    html += '<div class="store-row">';
+    html += '<input class="store-input" type="text" id="rack_' + i + '" placeholder="棚番号を入力">';
+    html += '<button class="store-btn" onclick="doStore(\'' + escapeHtml(it.tireSetId) + '\',' + i + ')">格納</button>';
+    html += '</div></div>';
+  }
+  document.getElementById('storeList').innerHTML = html;
+}
+
+async function doStore(tireSetId, idx) {
+  var rack = document.getElementById('rack_' + idx).value.trim();
+  if (!rack) {
+    showError('棚番号を入力してください');
+    return;
+  }
+  var r = await callAPI('warehouse_store', { tireSetId: tireSetId, rack: rack });
+  if (handleAPIError(r)) return;
+  showSuccess('格納しました');
+  loadStore();
+}
+
+// --- 棚番変更 ---
+async function doMoveSearch() {
+  var query = document.getElementById('moveQuery').value.trim();
+  if (!query) { showError('検索語を入力してください'); return; }
+
+  var r = await callAPI('warehouse_searchForMove', { query: query });
+  if (handleAPIError(r)) return;
+  var items = r.data.items || [];
+
+  if (items.length === 0) {
+    document.getElementById('moveResults').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">該当なし</div>';
+    document.getElementById('moveForm').style.display = 'none';
+    return;
+  }
+
+  var html = '<div class="section-label">検索結果（' + items.length + '件）- タップで選択</div>';
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    html += '<div class="task-card" style="cursor:pointer;" onclick="selectForMove(\'' + escapeHtml(it.tireSetId) + '\',\'' + escapeHtml(it.customerName) + '\',\'' + escapeHtml(it.plate) + '\',\'' + escapeHtml(it.model) + '\',\'' + escapeHtml(it.rack) + '\')">';
+    html += '<div class="task-top"><span class="task-customer">' + escapeHtml(it.customerName) + '</span><span class="status st-ready">保管中</span></div>';
+    html += '<div class="task-plate">' + escapeHtml(it.plate) + '</div>';
+    html += '<div class="task-detail">' + escapeHtml(it.model) + '</div>';
+    html += '<div class="task-detail">' + escapeHtml(it.tireType || '') + 'タイヤ ' + escapeHtml(it.tireCount || '') + '本</div>';
+    html += '<div class="task-rack">棚 : ' + escapeHtml(it.rack) + '</div>';
+    html += '</div>';
+  }
+  document.getElementById('moveResults').innerHTML = html;
+}
+
+var selectedMoveId = '';
+function selectForMove(tireSetId, name, plate, model, rack) {
+  selectedMoveId = tireSetId;
+  var html = '<div class="section-label">選択中のタイヤ</div>';
+  html += '<div class="move-section">';
+  html += '<div class="move-title">' + escapeHtml(name) + ' / ' + escapeHtml(plate) + '</div>';
+  html += '<div class="move-current">現在の棚</div><div class="move-value">' + escapeHtml(rack) + '</div>';
+  html += '<div class="move-arrow">↓</div>';
+  html += '<div class="move-current">移動先</div>';
+  html += '<input class="move-input" type="text" id="newRack" placeholder="新しい棚番号">';
+  html += '<button class="btn-primary" style="margin-top:10px;" onclick="doChangeRack()">棚番変更を実行</button>';
+  html += '</div>';
+  document.getElementById('moveForm').innerHTML = html;
+  document.getElementById('moveForm').style.display = '';
+}
+
+async function doChangeRack() {
+  if (!selectedMoveId) return;
+  var newRack = document.getElementById('newRack').value.trim();
+  if (!newRack) { showError('新しい棚番号を入力してください'); return; }
+
+  var r = await callAPI('warehouse_changeRack', { tireSetId: selectedMoveId, newRack: newRack });
+  if (handleAPIError(r)) return;
+  showSuccess('棚番号を変更しました（' + r.data.oldRack + ' → ' + r.data.newRack + '）');
+  document.getElementById('moveForm').style.display = 'none';
+  document.getElementById('moveResults').innerHTML = '';
+  document.getElementById('moveQuery').value = '';
+}
+
+// 初期読み込み
+loadOutbound();
+loadStore();
+</script>
+</body>
+</html>

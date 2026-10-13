@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>契約書発行 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.preview-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+.preview-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--orange); display: flex; justify-content: space-between; }
+.edit-link { font-size: 12px; color: var(--blue); cursor: pointer; text-decoration: underline; font-weight: 400; }
+.edit-link:active { color: var(--orange); }
+.preview-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
+.preview-row:last-child { border-bottom: none; }
+.preview-label { color: var(--text3); min-width: 80px; }
+.preview-value { color: var(--text); font-weight: 600; text-align: right; flex: 1; }
+.preview-value.empty { color: var(--red); font-style: italic; font-weight: 400; }
+.preview-value.alert { color: var(--red); font-weight: 700; }
+.tire-preview { margin-bottom: 8px; padding: 10px; background: var(--cream); border-radius: 8px; }
+.tire-preview-title { font-size: 13px; font-weight: 700; color: var(--brown); margin-bottom: 6px; }
+.tire-preview-row { display: flex; justify-content: space-between; font-size: 12px; padding: 3px 0; }
+.tire-preview-label { color: var(--text3); }
+.tire-preview-value { color: var(--text); font-weight: 600; }
+.scratch-tag { font-size: 11px; padding: 2px 8px; background: #FFF5F5; color: var(--red); border-radius: 4px; font-weight: 600; display: inline-block; margin-right: 4px; }
+.price-card { background: var(--white); border: 2px solid var(--green); border-radius: 14px; padding: 16px; margin-bottom: 12px; }
+.price-title { font-size: 14px; font-weight: 700; color: var(--green); margin-bottom: 10px; }
+.price-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 14px; }
+.price-row.total { border-top: 2px solid var(--green); padding-top: 10px; margin-top: 6px; font-size: 18px; font-weight: 700; }
+.list-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow-sm); }
+.list-card:active { transform: scale(0.98); background: #FFF8F0; }
+.list-card.issued { opacity: 0.5; }
+.list-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.list-customer { font-size: 15px; font-weight: 700; }
+.list-plate { font-size: 14px; font-weight: 600; color: var(--brown); margin-bottom: 4px; }
+.list-detail { font-size: 13px; color: var(--text2); }
+.list-time { font-size: 12px; color: var(--text3); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- 一覧画面 -->
+<div id="scrList" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <div class="header-title">契約書発行</div>
+  </div>
+  <div class="content">
+    <div class="section-label">契約書発行待ち</div>
+    <div id="completedList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+  </div>
+</div>
+
+<!-- プレビュー画面 -->
+<div id="scrPreview" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrList')">< 戻る</button>
+    <div class="header-title">契約書プレビュー</div>
+  </div>
+  <div class="content" id="previewContent">
+    <div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div>
+  </div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+
+var selectedOrder = null;
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// 一覧
+async function loadList() {
+  var r = await callAPI('contract_completedList', {});
+  var items = (r && r.ok && r.data) ? r.data.items || [] : [];
+
+  if (items.length === 0) {
+    document.getElementById('completedList').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">発行待ちの契約はありません</div>';
+    return;
+  }
+
+  var html = '';
+  var hasIssued = false;
+
+  // 発行待ち
+  for (var i = 0; i < items.length; i++) {
+    var it = items[i];
+    if (it.status === '契約発行済み') continue;
+    html += '<div class="list-card" onclick="loadPreview(\'' + escapeHtml(it.orderNumber) + '\')">';
+    html += '<div class="list-top"><span class="list-customer">' + escapeHtml(it.customerName) + '</span>';
+    html += '<span class="status st-ready">作業完了</span></div>';
+    html += '<div class="list-plate">' + escapeHtml(it.plate) + '</div>';
+    html += '<div class="list-detail">' + escapeHtml(it.model) + ' / ' + escapeHtml(it.tireInfo) + '</div>';
+    html += '<div class="list-time">完了 : ' + formatDateTime(it.completedAt) + '</div>';
+    html += '</div>';
+  }
+
+  // 発行済み
+  for (var j = 0; j < items.length; j++) {
+    var it2 = items[j];
+    if (it2.status !== '契約発行済み') continue;
+    if (!hasIssued) {
+      html += '<div class="section-label" style="color:var(--text3);margin-top:16px;">発行済み</div>';
+      hasIssued = true;
+    }
+    html += '<div class="list-card issued">';
+    html += '<div class="list-top"><span class="list-customer">' + escapeHtml(it2.customerName) + '</span>';
+    html += '<span class="status st-done">発行済み</span></div>';
+    html += '<div class="list-plate">' + escapeHtml(it2.plate) + '</div>';
+    html += '<div class="list-detail">' + escapeHtml(it2.model) + '</div>';
+    html += '</div>';
+  }
+
+  document.getElementById('completedList').innerHTML = html;
+}
+
+// プレビュー
+async function loadPreview(orderNumber) {
+  selectedOrder = orderNumber;
+  document.getElementById('previewContent').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div>';
+  showScr('scrPreview');
+
+  var r = await callAPI('contract_getPreview', { orderNumber: orderNumber });
+  if (handleAPIError(r)) return;
+
+  var d = r.data;
+  var c = d.customer || {};
+  var v = d.vehicle || {};
+  var ts = d.tireSet || {};
+  var recs = d.tireRecords || [];
+  var plate = [v['地名'], v['分類番号'], v['かな'], v['下4桁']].filter(Boolean).join(' ');
+
+  var html = '';
+
+  // 顧客情報
+  html += '<div class="preview-card"><div class="preview-title">顧客情報 <span class="edit-link" onclick="navigateTo(\'customer_edit.html\',{customerId:\'' + escapeHtml(c['顧客ID']) + '\'})">編集</span></div>';
+  html += '<div class="preview-row"><span class="preview-label">氏名</span><span class="preview-value">' + escapeHtml(c['氏名'] || '') + '</span></div>';
+  html += '<div class="preview-row"><span class="preview-label">電話番号</span><span class="preview-value' + (!c['電話'] ? ' empty' : '') + '">' + escapeHtml(c['電話'] || '未入力') + '</span></div>';
+  html += '<div class="preview-row"><span class="preview-label">携帯番号</span><span class="preview-value">' + escapeHtml(c['携帯'] || '') + '</span></div>';
+  html += '<div class="preview-row"><span class="preview-label">住所</span><span class="preview-value" style="font-size:12px;">' + escapeHtml(c['住所'] || '') + '</span></div>';
+  html += '</div>';
+
+  // 車両情報
+  html += '<div class="preview-card"><div class="preview-title">車両情報 <span class="edit-link">編集</span></div>';
+  html += '<div class="preview-row"><span class="preview-label">ナンバー</span><span class="preview-value">' + escapeHtml(plate) + '</span></div>';
+  html += '<div class="preview-row"><span class="preview-label">メーカー</span><span class="preview-value">' + escapeHtml(v['メーカー'] || '') + '</span></div>';
+  html += '<div class="preview-row"><span class="preview-label">車種</span><span class="preview-value">' + escapeHtml(v['車種名'] || '') + '</span></div>';
+  html += '</div>';
+
+  // タイヤ情報
+  html += '<div class="preview-card"><div class="preview-title">タイヤ情報（' + (ts['本数'] || '') + '本） <span class="edit-link">編集</span></div>';
+  html += '<div class="preview-row"><span class="preview-label">預かり区分</span><span class="preview-value">' + escapeHtml(ts['区分'] || '') + 'タイヤ預かり</span></div>';
+  for (var k = 0; k < recs.length; k++) {
+    var rec = recs[k];
+    html += '<div class="tire-preview">';
+    html += '<div class="tire-preview-title">' + (k+1) + '本目 : ' + escapeHtml(rec['ポジション'] || '') + '</div>';
+    html += '<div class="tire-preview-row"><span class="tire-preview-label">メーカー / パターン</span><span class="tire-preview-value">' + escapeHtml(rec['メーカー'] || '') + ' / ' + escapeHtml(rec['パターン'] || '') + '</span></div>';
+    html += '<div class="tire-preview-row"><span class="tire-preview-label">サイズ</span><span class="tire-preview-value">' + escapeHtml(rec['サイズ'] || '') + '</span></div>';
+    var groove = parseFloat(rec['残溝']) || 0;
+    var grooveClass = groove > 0 && groove < 3 ? ' alert' : '';
+    html += '<div class="tire-preview-row"><span class="tire-preview-label">残溝</span><span class="tire-preview-value' + grooveClass + '">' + escapeHtml(rec['残溝'] || '') + ' mm' + (groove > 0 && groove < 3 ? ' ⚠要交換' : '') + '</span></div>';
+    // 傷
+    var scratches = [];
+    if (rec['傷_サイドウォール'] === 'はい') scratches.push('サイドウォール');
+    if (rec['傷_トレッド面'] === 'はい') scratches.push('トレッド面');
+    if (rec['傷_リム'] === 'はい') scratches.push('リム');
+    if (scratches.length > 0) {
+      html += '<div class="tire-preview-row"><span class="tire-preview-label">傷</span></div>';
+      for (var s = 0; s < scratches.length; s++) html += '<span class="scratch-tag">' + scratches[s] + '</span>';
+    } else if (rec['傷なし'] === 'はい') {
+      html += '<div class="tire-preview-row"><span class="tire-preview-label">傷</span><span class="tire-preview-value" style="color:var(--green);">傷なし</span></div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // 保管について
+  html += '<div class="preview-card"><div class="preview-title">保管について</div>';
+  html += '<div style="font-size:13px;color:var(--text2);line-height:1.6;">お預かりしたタイヤは、株式会社OKABE GROUPが管理する倉庫にて安全に保管いたします。</div></div>';
+
+  // 料金
+  html += '<div class="price-card"><div class="price-title">料金</div>';
+  html += '<div class="form-row"><label class="form-label">料金プラン</label><select class="form-input" id="pricePlanSelect" style="padding:10px;" onchange="calcPrice()">';
+  html += '<option value="">選択してください</option>';
+  for (var p = 0; p < d.pricePlans.length; p++) {
+    var pp = d.pricePlans[p];
+    html += '<option value="' + escapeHtml(pp['プランID']) + '" data-fee="' + escapeHtml(pp['保管料']) + '">' + escapeHtml(pp['プラン名']) + '（' + escapeHtml(pp['保管料']) + '円）</option>';
+  }
+  html += '</select></div>';
+  html += '<div class="form-row"><label class="form-label">割引</label><select class="form-input" id="discountSelect" style="padding:10px;" onchange="calcPrice()">';
+  html += '<option value="" data-rate="0">なし</option>';
+  for (var q = 0; q < d.discountRules.length; q++) {
+    var dr = d.discountRules[q];
+    html += '<option value="' + escapeHtml(dr['割引ルールID']) + '" data-rate="' + escapeHtml(dr['割引率']) + '">' + escapeHtml(dr['割引名']) + '（' + escapeHtml(dr['割引率']) + '%OFF）</option>';
+  }
+  html += '</select></div>';
+  html += '<div id="priceDisplay"></div>';
+  html += '</div>';
+
+  // 返却予定日
+  html += '<div class="preview-card"><div class="preview-title">返却予定日</div>';
+  html += '<div class="form-row"><input class="form-input" type="date" id="returnDate" style="padding:10px 12px;"></div>';
+  html += '</div>';
+
+  // ボタン
+  html += '<button class="btn-primary" style="background:var(--green);" id="issueBtn" onclick="doIssue()">契約書を発行する</button>';
+  html += '<button class="btn-secondary" onclick="showScr(\'scrList\')">一覧に戻る</button>';
+
+  document.getElementById('previewContent').innerHTML = html;
+}
+
+function calcPrice() {
+  var planSelect = document.getElementById('pricePlanSelect');
+  var discountSelect = document.getElementById('discountSelect');
+  var fee = Number(planSelect.options[planSelect.selectedIndex].dataset.fee) || 0;
+  var rate = Number(discountSelect.options[discountSelect.selectedIndex].dataset.rate) || 0;
+  var discount = Math.floor(fee * rate / 100);
+  var total = fee - discount;
+
+  var html = '';
+  if (fee > 0) {
+    html += '<div class="price-row"><span>保管料</span><span>' + fee.toLocaleString() + '円</span></div>';
+    if (discount > 0) html += '<div class="price-row"><span>割引</span><span>-' + discount.toLocaleString() + '円</span></div>';
+    html += '<div class="price-row total"><span>合計（税別）</span><span>' + total.toLocaleString() + '円</span></div>';
+  }
+  document.getElementById('priceDisplay').innerHTML = html;
+}
+
+async function doIssue() {
+  if (!selectedOrder) return;
+  var planSelect = document.getElementById('pricePlanSelect');
+  var discountSelect = document.getElementById('discountSelect');
+  var fee = Number(planSelect.options[planSelect.selectedIndex].dataset.fee) || 0;
+  var rate = Number(discountSelect.options[discountSelect.selectedIndex].dataset.rate) || 0;
+  var discount = Math.floor(fee * rate / 100);
+  var total = fee - discount;
+
+  startLoading(document.getElementById('issueBtn'));
+  var r = await callAPI('contract_issue', {
+    orderNumber: selectedOrder,
+    pricePlan: planSelect.value,
+    fee: String(fee),
+    discountRule: discountSelect.value,
+    discountAmount: String(discount),
+    total: String(total),
+    returnDate: document.getElementById('returnDate').value,
+  });
+  stopLoading(document.getElementById('issueBtn'));
+  if (handleAPIError(r)) return;
+
+  showSuccess('契約書を発行しました（' + r.data.contractNumber + '）');
+  loadList();
+  showScr('scrList');
+}
+
+loadList();
+</script>
+</body>
+</html>

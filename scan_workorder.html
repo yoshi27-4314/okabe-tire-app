@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>作業開始 - タイヤホテルOKABE DX</title>
+<link rel="stylesheet" href="style.css">
+<script src="api.js"></script>
+<script src="common.js"></script>
+<style>
+.step-indicator { display: flex; gap: 4px; margin-bottom: 16px; }
+.step-dot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); }
+.step-dot.active { background: var(--orange); }
+.step-dot.done { background: var(--green); }
+.camera-area { background: var(--white); border: 2.5px dashed var(--border); border-radius: 16px; padding: 40px 20px; text-align: center; margin-bottom: 16px; cursor: pointer; }
+.camera-area:active { background: #F5F0EA; transform: scale(0.98); }
+.camera-icon { font-size: 48px; margin-bottom: 8px; }
+.camera-text { font-size: 15px; font-weight: 600; color: var(--brown); }
+.camera-sub { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.result-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+.result-title { font-size: 13px; font-weight: 700; color: var(--brown); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid var(--border-light); }
+.result-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+.result-row:last-child { border-bottom: none; }
+.result-label { font-size: 12px; color: var(--text3); min-width: 80px; }
+.result-value { font-size: 14px; font-weight: 600; color: var(--text); flex: 1; text-align: right; }
+.result-value.empty { color: var(--red); font-style: italic; font-weight: 400; }
+.result-edit { font-size: 11px; color: var(--blue); margin-left: 8px; cursor: pointer; text-decoration: underline; }
+.result-edit:active { color: var(--orange); }
+.tire-status { border: 2px solid var(--green); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; }
+.tire-status.none { border-color: var(--border); }
+.tire-found { font-size: 14px; font-weight: 700; color: var(--green); margin-bottom: 4px; }
+.tire-notfound { font-size: 14px; font-weight: 700; color: var(--text3); margin-bottom: 4px; }
+.tire-detail { font-size: 13px; color: var(--text2); }
+.tire-rack { font-size: 16px; font-weight: 700; color: var(--brown); margin-top: 4px; }
+</style>
+</head>
+<body>
+
+<!-- STEP 1: 撮影 -->
+<div id="scr1" class="screen active">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <div class="header-title">作業開始</div>
+  </div>
+  <div class="content">
+    <div class="step-indicator"><div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div></div>
+    <div class="section-label">STEP 1 : 作業指示書を撮影</div>
+    <div class="camera-area" onclick="document.getElementById('cameraInput').click()">
+      <div class="camera-icon">📋</div>
+      <div class="camera-text">作業指示書を撮影する</div>
+      <div class="camera-sub">タップしてファイルを読み取る</div>
+    </div>
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="onCapture(this)">
+    <div class="info-box">作業指示書を撮影すると、顧客名・ナンバー・車種などを自動で読み取ります。読み取り後に手修正もできます。</div>
+    <button class="btn-secondary" onclick="showScr('scr2')" style="color:var(--brown);">手入力で進める</button>
+    <button class="btn-secondary" onclick="goHome()">ホームに戻る</button>
+  </div>
+</div>
+
+<!-- STEP 2: OCR結果確認 -->
+<div id="scr2" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scr1')">< 戻る</button>
+    <div class="header-title">読み取り結果</div>
+  </div>
+  <div class="content">
+    <div class="step-indicator"><div class="step-dot done"></div><div class="step-dot active"></div><div class="step-dot"></div></div>
+    <div class="warn-box">読み取り結果を確認してください。間違いがあれば「編集」をタップして修正できます。</div>
+
+    <div class="result-card">
+      <div class="result-title">顧客情報</div>
+      <div class="result-row"><span class="result-label">顧客コード</span><input class="form-input" id="fCode" style="text-align:right;font-weight:600;"></div>
+      <div class="result-row"><span class="result-label">氏名 <span style="color:var(--red);font-size:16px;font-weight:700;">*</span></span><input class="form-input" id="fName" style="text-align:right;font-weight:600;"></div>
+      <div class="result-row"><span class="result-label">フリガナ</span><input class="form-input" id="fFurigana" style="text-align:right;"></div>
+      <div class="result-row"><span class="result-label">電話番号 <span style="color:var(--red);font-size:16px;font-weight:700;">*</span></span><input class="form-input" id="fPhone" style="text-align:right;" type="tel"></div>
+      <div style="text-align:left;font-size:11px;color:var(--red);margin:-4px 0 2px;padding-left:80px;">↑ どちらか一つ入力 ↓</div>
+      <div class="result-row"><span class="result-label">携帯番号</span><input class="form-input" id="fMobile" style="text-align:right;" type="tel"></div>
+      <div class="result-row"><span class="result-label">住所</span><input class="form-input" id="fAddress" style="text-align:right;font-size:13px;"></div>
+      <div class="result-row"><span class="result-label">Eメール</span><input class="form-input" id="fEmail" style="text-align:right;" type="email"></div>
+      <div class="result-row"><span class="result-label">営業担当</span><input class="form-input" id="fSalesRep" style="text-align:right;"></div>
+    </div>
+
+    <div class="result-card">
+      <div class="result-title">車両情報</div><div style="font-size:12px;color:var(--text3);margin-bottom:8px;">ナンバー</div>
+      <div class="result-row"><span class="result-label">地名</span><input class="form-input" id="fArea" style="text-align:right;width:120px;"></div>
+      <div class="result-row"><span class="result-label">分類番号</span><input class="form-input" id="fClassNo" style="text-align:right;width:100px;"></div>
+      <div class="result-row"><span class="result-label">かな</span><input class="form-input" id="fKana" style="text-align:right;width:60px;"></div>
+      <div class="result-row"><span class="result-label">下4桁 <span style="color:var(--red);font-size:16px;font-weight:700;">*</span></span><input class="form-input" id="fPlate" style="text-align:right;width:100px;font-size:18px;font-weight:700;"></div>
+      <div class="result-row"><span class="result-label">メーカー</span><input class="form-input" id="fMaker" style="text-align:right;"></div>
+      <div class="result-row"><span class="result-label">車種</span><input class="form-input" id="fModel" style="text-align:right;"></div>
+      <div class="result-row"><span class="result-label">車台番号</span><input class="form-input" id="fVin" style="text-align:right;"></div>
+      <div class="result-row"><span class="result-label">指示書No</span><input class="form-input" id="fInstNo" style="text-align:right;"></div>
+    </div>
+
+    <button class="btn-primary" id="confirmBtn" onclick="doConfirm()">確定して次へ</button>
+    <button class="btn-secondary" onclick="showScr('scr1')">撮り直す</button>
+    <button class="btn-danger" onclick="goHome()">破棄してホームへ</button>
+  </div>
+</div>
+
+<!-- STEP 3: 預かり判定 -->
+<div id="scr3" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scr2')">< 戻る</button>
+    <div class="header-title">預かり判定</div>
+  </div>
+  <div class="content">
+    <div class="step-indicator"><div class="step-dot done"></div><div class="step-dot done"></div><div class="step-dot active"></div></div>
+
+    <div class="result-card">
+      <div class="result-title">登録結果</div>
+      <div class="result-row"><span class="result-label">顧客</span><span class="result-value" id="rCustomer">-</span></div>
+      <div class="result-row"><span class="result-label">車両</span><span class="result-value" id="rVehicle">-</span></div>
+    </div>
+
+    <div id="tireStatusArea"></div>
+
+    <div class="form-row" style="margin-top:12px;">
+      <label class="form-label">作業予定日</label>
+      <input class="form-input" type="date" id="fScheduleDate" style="padding:10px 12px;">
+    </div>
+
+    <button class="btn-primary" id="addListBtn" onclick="doAddToList()" style="margin-top:12px;">リストに追加する</button>
+    <button class="btn-secondary" onclick="showScr('scr2')">読み取り結果を修正する</button>
+    <button class="btn-danger" onclick="doCancelOrder()">取り消してホームへ</button>
+  </div>
+</div>
+
+<script>
+if (!requireLogin()) {}
+
+var ocrFields = {};
+var registerResult = null;
+
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// STEP 1: 撮影
+async function onCapture(input) {
+  if (!input.files || !input.files[0]) return;
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    showSuccess('読み取り中...');
+    var r = await callAPI('ocr_workorder', { imageData: e.target.result });
+    if (handleAPIError(r)) return;
+    ocrFields = r.data.fields || {};
+    fillOcrFields(ocrFields);
+    showScr('scr2');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function fillOcrFields(f) {
+  document.getElementById('fCode').value = f['顧客コード'] || '';
+  document.getElementById('fName').value = f['顧客名'] || '';
+  document.getElementById('fFurigana').value = f['フリガナ'] || '';
+  document.getElementById('fPhone').value = f['電話'] || '';
+  document.getElementById('fMobile').value = f['携帯'] || '';
+  document.getElementById('fAddress').value = f['住所'] || '';
+  document.getElementById('fEmail').value = '';
+  document.getElementById('fSalesRep').value = f['営業担当'] || '';
+  document.getElementById('fArea').value = f['地名'] || '';
+  document.getElementById('fClassNo').value = f['分類番号'] || '';
+  document.getElementById('fKana').value = f['かな'] || '';
+  document.getElementById('fPlate').value = f['下4桁'] || '';
+  document.getElementById('fMaker').value = f['メーカー'] || '';
+  document.getElementById('fModel').value = f['車種'] || '';
+  document.getElementById('fVin').value = f['車台番号'] || '';
+  document.getElementById('fInstNo').value = f['指示書番号'] || '';
+}
+
+// STEP 2: 確定
+async function doConfirm() {
+  var name = document.getElementById('fName').value.trim();
+  var plate = document.getElementById('fPlate').value.trim();
+  var model = document.getElementById('fModel').value.trim();
+  var code = document.getElementById('fCode').value.trim();
+  var phone = document.getElementById('fPhone').value.trim();
+  var mobile = document.getElementById('fMobile').value.trim();
+  if (!name) { showError('氏名を入力してください'); return; }
+  if (!phone && !mobile) { showError('電話番号または携帯番号を入力してください'); return; }
+  if (!plate) { showError('ナンバー下4桁を入力してください'); return; }
+
+  startLoading(document.getElementById('confirmBtn'));
+
+  // まず既存顧客・車両を検索
+  var lookup = await callAPI('workorder_lookup', { customerCode: code, plateNumber: plate });
+  stopLoading(document.getElementById('confirmBtn'));
+  if (handleAPIError(lookup)) return;
+
+  var customerId = '';
+  var vehicleId = '';
+
+  if (lookup.data.found && lookup.data.customer) {
+    customerId = lookup.data.customer['顧客ID'];
+    // 顧客情報を更新（OCRで読み取った情報で補完）
+    var updates = {};
+    var name = document.getElementById('fName').value.trim();
+    var furigana = document.getElementById('fFurigana').value.trim();
+    var phone = document.getElementById('fPhone').value.trim();
+    var mobile = document.getElementById('fMobile').value.trim();
+    var address = document.getElementById('fAddress').value.trim();
+    var email = document.getElementById('fEmail').value.trim();
+    var salesRep = document.getElementById('fSalesRep').value.trim();
+    if (name) updates['氏名'] = name;
+    if (furigana) updates['フリガナ'] = furigana;
+    if (phone) updates['電話'] = phone;
+    if (mobile) updates['携帯'] = mobile;
+    if (address) updates['住所'] = address;
+    if (email) updates['Eメール'] = email;
+    if (salesRep) updates['営業担当'] = salesRep;
+    if (Object.keys(updates).length > 0) {
+      await callAPI('customer_update', {
+        customerId: customerId,
+        version: lookup.data.customer['版番号'],
+        updates: updates
+      });
+    }
+  } else {
+    // 新規顧客登録
+    var newCust = await callAPI('customer_create', {
+      name: document.getElementById('fName').value.trim(),
+      furigana: document.getElementById('fFurigana').value.trim(),
+      phone: document.getElementById('fPhone').value.trim(),
+      mobile: document.getElementById('fMobile').value.trim(),
+      address: document.getElementById('fAddress').value.trim(),
+      email: document.getElementById('fEmail').value.trim(),
+      code: document.getElementById('fCode').value.trim(),
+      salesRep: document.getElementById('fSalesRep').value.trim(),
+    });
+    if (handleAPIError(newCust)) return;
+    customerId = newCust.data.customerId;
+  }
+
+  if (lookup.data.found && lookup.data.vehicle) {
+    vehicleId = lookup.data.vehicle['車両ID'];
+  } else {
+    // 新規車両登録
+    var newVeh = await callAPI('vehicle_create', {
+      customerId: customerId,
+      area: document.getElementById('fArea').value.trim(),
+      classNo: document.getElementById('fClassNo').value.trim(),
+      kana: document.getElementById('fKana').value.trim(),
+      plateNum: document.getElementById('fPlate').value.trim(),
+      maker: document.getElementById('fMaker').value.trim(),
+      model: document.getElementById('fModel').value.trim(),
+      vin: document.getElementById('fVin').value.trim(),
+    });
+    if (handleAPIError(newVeh)) return;
+    vehicleId = newVeh.data.vehicleId;
+  }
+
+  // 作業伝票を登録
+  startLoading(document.getElementById('confirmBtn'));
+  var reg = await callAPI('workorder_register', {
+    customerId: customerId,
+    vehicleId: vehicleId,
+    instructionNo: document.getElementById('fInstNo').value.trim(),
+    salesRep: document.getElementById('fSalesRep').value.trim(),
+  });
+  stopLoading(document.getElementById('confirmBtn'));
+  if (handleAPIError(reg)) return;
+
+  registerResult = reg.data;
+  showStep3(reg.data);
+}
+
+// STEP 3: 預かり判定表示
+function showStep3(data) {
+  document.getElementById('rCustomer').textContent =
+    escapeHtml(data.customer.name) + (data.hasStoredTires ? '（既存顧客）' : '（新規）');
+  document.getElementById('rVehicle').textContent = escapeHtml(data.vehicle.plate || '');
+
+  var html = '';
+  if (data.hasStoredTires) {
+    html += '<div class="tire-status"><div class="tire-found">預かりタイヤあり</div>';
+    html += '<div class="tire-detail">' + escapeHtml(data.storedTire.type || '') + ' ' + escapeHtml(data.storedTire.count || '') + '本セット</div>';
+    html += '<div class="tire-rack">棚番号 : ' + escapeHtml(data.storedTire.rack || '') + '</div></div>';
+    html += '<div class="info-box">預かりタイヤがあります。出庫準備リストに追加して、倉庫から取り出してください。</div>';
+    document.getElementById('addListBtn').textContent = '出庫準備リストに追加する';
+    document.getElementById('addListBtn').style.background = 'var(--blue)';
+  } else {
+    html += '<div class="tire-status none"><div class="tire-notfound">預かりタイヤなし（新規）</div>';
+    html += '<div class="tire-detail">新規のお客様、または預かりタイヤが登録されていません</div></div>';
+    html += '<div class="info-box">新規の預かりです。作業予定リストに追加してください。</div>';
+    document.getElementById('addListBtn').textContent = '作業予定リストに追加する';
+    document.getElementById('addListBtn').style.background = 'var(--orange)';
+  }
+  document.getElementById('tireStatusArea').innerHTML = html;
+
+  // 作業予定日を今日に設定
+  var today = new Date().toISOString().slice(0, 10);
+  document.getElementById('fScheduleDate').value = today;
+
+  showScr('scr3');
+}
+
+// STEP 3: リストに追加
+async function doAddToList() {
+  if (!registerResult) return;
+  var date = document.getElementById('fScheduleDate').value;
+  if (!date) { showError('作業予定日を選んでください'); return; }
+
+  startLoading(document.getElementById('addListBtn'));
+  var r = await callAPI('workorder_register', {
+    customerId: registerResult.customer.id,
+    vehicleId: registerResult.vehicle.id,
+    scheduledDate: date,
+    instructionNo: document.getElementById('fInstNo').value.trim(),
+    salesRep: document.getElementById('fSalesRep').value.trim(),
+  });
+  stopLoading(document.getElementById('addListBtn'));
+
+  // 既に登録済みなので作業予定日だけ更新
+  showSuccess('リストに追加しました');
+  setTimeout(function() { goHome(); }, 1500);
+}
+
+// 取り消し
+async function doCancelOrder() {
+  if (!registerResult) { goHome(); return; }
+  if (!confirmAction('取り消しますか？')) return;
+  await callAPI('workorder_cancel', { orderNumber: registerResult.orderNumber });
+  showSuccess('取り消しました');
+  setTimeout(function() { goHome(); }, 1500);
+}
+</script>
+</body>
+</html>
