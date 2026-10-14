@@ -37,6 +37,7 @@
     <button class="btn-primary" onclick="showEditScreen()">車両情報を編集する</button>
     <div class="section-label">預かりタイヤ</div>
     <div id="tireList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+    <div style="text-align:right;margin-top:24px;"><a href="#" onclick="event.preventDefault();deleteVehicle()" style="font-size:13px;color:var(--red);text-decoration:underline;">この車両を削除する</a></div>
   </div>
 </div>
 
@@ -171,6 +172,15 @@ async function saveVehicle() {
   currentVersion = r.data.newVersion;
   showSuccess('変更を保存しました');
   loadDetail(currentVehicle['車両ID']);
+}
+
+async function deleteVehicle() {
+  if (!currentVehicle) return;
+  if (!confirmAction('この車両を削除しますか？\n\nタイヤが紐づいている場合は削除できません。')) return;
+  var r = await callAPI('vehicle_delete', { vehicleId: currentVehicle['車両ID'] });
+  if (handleAPIError(r)) return;
+  showSuccess('削除しました');
+  showScr('scrSearch');
 }
 
 var paramId = getParam('vehicleId');

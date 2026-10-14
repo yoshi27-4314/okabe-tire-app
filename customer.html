@@ -38,6 +38,7 @@
     <div class="section-label">社内メモ</div>
     <textarea class="form-input" rows="4" id="memoField" style="resize:vertical;font-size:15px;margin-bottom:10px;"></textarea>
     <button class="btn-secondary" id="memoBtn" onclick="saveMemo()" style="color:var(--green);border-color:var(--green);">メモを保存</button>
+    <div style="text-align:right;margin-top:24px;"><a href="#" onclick="event.preventDefault();deleteCustomer()" style="font-size:13px;color:var(--red);text-decoration:underline;">この顧客を削除する</a></div>
   </div>
 </div>
 
@@ -180,9 +181,14 @@ async function saveCustomer() {
   loadDetail(currentCustomer['顧客ID']);
 }
 
-// 編集ボタンのonclick修正
-document.querySelector('.btn-primary[onclick*="showScr(\'scrEdit\')"]') ||
-  document.querySelector('.btn-primary').addEventListener('click', function(){});
+async function deleteCustomer() {
+  if (!currentCustomer) return;
+  if (!confirmAction('この顧客を削除しますか？\n\nタイヤが紐づいている場合は削除できません。')) return;
+  var r = await callAPI('customer_delete', { customerId: currentCustomer['顧客ID'] });
+  if (handleAPIError(r)) return;
+  showSuccess('削除しました');
+  showScr('scrSearch');
+}
 </script>
 </body>
 </html>
