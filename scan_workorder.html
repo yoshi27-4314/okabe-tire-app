@@ -200,6 +200,20 @@ async function doConfirm() {
   var vehicleId = '';
 
   if (lookup.data.found && lookup.data.customer) {
+    // 既存顧客が見つかった → 紐付けるか新規登録か選ぶ
+    var existName = lookup.data.customer['氏名'] || '';
+    var existPlate = lookup.data.vehicle ? [lookup.data.vehicle['地名'], lookup.data.vehicle['分類番号'], lookup.data.vehicle['かな'], lookup.data.vehicle['下4桁']].filter(Boolean).join(' ') : '';
+    var useExisting = confirm('既存の顧客が見つかりました。\n\n顧客名: ' + existName + '\nナンバー: ' + existPlate + '\n\nこの顧客に紐付けますか？\n\n「OK」→ この顧客に紐付ける\n「キャンセル」→ 新規登録する');
+
+    if (!useExisting) {
+      // 新規登録を選んだ
+      lookup.data.found = false;
+      lookup.data.customer = null;
+      lookup.data.vehicle = null;
+    }
+  }
+
+  if (lookup.data.found && lookup.data.customer) {
     customerId = lookup.data.customer['顧客ID'];
     // 顧客情報を補完（空の項目だけ追加。既存データは上書きしない）
     var ec = lookup.data.customer;
