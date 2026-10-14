@@ -99,6 +99,8 @@ var orderNumber = getParam('orderNumber');
 var tireSetId = getParam('tireSetId');
 var tireCount = 4;
 var positions = ['左前', '右前', '左後', '右後', '5本目', '6本目'];
+var scratchFolderIds = {};
+var scratchPhotos = {};
 
 // 本数バー
 function renderCountBar() {
@@ -146,7 +148,7 @@ function renderTireInputs() {
     html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sTread" onchange="onScratchCheck(' + i + ')"> トレッド面</label>';
     html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sRim" onchange="onScratchCheck(' + i + ')"> リム</label>';
     html += '</div>';
-    html += '<div id="' + id + '_scratchPhotos" style="display:none;"><label class="form-label" style="margin-top:6px;">傷の写真</label><div class="scratch-photos"><div class="scratch-add" onclick="document.getElementById(\'' + id + '_sFile\').click()">+</div></div><input type="file" id="' + id + '_sFile" accept="image/*" capture="environment" style="display:none;"></div>';
+    html += '<div id="' + id + '_scratchPhotos" style="display:none;"><label class="form-label" style="margin-top:6px;">傷の写真</label><div class="scratch-photos" id="' + id + '_photoArea"><div class="scratch-add" onclick="document.getElementById(\'' + id + '_sFile\').click()">+</div></div><input type="file" id="' + id + '_sFile" accept="image/*" capture="environment" style="display:none;" onchange="onScratchPhoto(this,' + i + ')"></div>';
     html += '</div>';
     html += '<div class="form-row" style="margin-top:10px;"><label class="form-label">メモ（この1本）</label><textarea class="memo-input" id="' + id + '_memo" placeholder="この1本に対するメモ"></textarea></div>';
     html += '</div>';
@@ -185,6 +187,66 @@ function onScratchCheck(idx) {
   } else {
     document.getElementById(id + '_scratchPhotos').style.display = 'none';
   }
+}
+
+// 傷写真のアップロード
+async function onScratchPhoto(input, idx) {
+  if (!input.files || !input.files[0]) return;
+  var id = 't' + idx;
+  var pos = positions[idx];
+
+  // フォルダがなければ作成
+  if (!scratchFolderIds[idx]) {
+    showSuccess('フォルダ作成中...');
+    var custName = document.getElementById('infoName').textContent || '';
+    var plate = document.getElementById('infoPlate').textContent || '';
+    var r = await callAPI('photo_createFolder', {
+      customerName: custName,
+      plateNumber: plate,
+      area: '',
+      classNo: '',
+      kana: '',
+      subFolder: 'タイヤ' + (idx+1) + '_' + pos
+    });
+    if (r && r.ok && r.data && r.data.folderId) {
+      scratchFolderIds[idx] = r.data.folderId;
+    } else {
+      showError('フォルダ作成に失敗しました');
+      input.value = '';
+      return;
+    }
+  }
+
+  var file = input.files[0];
+  var reader = new FileReader();
+  reader.onload = async function(e) {
+    showSuccess('アップロード中...');
+    var r = await callAPI('photo_upload', {
+      imageData: e.target.result,
+      folderId: scratchFolderIds[idx],
+      position: pos
+    });
+    if (!r || !r.ok) {
+      showError('アップロードに失敗しました');
+      return;
+    }
+    // サムネイル追加
+    if (!scratchPhotos[idx]) scratchPhotos[idx] = [];
+    scratchPhotos[idx].push({ fileId: r.data ? r.data.fileId : '', dataUrl: e.target.result });
+    var photoArea = document.getElementById(id + '_photoArea');
+    var addBtn = photoArea.querySelector('.scratch-add');
+    var thumb = document.createElement('div');
+    thumb.className = 'scratch-thumb';
+    thumb.style.backgroundImage = 'url(' + e.target.result + ')';
+    thumb.style.backgroundSize = 'cover';
+    thumb.style.backgroundPosition = 'center';
+    thumb.textContent = '';
+    thumb.onclick = function() { window.open(e.target.result); };
+    photoArea.insertBefore(thumb, addBtn);
+    showSuccess('写真を保存しました');
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
 }
 
 // OCR読み取り
@@ -239,6 +301,7 @@ async function doSave() {
       scratchSidewall: document.getElementById(id + '_sSide').checked ? 'はい' : '',
       scratchTread: document.getElementById(id + '_sTread').checked ? 'はい' : '',
       scratchRim: document.getElementById(id + '_sRim').checked ? 'はい' : '',
+      scratchPhotoFolderId: scratchFolderIds[i] || '',
       memo: document.getElementById(id + '_memo').value.trim(),
     });
   }
