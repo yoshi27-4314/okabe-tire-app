@@ -255,12 +255,30 @@ async function onScratchPhoto(input, idx) {
 function doOcr(idx) {
   document.getElementById('t' + idx + '_file').click();
 }
+// 画像圧縮
+function compressImage(dataUrl, maxWidth, quality) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
 async function onTireCapture(input, idx) {
   if (!input.files || !input.files[0]) return;
   var reader = new FileReader();
   reader.onload = async function(e) {
+    showSuccess('画像を圧縮中...');
+    var compressed = await compressImage(e.target.result, 1200, 0.7);
     showSuccess('読み取り中...');
-    var r = await callAPI('tire_ocrRead', { imageData: e.target.result });
+    var r = await callAPI('tire_ocrRead', { imageData: compressed });
     if (handleAPIError(r)) return;
     var f = r.data.fields || {};
     var id = 't' + idx;

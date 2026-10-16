@@ -42,6 +42,7 @@
     <div class="form-row"><label class="form-label">タイヤサイズ</label><input class="form-input" type="text" id="sSize" placeholder="195/65R15"></div>
     <div class="form-row"><label class="form-label">棚番号</label><input class="form-input" type="text" id="sRack" placeholder="西1D-R"></div>
     <div class="form-row"><label class="form-label">営業担当者</label><input class="form-input" type="text" id="sSalesRep" placeholder="藤井"></div>
+    <div class="form-row"><label class="form-label">メモ検索</label><input class="form-input" type="text" id="sMemo" placeholder="メモ内をフリーテキスト検索"></div>
 
     <div class="extra-toggle" onclick="toggleExtra()">その他の検索条件 <span id="extraArrow">▼</span></div>
     <div id="extraFields" style="display:none;">
@@ -62,7 +63,6 @@
           <span class="toggle-btn" data-value="50" onclick="toggleCheck(this)">50%</span>
         </div>
       </div>
-      <div class="form-row"><label class="form-label">メモ（フリーテキスト）</label><input class="form-input" type="text" id="sMemo" placeholder="メモ内を検索"></div>
     </div>
 
     <button class="search-btn" id="searchBtn" onclick="doSearch()">検索する</button>
