@@ -33,7 +33,7 @@ async function downloadCsv(table) {
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  a.download = table + '_' + new Date().toISOString().slice(0,10) + '.csv';
+  a.download = table + '_' + new Date(Date.now() + 9*60*60*1000).toISOString().slice(0,10) + '.csv';
   a.click();
   URL.revokeObjectURL(url);
   showSuccess('ダウンロードしました');
