@@ -189,6 +189,9 @@ async function deleteCustomer() {
   showSuccess('削除しました');
   showScr('scrSearch');
 }
+
+var paramId = getParam('customerId');
+if (paramId) loadDetail(paramId);
 </script>
 </body>
 </html>

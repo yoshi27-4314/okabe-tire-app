@@ -25,7 +25,8 @@
 if (!requireLogin()) {}
 async function downloadCsv(table) {
   showSuccess('ダウンロード準備中...');
-  var r = await callAPI('admin_exportCsv', { table: table });
+  var action = table === 'tire_list' ? 'admin_exportTireCsv' : 'admin_exportCsv';
+  var r = await callAPI(action, { table: table });
   if (handleAPIError(r)) return;
   var bom = '\uFEFF';
   var blob = new Blob([bom + r.data.csv], { type: 'text/csv;charset=utf-8;' });

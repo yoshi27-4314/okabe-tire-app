@@ -246,7 +246,7 @@ async function doConfirm() {
       mobile: document.getElementById('fMobile').value.trim(),
       address: document.getElementById('fAddress').value.trim(),
       email: document.getElementById('fEmail').value.trim(),
-      code: document.getElementById('fCode').value.trim(),
+      customerCode: document.getElementById('fCode').value.trim(),
       salesRep: document.getElementById('fSalesRep').value.trim(),
     });
     if (handleAPIError(newCust)) return;
@@ -290,6 +290,7 @@ async function doConfirm() {
     vehicleId: vehicleId,
     instructionNo: document.getElementById('fInstNo').value.trim(),
     salesRep: document.getElementById('fSalesRep').value.trim(),
+    scheduledDate: new Date().toISOString().slice(0, 10),
   });
   stopLoading(document.getElementById('confirmBtn'));
   if (handleAPIError(reg)) return;
@@ -328,24 +329,25 @@ function showStep3(data) {
   showScr('scr3');
 }
 
-// STEP 3: リストに追加
+// STEP 3: 作業予定日を更新してリストに追加
 async function doAddToList() {
   if (!registerResult) return;
   var date = document.getElementById('fScheduleDate').value;
   if (!date) { showError('作業予定日を選んでください'); return; }
 
   startLoading(document.getElementById('addListBtn'));
-  var r = await callAPI('workorder_register', {
-    customerId: registerResult.customer.id,
-    vehicleId: registerResult.vehicle.id,
-    scheduledDate: date,
-    instructionNo: document.getElementById('fInstNo').value.trim(),
-    salesRep: document.getElementById('fSalesRep').value.trim(),
+  var r = await callAPI('pit_updateDate', {
+    orderNumber: registerResult.orderNumber,
+    newDate: date,
   });
   stopLoading(document.getElementById('addListBtn'));
 
-  // 既に登録済みなので作業予定日だけ更新
-  showSuccess('リストに追加しました');
+  if (r && !r.ok && r.code !== 'ERR_VERSION_CONFLICT') {
+    handleAPIError(r);
+    return;
+  }
+
+  showSuccess('リストに追加しました（' + registerResult.orderNumber + '）');
   setTimeout(function() { goHome(); }, 1500);
 }
 

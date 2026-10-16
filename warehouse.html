@@ -169,13 +169,17 @@ async function loadStore() {
   document.getElementById('storeList').innerHTML = html;
 }
 
+var storeLoading = false;
 async function doStore(tireSetId, idx) {
+  if (storeLoading) return;
   var rack = document.getElementById('rack_' + idx).value.trim();
   if (!rack) {
     showError('棚番号を入力してください');
     return;
   }
+  storeLoading = true;
   var r = await callAPI('warehouse_store', { tireSetId: tireSetId, rack: rack });
+  storeLoading = false;
   if (handleAPIError(r)) return;
   showSuccess('格納しました');
   loadStore();
@@ -226,12 +230,16 @@ function selectForMove(tireSetId, name, plate, model, rack) {
   document.getElementById('moveForm').style.display = '';
 }
 
+var rackLoading = false;
 async function doChangeRack() {
+  if (rackLoading) return;
   if (!selectedMoveId) return;
   var newRack = document.getElementById('newRack').value.trim();
   if (!newRack) { showError('新しい棚番号を入力してください'); return; }
 
+  rackLoading = true;
   var r = await callAPI('warehouse_changeRack', { tireSetId: selectedMoveId, newRack: newRack });
+  rackLoading = false;
   if (handleAPIError(r)) return;
   showSuccess('棚番号を変更しました（' + r.data.oldRack + ' → ' + r.data.newRack + '）');
   document.getElementById('moveForm').style.display = 'none';

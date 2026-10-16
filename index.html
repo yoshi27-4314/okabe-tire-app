@@ -139,9 +139,8 @@
     <div id="alertArea"></div>
 
     <!-- メインボタン -->
-    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:20px;">
-      <button class="quick-btn primary" onclick="navigateTo('scan_workorder.html')">作業開始<span class="quick-sub">作業指示書の読み取り</span></button>
-      <button class="quick-btn secondary" onclick="navigateTo('search.html')">預かり検索<span class="quick-sub">顧客 / 車両 / タイヤ / 担当</span></button>
+    <div style="margin-bottom:20px;">
+      <button class="quick-btn primary" style="width:100%;" onclick="navigateTo('scan_workorder.html')">作業開始<span class="quick-sub">作業指示書の読み取り</span></button>
     </div>
 
     <!-- 今日の作業状況 -->
@@ -193,6 +192,12 @@
       <div class="menu-card" onclick="navigateTo('vehicle.html')">
         <div class="menu-card-icon">&#x1F697;</div>
         <div class="menu-card-label">車両台帳</div>
+      </div>
+    </div>
+    <div style="margin-bottom:12px;">
+      <div class="menu-card" onclick="navigateTo('search.html')" style="text-align:center;">
+        <div class="menu-card-icon">&#x1F50D;</div>
+        <div class="menu-card-label">預かり検索</div>
       </div>
     </div>
   </div>

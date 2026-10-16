@@ -40,6 +40,7 @@
   </div>
 
   <div id="summaryArea"></div>
+  <button class="btn-secondary" style="margin-bottom:12px;color:var(--blue);border-color:var(--blue);" onclick="doPrintOverdue()">PDF印刷（返却予定日リスト）</button>
   <div id="listArea"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
 </div>
 
@@ -108,6 +109,41 @@ async function loadOverdue(type) {
   if (!lhtml) lhtml = '<div style="text-align:center;color:var(--text3);padding:30px;">期限間近・超過の預かりはありません</div>';
 
   document.getElementById('listArea').innerHTML = lhtml;
+}
+
+function doPrintOverdue() {
+  var summaryContent = document.getElementById('summaryArea').innerHTML;
+  var listContent = document.getElementById('listArea').innerHTML;
+  var pw = window.open('', '_blank');
+  pw.document.write('<html><head><title>返却予定日リスト</title>');
+  pw.document.write('<style>');
+  pw.document.write('body { font-family: "Hiragino Sans","Noto Sans JP",sans-serif; color: #2C2C2C; padding: 15mm; font-size: 10pt; }');
+  pw.document.write('.summary-box { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 14px; }');
+  pw.document.write('.summary-title { font-size: 12pt; font-weight: 700; color: #5C4033; margin-bottom: 6px; }');
+  pw.document.write('.summary-row { display: flex; justify-content: space-between; padding: 3px 0; font-size: 10pt; }');
+  pw.document.write('.summary-value { font-weight: 700; }');
+  pw.document.write('.section-label { font-size: 11pt; font-weight: 700; margin: 12px 0 6px; }');
+  pw.document.write('.overdue-card { border: 1px solid #ddd; border-radius: 8px; padding: 10px 14px; margin-bottom: 8px; }');
+  pw.document.write('.overdue-card.warn { border-color: #E86A2A; }');
+  pw.document.write('.overdue-card.alert { border-color: #C41E3A; }');
+  pw.document.write('.overdue-card.critical { border: 2px solid #C41E3A; background: #FFF5F5; }');
+  pw.document.write('.overdue-top { display: flex; justify-content: space-between; margin-bottom: 4px; }');
+  pw.document.write('.overdue-customer { font-size: 11pt; font-weight: 700; }');
+  pw.document.write('.overdue-plate { font-size: 10pt; font-weight: 600; color: #5C4033; }');
+  pw.document.write('.overdue-detail { font-size: 9pt; color: #666; }');
+  pw.document.write('.overdue-date { font-size: 10pt; font-weight: 700; margin-top: 3px; }');
+  pw.document.write('.overdue-date.red { color: #C41E3A; }');
+  pw.document.write('.overdue-date.orange { color: #E86A2A; }');
+  pw.document.write('.status { font-size: 9pt; padding: 2px 8px; border-radius: 4px; font-weight: 600; }');
+  pw.document.write('.btn-secondary { display: none !important; }');
+  pw.document.write('@media print { @page { margin: 10mm; } }');
+  pw.document.write('</style></head><body>');
+  pw.document.write('<div style="text-align:center;margin-bottom:16px;"><h1 style="font-size:16pt;color:#5C4033;">返却予定日リスト</h1><div style="font-size:10pt;color:#999;">出力日: ' + new Date().toLocaleDateString('ja-JP') + '</div></div>');
+  pw.document.write(summaryContent);
+  pw.document.write(listContent);
+  pw.document.write('</body></html>');
+  pw.document.close();
+  pw.print();
 }
 
 loadOverdue('冬');

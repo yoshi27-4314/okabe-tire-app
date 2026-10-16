@@ -59,7 +59,7 @@ function p(n) { return String(n).padStart(2, '0'); }
 // --- HTMLエスケープ ---
 function escapeHtml(s) {
   if (!s) return '';
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 // --- トースト通知 ---
@@ -97,8 +97,9 @@ function stopLoading(btn) {
 function handleAPIError(result) {
   if (!result) { showError('通信エラーです'); return true; }
   if (!result.ok) {
-    if (result.code === 'SESSION_EXPIRED') {
+    if (result.code === 'SESSION_EXPIRED' || result.code === 'NO_SESSION' || result.code === 'INVALID_SESSION' || result.code === 'STAFF_DISABLED') {
       showError('セッションが切れました。再ログインしてください');
+      localStorage.clear();
       setTimeout(function() { location.href = 'index.html'; }, 1500);
       return true;
     }

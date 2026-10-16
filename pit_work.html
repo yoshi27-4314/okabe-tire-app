@@ -104,8 +104,7 @@
       <button class="btn-secondary" style="margin-top:10px;background:var(--blue);color:var(--white);border-color:var(--blue);" id="dateBtn" onclick="doUpdateDate()">作業予定日を変更する</button>
     </div>
 
-    <button class="btn-primary" id="startBtn" onclick="doStart()">履き替え作業を開始する</button>
-    <button class="btn-danger" onclick="doCancel()">この作業を取り消す</button>
+    <div id="actionBtns"></div>
   </div>
 </div>
 
@@ -256,7 +255,7 @@ function renderOrderList() {
       html += '<div class="section-label" style="color:var(--text3);margin-top:16px;">完了</div>';
       hasCompleted = true;
     }
-    html += '<div class="pit-card completed">'
+    html += '<div class="pit-card completed" onclick="openDetail(\'' + escapeHtml(o2.orderNumber) + '\')">'
       + '<div class="pit-top"><span class="pit-customer">' + escapeHtml(o2.customerName) + '</span>'
       + '<span class="status st-done">完了</span></div>'
       + '<div class="pit-plate">' + escapeHtml(o2.plate) + '</div>'
@@ -293,6 +292,24 @@ function openDetail(orderNumber) {
   }
 
   document.getElementById('dDate').value = selectedOrder.scheduledDate || '';
+
+  // 状態に応じてボタンを切り替え
+  var isDone = selectedOrder.status === '作業完了' || selectedOrder.status === '契約発行済み';
+  var actHtml = '';
+  if (isDone) {
+    // 完了済み：タイヤ情報の閲覧のみ
+    if (selectedOrder.tireSetId) {
+      actHtml += '<button class="btn-primary" style="background:var(--blue);" onclick="navigateTo(\'tire_input.html\',{orderNumber:\'' + escapeHtml(selectedOrder.orderNumber) + '\',tireSetId:\'' + escapeHtml(selectedOrder.tireSetId) + '\',customerName:\'' + escapeHtml(selectedOrder.customerName) + '\',plate:\'' + escapeHtml(selectedOrder.plate) + '\'})">タイヤ情報を確認する</button>';
+    }
+  } else {
+    // 未完了：作業開始・取り消しボタンを表示
+    actHtml += '<button class="btn-primary" id="startBtn" onclick="doStart()">履き替え作業を開始する</button>';
+    actHtml += '<button class="btn-danger" onclick="doCancel()">この作業を取り消す</button>';
+  }
+  // 予定日変更は完了済みでは非表示
+  document.getElementById('dateBtn').style.display = isDone ? 'none' : '';
+  document.getElementById('actionBtns').innerHTML = actHtml;
+
   showScr('scrDetail');
 }
 
@@ -325,7 +342,9 @@ async function doStart() {
 
   navigateTo('tire_input.html', {
     orderNumber: selectedOrder.orderNumber,
-    tireSetId: selectedOrder.tireSetId
+    tireSetId: selectedOrder.tireSetId,
+    customerName: selectedOrder.customerName,
+    plate: selectedOrder.plate
   });
 }
 

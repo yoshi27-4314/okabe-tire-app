@@ -68,6 +68,7 @@
 if (!requireLogin()) {}
 
 var selectedOrder = null;
+var currentTireType = '';
 
 function showScr(id) {
   var s = document.querySelectorAll('.screen');
@@ -134,13 +135,14 @@ async function loadPreview(orderNumber) {
   var c = d.customer || {};
   var v = d.vehicle || {};
   var ts = d.tireSet || {};
+  currentTireType = ts['区分'] || '';
   var recs = d.tireRecords || [];
   var plate = [v['地名'], v['分類番号'], v['かな'], v['下4桁']].filter(Boolean).join(' ');
 
   var html = '';
 
   // 顧客情報
-  html += '<div class="preview-card"><div class="preview-title">顧客情報 <span class="edit-link" onclick="navigateTo(\'customer_edit.html\',{customerId:\'' + escapeHtml(c['顧客ID']) + '\'})">編集</span></div>';
+  html += '<div class="preview-card"><div class="preview-title">顧客情報 <span class="edit-link" onclick="navigateTo(\'customer.html\',{customerId:\'' + escapeHtml(c['顧客ID']) + '\'})">編集</span></div>';
   html += '<div class="preview-row"><span class="preview-label">氏名</span><span class="preview-value">' + escapeHtml(c['氏名'] || '') + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">電話番号</span><span class="preview-value' + (!c['電話'] ? ' empty' : '') + '">' + escapeHtml(c['電話'] || '未入力') + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">携帯番号</span><span class="preview-value">' + escapeHtml(c['携帯'] || '') + '</span></div>';
@@ -251,6 +253,7 @@ async function doIssue() {
   startLoading(document.getElementById('issueBtn'));
   var r = await callAPI('contract_issue', {
     orderNumber: selectedOrder,
+    tireType: currentTireType || '',
     pricePlan: planSelect.value,
     fee: String(fee),
     discountRule: discountSelect.value,
@@ -262,65 +265,7 @@ async function doIssue() {
   if (handleAPIError(r)) return;
 
   showSuccess('契約書を発行しました（' + r.data.contractNumber + '）');
-  function doPrint() {
-  // プレビュー画面の内容をそのまま印刷
-  var printContent = document.getElementById('previewContent').innerHTML;
-  var printWindow = window.open('', '_blank');
-  printWindow.document.write('<html><head><title>タイヤホテル契約書</title>');
-  printWindow.document.write('<style>');
-  printWindow.document.write('body { font-family: "Hiragino Sans","Noto Sans JP",sans-serif; color: #2C2C2C; padding: 20mm; font-size: 11pt; }');
-  printWindow.document.write('.preview-card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 12px; }');
-  printWindow.document.write('.preview-title { font-size: 13pt; font-weight: 700; color: #5C4033; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #E86A2A; }');
-  printWindow.document.write('.preview-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 10pt; }');
-  printWindow.document.write('.preview-label { color: #999; }');
-  printWindow.document.write('.preview-value { font-weight: 600; }');
-  printWindow.document.write('.preview-value.empty { color: #C41E3A; }');
-  printWindow.document.write('.preview-value.alert { color: #C41E3A; font-weight: 700; }');
-  printWindow.document.write('.tire-preview { padding: 8px; background: #FAF8F5; border-radius: 6px; margin-bottom: 6px; }');
-  printWindow.document.write('.tire-preview-title { font-size: 11pt; font-weight: 700; color: #5C4033; margin-bottom: 4px; }');
-  printWindow.document.write('.tire-preview-row { display: flex; justify-content: space-between; font-size: 10pt; padding: 2px 0; }');
-  printWindow.document.write('.tire-preview-label { color: #999; }');
-  printWindow.document.write('.tire-preview-value { font-weight: 600; }');
-  printWindow.document.write('.scratch-tag { font-size: 9pt; padding: 2px 6px; background: #FFF5F5; color: #C41E3A; border-radius: 3px; display: inline-block; margin-right: 3px; }');
-  printWindow.document.write('.price-card { border: 2px solid #006B3F; border-radius: 8px; padding: 14px; margin-bottom: 12px; }');
-  printWindow.document.write('.price-title { font-size: 13pt; font-weight: 700; color: #006B3F; margin-bottom: 8px; }');
-  printWindow.document.write('.price-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11pt; }');
-  printWindow.document.write('.price-row.total { border-top: 2px solid #006B3F; padding-top: 8px; margin-top: 4px; font-size: 14pt; font-weight: 700; }');
-  printWindow.document.write('.edit-link, .btn-primary, .btn-secondary, select, #priceDisplay + div { display: none !important; }');
-  printWindow.document.write('@media print { @page { margin: 15mm; } }');
-  printWindow.document.write('</style></head><body>');
-  printWindow.document.write('<div style="text-align:center;margin-bottom:20px;"><h1 style="font-size:18pt;color:#5C4033;">タイヤホテル預かり契約書</h1></div>');
-  printWindow.document.write(printContent);
-  printWindow.document.write('<div style="margin-top:40px;border-top:1px solid #ddd;padding-top:20px;">');
-  printWindow.document.write('<div style="display:flex;justify-content:space-between;font-size:11pt;">');
-  printWindow.document.write('<div>お客様署名：＿＿＿＿＿＿＿＿＿＿＿＿</div>');
-  printWindow.document.write('<div>日付：＿＿＿＿年＿＿月＿＿日</div>');
-  printWindow.document.write('</div></div>');
-  printWindow.document.write('</body></html>');
-  printWindow.document.close();
-  printWindow.print();
-}
-
-async function loadScratchPhotos(idx, folderId) {
-  var r = await callAPI('photo_getImage', { folderId: folderId });
-  var el = document.getElementById('photos_' + idx);
-  if (!el) return;
-  if (!r || !r.ok || !r.data || !r.data.images || r.data.images.length === 0) {
-    el.innerHTML = '<div style="font-size:11px;color:var(--text3);">写真なし</div>';
-    return;
-  }
-  var html = '';
-  for (var i = 0; i < r.data.images.length; i++) {
-    var img = r.data.images[i];
-    var src = img.dataUrl || img.url || '';
-    if (src) {
-      html += '<div style="width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer;" onclick="window.open(this.querySelector(\'img\').src)"><img src="' + src + '" style="width:100%;height:100%;object-fit:cover;"></div>';
-    }
-  }
-  el.innerHTML = html || '<div style="font-size:11px;color:var(--text3);">写真なし</div>';
-}
-
-loadList();
+  loadList();
   showScr('scrList');
 }
 
