@@ -21,6 +21,12 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+:root { color-scheme: light; }
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: light; }
+  body { background: var(--cream) !important; color: var(--text) !important; }
+  input, select, textarea { background: var(--cream) !important; color: var(--text) !important; }
+}
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
