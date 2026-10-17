@@ -120,7 +120,7 @@ function handleAPIError(result) {
 // --- 確認ダイアログ ---
 function confirmAction(msg) { return confirm(msg); }
 
-// --- 画像圧縮（OCR・タイヤ撮影・傷写真で共通） ---
+// --- 画像圧縮（傷写真保存用: 高品質） ---
 function compressImage(dataUrl) {
   return new Promise(function(resolve) {
     var img = new Image();
@@ -135,6 +135,30 @@ function compressImage(dataUrl) {
       var quality = 0.92;
       var result = canvas.toDataURL('image/jpeg', quality);
       while (result.length > 1400000 && quality > 0.5) {
+        quality -= 0.1;
+        result = canvas.toDataURL('image/jpeg', quality);
+      }
+      resolve(result);
+    };
+    img.src = dataUrl;
+  });
+}
+
+// --- 画像圧縮（OCR用: テキスト読取に十分な軽量版） ---
+function compressImageForOcr(dataUrl) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      var maxW = 1024;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      if (h > maxW) { w = Math.round(w * maxW / h); h = maxW; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var quality = 0.7;
+      var result = canvas.toDataURL('image/jpeg', quality);
+      while (result.length > 500000 && quality > 0.4) {
         quality -= 0.1;
         result = canvas.toDataURL('image/jpeg', quality);
       }

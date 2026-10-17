@@ -252,7 +252,7 @@ async function addTireImage(input, idx) {
   if (!input.files || !input.files[0]) return;
   if (!tireOcrImages[idx]) tireOcrImages[idx] = [];
   var dataUrl = await readFile(input.files[0]);
-  var compressed = await compressImage(dataUrl);
+  var compressed = await compressImageForOcr(dataUrl);
   tireOcrImages[idx].push(compressed);
   renderTireOcrPreview(idx);
   input.value = '';
@@ -263,7 +263,7 @@ async function addTireImages(input, idx) {
   if (!tireOcrImages[idx]) tireOcrImages[idx] = [];
   for (var i = 0; i < input.files.length; i++) {
     var dataUrl = await readFile(input.files[i]);
-    var compressed = await compressImage(dataUrl);
+    var compressed = await compressImageForOcr(dataUrl);
     tireOcrImages[idx].push(compressed);
   }
   renderTireOcrPreview(idx);

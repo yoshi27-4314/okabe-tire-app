@@ -152,7 +152,7 @@ async function addImage(input) {
   if (!input.files || !input.files[0]) return;
   showSuccess('圧縮中...');
   var dataUrl = await readFileAsDataUrl(input.files[0]);
-  var compressed = await compressImage(dataUrl);
+  var compressed = await compressImageForOcr(dataUrl);
   pendingImages.push(compressed);
   renderPreview();
   input.value = '';
@@ -165,7 +165,7 @@ async function addImages(input) {
   showSuccess(input.files.length + '枚を準備中...');
   for (var i = 0; i < input.files.length; i++) {
     var dataUrl = await readFileAsDataUrl(input.files[i]);
-    var compressed = await compressImage(dataUrl);
+    var compressed = await compressImageForOcr(dataUrl);
     pendingImages.push(compressed);
   }
   renderPreview();
