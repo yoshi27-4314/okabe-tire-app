@@ -128,8 +128,13 @@ function renderTireInputs() {
     var id = 't' + i;
     html += '<div class="tire-section">';
     html += '<div class="tire-header"><span class="tire-pos">' + (i+1) + '本目 : ' + pos + '</span><span class="tire-badge empty" id="' + id + '_badge">未入力</span></div>';
-    html += '<div class="scan-btn" onclick="doOcr(' + i + ')">📷 タイヤを読み取る</div>';
-    html += '<input type="file" id="' + id + '_file" accept="image/*" capture="environment" style="display:none;" onchange="onTireCapture(this,' + i + ')">';
+    html += '<div style="display:flex;gap:6px;margin-bottom:10px;">';
+    html += '<input type="file" id="' + id + '_cam" accept="image/*" capture="environment" style="display:none;" onchange="addTireImage(this,' + i + ')">';
+    html += '<input type="file" id="' + id + '_file" accept="image/*" multiple style="display:none;" onchange="addTireImages(this,' + i + ')">';
+    html += '<a onclick="document.getElementById(\'' + id + '_cam\').click()" style="flex:1;text-align:center;padding:10px;font-size:13px;font-weight:600;color:var(--blue);background:#F0F7FF;border:1px solid var(--blue);border-radius:8px;cursor:pointer;">📷 カメラ</a>';
+    html += '<a onclick="document.getElementById(\'' + id + '_file\').click()" style="flex:1;text-align:center;padding:10px;font-size:13px;font-weight:600;color:var(--blue);background:#F0F7FF;border:1px solid var(--blue);border-radius:8px;cursor:pointer;">📁 ファイル</a>';
+    html += '</div>';
+    html += '<div id="' + id + '_ocrPreview" style="display:none;margin-bottom:10px;"><div style="display:flex;gap:4px;flex-wrap:wrap;" id="' + id + '_ocrThumbs"></div><a onclick="doTireOcr(' + i + ')" style="display:block;text-align:center;padding:8px;font-size:13px;font-weight:700;color:var(--white);background:var(--blue);border-radius:8px;margin-top:6px;cursor:pointer;" id="' + id + '_ocrBtn">読み取り開始</a><a onclick="clearTireImages(' + i + ')" style="display:block;text-align:center;font-size:11px;color:var(--red);margin-top:4px;cursor:pointer;">画像をクリア</a></div>';
     html += '<div class="form-row"><label class="form-label">メーカー</label><input class="form-input" id="' + id + '_maker" placeholder="ブリヂストン"></div>';
     html += '<div class="form-row"><label class="form-label">パターン</label><input class="form-input" id="' + id + '_pattern" placeholder="ブリザック VRX3"></div>';
     html += '<div class="form-row"><label class="form-label">サイズ</label><input class="form-input" id="' + id + '_size" placeholder="195/65R15"></div>';
@@ -151,7 +156,7 @@ function renderTireInputs() {
     html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sTread" onchange="onScratchCheck(' + i + ')"> トレッド面</label>';
     html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sRim" onchange="onScratchCheck(' + i + ')"> リム</label>';
     html += '</div>';
-    html += '<div id="' + id + '_scratchPhotos" style="display:none;"><label class="form-label" style="margin-top:6px;">傷の写真</label><div class="scratch-photos" id="' + id + '_photoArea"><div class="scratch-add" onclick="document.getElementById(\'' + id + '_sFile\').click()">+</div></div><input type="file" id="' + id + '_sFile" accept="image/*" capture="environment" style="display:none;" onchange="onScratchPhoto(this,' + i + ')"></div>';
+    html += '<div id="' + id + '_scratchPhotos" style="display:none;"><label class="form-label" style="margin-top:6px;">傷の写真</label><div class="scratch-photos" id="' + id + '_photoArea"><a onclick="document.getElementById(\'' + id + '_sCam\').click()" style="font-size:12px;color:var(--blue);cursor:pointer;margin-right:10px;">📷 カメラで撮影</a><a onclick="document.getElementById(\'' + id + '_sFile\').click()" style="font-size:12px;color:var(--blue);cursor:pointer;">📁 ファイルから追加</a></div><input type="file" id="' + id + '_sCam" accept="image/*" capture="environment" style="display:none;" onchange="onScratchPhoto(this,' + i + ')"><input type="file" id="' + id + '_sFile" accept="image/*" multiple style="display:none;" onchange="onScratchPhoto(this,' + i + ')"></div>';
     html += '</div>';
     html += '<div class="form-row" style="margin-top:10px;"><label class="form-label">メモ（この1本）</label><textarea class="memo-input" id="' + id + '_memo" placeholder="この1本に対するメモ"></textarea></div>';
     html += '</div>';
@@ -252,10 +257,6 @@ async function onScratchPhoto(input, idx) {
   input.value = '';
 }
 
-// OCR読み取り
-function doOcr(idx) {
-  document.getElementById('t' + idx + '_file').click();
-}
 // 画像圧縮（OCR用: 保管不要なので高画質。1MB以下に抑える）
 function compressImage(dataUrl) {
   return new Promise(function(resolve) {
@@ -279,39 +280,80 @@ function compressImage(dataUrl) {
     img.src = dataUrl;
   });
 }
+function readFile(file) {
+  return new Promise(function(resolve) { var r = new FileReader(); r.onload = function(e) { resolve(e.target.result); }; r.readAsDataURL(file); });
+}
 
-async function onTireCapture(input, idx) {
+// タイヤOCR: 画像追加
+var tireOcrImages = {};
+async function addTireImage(input, idx) {
   if (!input.files || !input.files[0]) return;
-  var reader = new FileReader();
-  reader.onload = async function(e) {
-    showSuccess('画像を圧縮中...');
-    var compressed = await compressImage(e.target.result);
-    console.log('タイヤOCR画像サイズ:', Math.round(compressed.length / 1024) + 'KB');
-    showSuccess('読み取り中...');
-    var r = await callAPI('tire_ocrRead', { imageData: compressed });
-    if (handleAPIError(r)) return;
-    var f = r.data.fields || {};
-    if (r.data.rawText) console.log('Gemini生レスポンス:', r.data.rawText);
-    var id = 't' + idx;
-    if (f['メーカー']) document.getElementById(id + '_maker').value = f['メーカー'];
-    if (f['パターン']) document.getElementById(id + '_pattern').value = f['パターン'];
-    if (f['サイズ']) document.getElementById(id + '_size').value = f['サイズ'];
-    if (f['製造年月']) document.getElementById(id + '_mfg').value = f['製造年月'];
-    showSuccess('読み取り完了');
-
-    // 1本目なら全本数にコピー
-    if (idx === 0) {
-      for (var i = 1; i < tireCount; i++) {
-        var tid = 't' + i;
-        if (!document.getElementById(tid + '_maker').value) document.getElementById(tid + '_maker').value = f['メーカー'] || '';
-        if (!document.getElementById(tid + '_pattern').value) document.getElementById(tid + '_pattern').value = f['パターン'] || '';
-        if (!document.getElementById(tid + '_size').value) document.getElementById(tid + '_size').value = f['サイズ'] || '';
-        if (!document.getElementById(tid + '_mfg').value) document.getElementById(tid + '_mfg').value = f['製造年月'] || '';
-      }
-    }
-  };
-  reader.readAsDataURL(input.files[0]);
+  if (!tireOcrImages[idx]) tireOcrImages[idx] = [];
+  var dataUrl = await readFile(input.files[0]);
+  var compressed = await compressImage(dataUrl);
+  tireOcrImages[idx].push(compressed);
+  renderTireOcrPreview(idx);
   input.value = '';
+  showSuccess(tireOcrImages[idx].length + '枚追加済み');
+}
+async function addTireImages(input, idx) {
+  if (!input.files || input.files.length === 0) return;
+  if (!tireOcrImages[idx]) tireOcrImages[idx] = [];
+  for (var i = 0; i < input.files.length; i++) {
+    var dataUrl = await readFile(input.files[i]);
+    var compressed = await compressImage(dataUrl);
+    tireOcrImages[idx].push(compressed);
+  }
+  renderTireOcrPreview(idx);
+  input.value = '';
+  showSuccess(tireOcrImages[idx].length + '枚追加済み');
+}
+function renderTireOcrPreview(idx) {
+  var id = 't' + idx;
+  var imgs = tireOcrImages[idx] || [];
+  var html = '';
+  for (var i = 0; i < imgs.length; i++) {
+    html += '<div style="width:50px;height:50px;border-radius:6px;overflow:hidden;border:1px solid var(--border);"><img src="' + imgs[i] + '" style="width:100%;height:100%;object-fit:cover;"></div>';
+  }
+  document.getElementById(id + '_ocrThumbs').innerHTML = html;
+  document.getElementById(id + '_ocrPreview').style.display = imgs.length > 0 ? '' : 'none';
+}
+function clearTireImages(idx) {
+  tireOcrImages[idx] = [];
+  renderTireOcrPreview(idx);
+}
+
+// タイヤOCR: 読み取り実行
+async function doTireOcr(idx) {
+  var imgs = tireOcrImages[idx] || [];
+  if (imgs.length === 0) { showError('画像を追加してください'); return; }
+  var id = 't' + idx;
+  var btn = document.getElementById(id + '_ocrBtn');
+  if (btn) btn.textContent = '読み取り中...';
+  var r = await callAPI('tire_ocrRead', { images: imgs });
+  if (btn) btn.textContent = '読み取り開始';
+  if (handleAPIError(r)) return;
+  var f = r.data.fields || {};
+  if (r.data.rawText) console.log('Gemini生レスポンス:', r.data.rawText);
+  if (f['メーカー']) document.getElementById(id + '_maker').value = f['メーカー'];
+  if (f['パターン']) document.getElementById(id + '_pattern').value = f['パターン'];
+  if (f['サイズ']) document.getElementById(id + '_size').value = f['サイズ'];
+  if (f['製造年月']) document.getElementById(id + '_mfg').value = f['製造年月'];
+  var filled = Object.values(f).filter(function(v) { return v; }).length;
+  showSuccess(filled > 0 ? filled + '項目を読み取りました' : '読み取れませんでした');
+
+  // 1本目なら全本数にコピー
+  if (idx === 0) {
+    for (var i = 1; i < tireCount; i++) {
+      var tid = 't' + i;
+      if (!document.getElementById(tid + '_maker').value) document.getElementById(tid + '_maker').value = f['メーカー'] || '';
+      if (!document.getElementById(tid + '_pattern').value) document.getElementById(tid + '_pattern').value = f['パターン'] || '';
+      if (!document.getElementById(tid + '_size').value) document.getElementById(tid + '_size').value = f['サイズ'] || '';
+      if (!document.getElementById(tid + '_mfg').value) document.getElementById(tid + '_mfg').value = f['製造年月'] || '';
+    }
+  }
+  tireOcrImages[idx] = [];
+  renderTireOcrPreview(idx);
 }
 
 // 保存
