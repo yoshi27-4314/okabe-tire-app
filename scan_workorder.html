@@ -44,25 +44,25 @@
   </div>
   <div class="content">
     <div class="step-indicator"><div class="step-dot active"></div><div class="step-dot"></div><div class="step-dot"></div></div>
-    <div class="section-label">STEP 1 : 作業指示書を撮影</div>
-    <div class="camera-area" onclick="document.getElementById('cameraInput').click()">
-      <div class="camera-icon">📷</div>
-      <div class="camera-text">カメラで撮影する</div>
-      <div class="camera-sub">作業指示書をその場で撮影</div>
+    <div class="section-label">STEP 1 : 作業指示書を読み取る</div>
+    <div class="info-box">カメラまたはファイルで画像を追加してください。<strong>複数枚を追加すると精度が上がります。</strong>追加し終わったら「読み取り開始」を押してください。</div>
+    <div style="display:flex;gap:10px;margin-bottom:12px;">
+      <div class="camera-area" onclick="document.getElementById('cameraInput').click()" style="flex:1;padding:20px 8px;">
+        <div class="camera-icon">&#x1F4F7;</div>
+        <div class="camera-text">カメラで追加</div>
+      </div>
+      <div class="camera-area" onclick="document.getElementById('fileInput').click()" style="flex:1;padding:20px 8px;border-color:var(--blue);">
+        <div class="camera-icon">&#x1F4C1;</div>
+        <div class="camera-text" style="color:var(--blue);">ファイルで追加</div>
+      </div>
     </div>
-    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="onCapture(this)">
-    <div class="camera-area" onclick="document.getElementById('fileInput').click()" style="border-color:var(--blue);margin-top:10px;">
-      <div class="camera-icon">📁</div>
-      <div class="camera-text" style="color:var(--blue);">ファイルから選ぶ（複数可）</div>
-      <div class="camera-sub">保存済みの写真を読み込む</div>
-    </div>
-    <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="onCaptureMulti(this)">
+    <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="addImage(this)">
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="addImages(this)">
     <div id="previewArea" style="display:none;margin-top:10px;">
-      <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">選択した画像</div>
-      <div id="previewImages" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
-      <button class="btn-primary" style="margin-top:10px;" id="ocrMultiBtn" onclick="doOcrMulti()">読み取り開始</button>
+      <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">追加した画像（<span id="imageCount">0</span>枚）<span onclick="clearImages()" style="float:right;color:var(--red);cursor:pointer;font-size:11px;">全て削除</span></div>
+      <div id="previewImages" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;"></div>
+      <button class="btn-primary" id="ocrBtn" onclick="doOcr()">この画像で読み取り開始</button>
     </div>
-    <div class="info-box">作業指示書を撮影すると、顧客名・ナンバー・車種などを自動で読み取ります。複数枚を選択すると精度が上がります。読み取り後に手修正もできます。</div>
     <button class="btn-secondary" onclick="showScr('scr2')" style="color:var(--brown);">手入力で進める</button>
     <button class="btn-secondary" onclick="goHome()">ホームに戻る</button>
   </div>
@@ -170,44 +170,55 @@ function compressImage(dataUrl, maxWidth, quality) {
 
 var pendingImages = [];
 
-// STEP 1: カメラ撮影（1枚）
-async function onCapture(input) {
+// カメラで1枚追加
+async function addImage(input) {
   if (!input.files || !input.files[0]) return;
-  var file = input.files[0];
-  var reader = new FileReader();
-  reader.onload = async function(e) {
-    showSuccess('画像を圧縮中...');
-    var compressed = await compressImage(e.target.result, 1600, 0.85);
-    console.log('OCR画像サイズ:', Math.round(compressed.length / 1024) + 'KB');
-    showSuccess('読み取り中...');
-    var r = await callAPI('ocr_workorder', { imageData: compressed });
-    if (handleAPIError(r)) return;
-    ocrFields = r.data.fields || {};
-    if (r.data.rawText) console.log('Gemini生レスポンス:', r.data.rawText);
-    fillOcrFields(ocrFields);
-    showScr('scr2');
-  };
-  reader.readAsDataURL(file);
+  showSuccess('圧縮中...');
+  var dataUrl = await readFileAsDataUrl(input.files[0]);
+  var compressed = await compressImage(dataUrl, 1600, 0.85);
+  pendingImages.push(compressed);
+  console.log('追加: ' + Math.round(compressed.length / 1024) + 'KB（合計' + pendingImages.length + '枚）');
+  renderPreview();
   input.value = '';
+  showSuccess(pendingImages.length + '枚追加済み');
 }
 
-// STEP 1: ファイル選択（複数枚）
-async function onCaptureMulti(input) {
+// ファイルで複数枚追加
+async function addImages(input) {
   if (!input.files || input.files.length === 0) return;
-  pendingImages = [];
-  var previewHtml = '';
-  showSuccess(input.files.length + '枚の画像を準備中...');
-
+  showSuccess(input.files.length + '枚を準備中...');
   for (var i = 0; i < input.files.length; i++) {
     var dataUrl = await readFileAsDataUrl(input.files[i]);
     var compressed = await compressImage(dataUrl, 1600, 0.85);
     pendingImages.push(compressed);
-    previewHtml += '<div style="width:60px;height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--border);"><img src="' + compressed + '" style="width:100%;height:100%;object-fit:cover;"></div>';
   }
-
-  document.getElementById('previewImages').innerHTML = previewHtml;
-  document.getElementById('previewArea').style.display = '';
+  console.log('追加完了: 合計' + pendingImages.length + '枚');
+  renderPreview();
   input.value = '';
+  showSuccess(pendingImages.length + '枚追加済み');
+}
+
+function renderPreview() {
+  var html = '';
+  for (var i = 0; i < pendingImages.length; i++) {
+    html += '<div style="position:relative;width:70px;height:70px;border-radius:8px;overflow:hidden;border:1px solid var(--border);">';
+    html += '<img src="' + pendingImages[i] + '" style="width:100%;height:100%;object-fit:cover;">';
+    html += '<div onclick="removeImage(' + i + ')" style="position:absolute;top:2px;right:2px;width:20px;height:20px;background:var(--red);color:white;border-radius:50%;font-size:12px;line-height:20px;text-align:center;cursor:pointer;">×</div>';
+    html += '</div>';
+  }
+  document.getElementById('previewImages').innerHTML = html;
+  document.getElementById('imageCount').textContent = pendingImages.length;
+  document.getElementById('previewArea').style.display = pendingImages.length > 0 ? '' : 'none';
+}
+
+function removeImage(idx) {
+  pendingImages.splice(idx, 1);
+  renderPreview();
+}
+
+function clearImages() {
+  pendingImages = [];
+  renderPreview();
 }
 
 function readFileAsDataUrl(file) {
@@ -218,16 +229,24 @@ function readFileAsDataUrl(file) {
   });
 }
 
-async function doOcrMulti() {
-  if (pendingImages.length === 0) return;
-  startLoading(document.getElementById('ocrMultiBtn'));
+// 読み取り実行（1枚でも複数枚でも同じ処理）
+async function doOcr() {
+  if (pendingImages.length === 0) { showError('画像を追加してください'); return; }
+  startLoading(document.getElementById('ocrBtn'));
   showSuccess(pendingImages.length + '枚を読み取り中...');
+  console.log('OCR送信: ' + pendingImages.length + '枚, 合計' + Math.round(pendingImages.reduce(function(a, b) { return a + b.length; }, 0) / 1024) + 'KB');
   var r = await callAPI('ocr_workorder', { images: pendingImages });
-  stopLoading(document.getElementById('ocrMultiBtn'));
+  stopLoading(document.getElementById('ocrBtn'));
   if (handleAPIError(r)) return;
   ocrFields = r.data.fields || {};
+  if (r.data.rawText) console.log('Gemini生レスポンス:', r.data.rawText);
+  var filled = Object.values(ocrFields).filter(function(v) { return v; }).length;
+  if (filled === 0) {
+    showError('読み取れませんでした。撮り直すか、手入力で進めてください');
+  } else {
+    showSuccess(filled + '項目を読み取りました');
+  }
   fillOcrFields(ocrFields);
-  document.getElementById('previewArea').style.display = 'none';
   showScr('scr2');
 }
 
