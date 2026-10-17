@@ -356,6 +356,17 @@ async function doStart() {
   });
 }
 
+// --- タイヤ入力へ遷移（作業中から） ---
+function goToTireInput() {
+  if (!selectedOrder) return;
+  navigateTo('tire_input.html', {
+    orderNumber: selectedOrder.orderNumber,
+    tireSetId: selectedOrder.tireSetId || '',
+    customerName: selectedOrder.customerName || '',
+    plate: selectedOrder.plate || ''
+  });
+}
+
 // --- 取り消し ---
 async function doCancel() {
   if (!selectedOrder) return;
