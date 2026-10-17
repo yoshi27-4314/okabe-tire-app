@@ -276,11 +276,13 @@ async function onTireCapture(input, idx) {
   var reader = new FileReader();
   reader.onload = async function(e) {
     showSuccess('画像を圧縮中...');
-    var compressed = await compressImage(e.target.result, 1200, 0.7);
+    var compressed = await compressImage(e.target.result, 1600, 0.85);
+    console.log('タイヤOCR画像サイズ:', Math.round(compressed.length / 1024) + 'KB');
     showSuccess('読み取り中...');
     var r = await callAPI('tire_ocrRead', { imageData: compressed });
     if (handleAPIError(r)) return;
     var f = r.data.fields || {};
+    if (r.data.rawText) console.log('Gemini生レスポンス:', r.data.rawText);
     var id = 't' + idx;
     if (f['メーカー']) document.getElementById(id + '_maker').value = f['メーカー'];
     if (f['パターン']) document.getElementById(id + '_pattern').value = f['パターン'];

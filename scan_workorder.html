@@ -177,11 +177,13 @@ async function onCapture(input) {
   var reader = new FileReader();
   reader.onload = async function(e) {
     showSuccess('画像を圧縮中...');
-    var compressed = await compressImage(e.target.result, 1200, 0.7);
+    var compressed = await compressImage(e.target.result, 1600, 0.85);
+    console.log('OCR画像サイズ:', Math.round(compressed.length / 1024) + 'KB');
     showSuccess('読み取り中...');
     var r = await callAPI('ocr_workorder', { imageData: compressed });
     if (handleAPIError(r)) return;
     ocrFields = r.data.fields || {};
+    if (r.data.rawText) console.log('Gemini生レスポンス:', r.data.rawText);
     fillOcrFields(ocrFields);
     showScr('scr2');
   };
@@ -198,7 +200,7 @@ async function onCaptureMulti(input) {
 
   for (var i = 0; i < input.files.length; i++) {
     var dataUrl = await readFileAsDataUrl(input.files[i]);
-    var compressed = await compressImage(dataUrl, 1200, 0.7);
+    var compressed = await compressImage(dataUrl, 1600, 0.85);
     pendingImages.push(compressed);
     previewHtml += '<div style="width:60px;height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--border);"><img src="' + compressed + '" style="width:100%;height:100%;object-fit:cover;"></div>';
   }
