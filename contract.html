@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="color-scheme" content="light">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>契約書発行 - タイヤホテルOKABE DX</title>
+<title>契約書 - タイヤホテルOKABE DX</title>
 <link rel="stylesheet" href="style.css">
 <script src="api.js"></script>
 <script src="common.js"></script>
@@ -31,12 +31,19 @@
 .price-row.total { border-top: 2px solid var(--green); padding-top: 10px; margin-top: 6px; font-size: 18px; font-weight: 700; }
 .list-card { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; box-shadow: var(--shadow-sm); }
 .list-card:active { transform: scale(0.98); background: #FFF8F0; }
-.list-card.issued { opacity: 0.5; }
+.list-card.issued { opacity: 0.7; }
 .list-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
 .list-customer { font-size: 15px; font-weight: 700; }
 .list-plate { font-size: 14px; font-weight: 600; color: var(--brown); margin-bottom: 4px; }
 .list-detail { font-size: 13px; color: var(--text2); }
 .list-time { font-size: 12px; color: var(--text3); margin-top: 4px; }
+.confirm-box { background: var(--white); border: 1px solid var(--border-light); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow-sm); }
+.confirm-row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border-light); font-size: 13px; }
+.confirm-row:last-child { border-bottom: none; }
+.confirm-label { color: var(--text3); }
+.confirm-value { font-weight: 600; }
+.contact-log { font-size: 12px; color: var(--text2); padding: 6px 0; border-bottom: 1px solid var(--border-light); }
+.contact-log:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
@@ -45,15 +52,23 @@
 <div id="scrList" class="screen active">
   <div class="header">
     <button class="home-btn" onclick="goHome()">ホーム</button>
-    <div class="header-title">契約書発行</div>
+    <div class="header-title">契約書</div>
   </div>
   <div class="content">
-    <div class="section-label">契約書発行待ち</div>
-    <div id="completedList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="switchTab('issue',this)">発行待ち</div>
+      <div class="tab-item" onclick="switchTab('active',this)">有効な契約</div>
+    </div>
+    <div id="tabIssue">
+      <div id="completedList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+    </div>
+    <div id="tabActive" style="display:none;">
+      <div id="contractList"><div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div></div>
+    </div>
   </div>
 </div>
 
-<!-- プレビュー画面 -->
+<!-- 契約書プレビュー（発行用） -->
 <div id="scrPreview" class="screen">
   <div class="header">
     <button class="home-btn" onclick="goHome()">ホーム</button>
@@ -65,26 +80,65 @@
   </div>
 </div>
 
+<!-- 契約詳細（管理用） -->
+<div id="scrDetail" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrList')">< 戻る</button>
+    <div class="header-title">契約詳細</div>
+  </div>
+  <div class="content" id="detailContent"></div>
+</div>
+
+<!-- 契約更新 -->
+<div id="scrRenew" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrDetail')">< 戻る</button>
+    <div class="header-title">契約更新</div>
+  </div>
+  <div class="content">
+    <div id="renewInfo"></div>
+    <div class="confirm-box">
+      <div style="font-size:13px;font-weight:600;color:var(--brown);margin-bottom:8px;">更新内容</div>
+      <div class="form-row"><label class="form-label">更新後の返却予定日（任意）</label><input class="form-input" type="date" id="renewReturnDate" style="padding:10px 12px;"></div>
+      <div class="form-row"><label class="form-label">更新メモ</label><textarea class="form-input" rows="2" id="renewMemo" placeholder="更新時の備考" style="resize:vertical;"></textarea></div>
+    </div>
+    <button class="btn-primary" style="background:var(--green);" id="renewBtn" onclick="doRenew()">契約を更新する</button>
+    <button class="btn-secondary" onclick="showScr('scrDetail')">キャンセル</button>
+  </div>
+</div>
+
 <script>
 if (!requireLogin()) {}
 
 var selectedOrder = null;
 var currentTireType = '';
+var currentContract = null;
+var currentVersion = null;
 
-// 一覧
+function switchTab(tab, el) {
+  var tabs = document.querySelectorAll('.tab-item');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+  el.classList.add('active');
+  document.getElementById('tabIssue').style.display = tab === 'issue' ? '' : 'none';
+  document.getElementById('tabActive').style.display = tab === 'active' ? '' : 'none';
+  if (tab === 'active') loadContracts();
+}
+
+// ========== 発行待ちタブ ==========
+
 async function loadList() {
   var r = await callAPI('contract_completedList', {});
   if (handleAPIError(r)) return;
   var items = r.data.items || [];
 
   if (items.length === 0) {
-    document.getElementById('completedList').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">発行待ちの契約はありません</div>';
+    document.getElementById('completedList').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">発行待ちの作業はありません</div>';
     return;
   }
 
   var html = '';
-  var hasIssued = false;
-
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
     if (it.status === '契約発行済み') continue;
@@ -97,25 +151,11 @@ async function loadList() {
     html += '</div>';
   }
 
-  for (var j = 0; j < items.length; j++) {
-    var it2 = items[j];
-    if (it2.status !== '契約発行済み') continue;
-    if (!hasIssued) {
-      html += '<div class="section-label" style="color:var(--text3);margin-top:16px;">発行済み</div>';
-      hasIssued = true;
-    }
-    html += '<div class="list-card issued">';
-    html += '<div class="list-top"><span class="list-customer">' + escapeHtml(it2.customerName) + '</span>';
-    html += '<span class="status st-done">発行済み</span></div>';
-    html += '<div class="list-plate">' + escapeHtml(it2.plate) + '</div>';
-    html += '<div class="list-detail">' + escapeHtml(it2.model) + '</div>';
-    html += '</div>';
-  }
-
+  if (!html) html = '<div style="text-align:center;color:var(--text3);padding:20px;">発行待ちの作業はありません</div>';
   document.getElementById('completedList').innerHTML = html;
 }
 
-// プレビュー
+// 契約書プレビュー
 async function loadPreview(orderNumber) {
   selectedOrder = orderNumber;
   document.getElementById('previewContent').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div>';
@@ -215,7 +255,6 @@ function calcPrice() {
   var rate = Number(discountSelect.options[discountSelect.selectedIndex].dataset.rate) || 0;
   var discount = Math.floor(fee * rate / 100);
   var total = fee - discount;
-
   var html = '';
   if (fee > 0) {
     html += '<div class="price-row"><span>保管料</span><span>' + fee.toLocaleString() + '円</span></div>';
@@ -230,76 +269,56 @@ async function doIssue() {
   if (!selectedOrder || issueLoading) return;
   var planSelect = document.getElementById('pricePlanSelect');
   var discountSelect = document.getElementById('discountSelect');
-
   if (!planSelect.value) { showError('料金プランを選択してください'); return; }
   var returnDate = document.getElementById('returnDate').value;
   if (!returnDate) { showError('返却予定日を入力してください'); return; }
-
   var fee = Number(planSelect.options[planSelect.selectedIndex].dataset.fee) || 0;
   var rate = Number(discountSelect.options[discountSelect.selectedIndex].dataset.rate) || 0;
   var discount = Math.floor(fee * rate / 100);
   var total = fee - discount;
-
   issueLoading = true;
   var btn = document.getElementById('issueBtn');
   btn.disabled = true;
   startLoading(btn);
   var r = await callAPI('contract_issue', {
-    orderNumber: selectedOrder,
-    tireType: currentTireType || '',
-    pricePlan: planSelect.value,
-    fee: String(fee),
-    discountRule: discountSelect.value,
-    discountAmount: String(discount),
-    total: String(total),
-    returnDate: returnDate,
+    orderNumber: selectedOrder, tireType: currentTireType || '',
+    pricePlan: planSelect.value, fee: String(fee),
+    discountRule: discountSelect.value, discountAmount: String(discount),
+    total: String(total), returnDate: returnDate,
   });
-  stopLoading(btn);
-  btn.disabled = false;
-  issueLoading = false;
+  stopLoading(btn); btn.disabled = false; issueLoading = false;
   if (handleAPIError(r)) return;
-
   showSuccess('契約書を発行しました（' + r.data.contractNumber + '）');
   loadList();
   showScr('scrList');
 }
 
 function doPrint() {
-  var printContent = document.getElementById('previewContent').innerHTML;
-  var printWindow = window.open('', '_blank');
-  printWindow.document.write('<html><head><title>タイヤホテル契約書</title>');
-  printWindow.document.write('<style>');
-  printWindow.document.write('body { font-family: "Hiragino Sans","Noto Sans JP",sans-serif; color: #2C2C2C; padding: 20mm; font-size: 11pt; }');
-  printWindow.document.write('.preview-card { border: 1px solid #ddd; border-radius: 8px; padding: 14px; margin-bottom: 12px; }');
-  printWindow.document.write('.preview-title { font-size: 13pt; font-weight: 700; color: #5C4033; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 2px solid #E86A2A; }');
-  printWindow.document.write('.preview-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #eee; font-size: 10pt; }');
-  printWindow.document.write('.preview-label { color: #999; }');
-  printWindow.document.write('.preview-value { font-weight: 600; }');
-  printWindow.document.write('.preview-value.empty { color: #C41E3A; }');
-  printWindow.document.write('.preview-value.alert { color: #C41E3A; font-weight: 700; }');
-  printWindow.document.write('.tire-preview { padding: 8px; background: #FAF8F5; border-radius: 6px; margin-bottom: 6px; }');
-  printWindow.document.write('.tire-preview-title { font-size: 11pt; font-weight: 700; color: #5C4033; margin-bottom: 4px; }');
-  printWindow.document.write('.tire-preview-row { display: flex; justify-content: space-between; font-size: 10pt; padding: 2px 0; }');
-  printWindow.document.write('.tire-preview-label { color: #999; }');
-  printWindow.document.write('.tire-preview-value { font-weight: 600; }');
-  printWindow.document.write('.scratch-tag { font-size: 9pt; padding: 2px 6px; background: #FFF5F5; color: #C41E3A; border-radius: 3px; display: inline-block; margin-right: 3px; }');
-  printWindow.document.write('.price-card { border: 2px solid #006B3F; border-radius: 8px; padding: 14px; margin-bottom: 12px; }');
-  printWindow.document.write('.price-title { font-size: 13pt; font-weight: 700; color: #006B3F; margin-bottom: 8px; }');
-  printWindow.document.write('.price-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 11pt; }');
-  printWindow.document.write('.price-row.total { border-top: 2px solid #006B3F; padding-top: 8px; margin-top: 4px; font-size: 14pt; font-weight: 700; }');
-  printWindow.document.write('.edit-link, .btn-primary, .btn-secondary, select, #priceDisplay + div { display: none !important; }');
-  printWindow.document.write('@media print { @page { margin: 15mm; } }');
-  printWindow.document.write('</style></head><body>');
-  printWindow.document.write('<div style="text-align:center;margin-bottom:20px;"><h1 style="font-size:18pt;color:#5C4033;">タイヤホテル預かり契約書</h1></div>');
-  printWindow.document.write(printContent);
-  printWindow.document.write('<div style="margin-top:40px;border-top:1px solid #ddd;padding-top:20px;">');
-  printWindow.document.write('<div style="display:flex;justify-content:space-between;font-size:11pt;">');
-  printWindow.document.write('<div>お客様署名：＿＿＿＿＿＿＿＿＿＿＿＿</div>');
-  printWindow.document.write('<div>日付：＿＿＿＿年＿＿月＿＿日</div>');
-  printWindow.document.write('</div></div>');
-  printWindow.document.write('</body></html>');
-  printWindow.document.close();
-  printWindow.print();
+  var content = document.getElementById('previewContent').innerHTML;
+  var pw = window.open('', '_blank');
+  pw.document.write('<html><head><title>タイヤホテル契約書</title><style>');
+  pw.document.write('body{font-family:"Hiragino Sans","Noto Sans JP",sans-serif;color:#2C2C2C;padding:20mm;font-size:11pt}');
+  pw.document.write('.preview-card{border:1px solid #ddd;border-radius:8px;padding:14px;margin-bottom:12px}');
+  pw.document.write('.preview-title{font-size:13pt;font-weight:700;color:#5C4033;margin-bottom:8px;padding-bottom:4px;border-bottom:2px solid #E86A2A}');
+  pw.document.write('.preview-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #eee;font-size:10pt}');
+  pw.document.write('.preview-label{color:#999}.preview-value{font-weight:600}');
+  pw.document.write('.tire-preview{padding:8px;background:#FAF8F5;border-radius:6px;margin-bottom:6px}');
+  pw.document.write('.tire-preview-title{font-size:11pt;font-weight:700;color:#5C4033;margin-bottom:4px}');
+  pw.document.write('.tire-preview-row{display:flex;justify-content:space-between;font-size:10pt;padding:2px 0}');
+  pw.document.write('.scratch-tag{font-size:9pt;padding:2px 6px;background:#FFF5F5;color:#C41E3A;border-radius:3px;display:inline-block;margin-right:3px}');
+  pw.document.write('.price-card{border:2px solid #006B3F;border-radius:8px;padding:14px;margin-bottom:12px}');
+  pw.document.write('.price-title{font-size:13pt;font-weight:700;color:#006B3F;margin-bottom:8px}');
+  pw.document.write('.price-row{display:flex;justify-content:space-between;padding:4px 0;font-size:11pt}');
+  pw.document.write('.price-row.total{border-top:2px solid #006B3F;padding-top:8px;margin-top:4px;font-size:14pt;font-weight:700}');
+  pw.document.write('.edit-link,.btn-primary,.btn-secondary,select{display:none!important}');
+  pw.document.write('@media print{@page{margin:15mm}}');
+  pw.document.write('</style></head><body>');
+  pw.document.write('<div style="text-align:center;margin-bottom:20px;"><h1 style="font-size:18pt;color:#5C4033;">タイヤホテル預かり契約書</h1></div>');
+  pw.document.write(content);
+  pw.document.write('<div style="margin-top:40px;border-top:1px solid #ddd;padding-top:20px;display:flex;justify-content:space-between;font-size:11pt;">');
+  pw.document.write('<div>お客様署名：＿＿＿＿＿＿＿＿＿＿＿＿</div><div>日付：＿＿＿＿年＿＿月＿＿日</div></div>');
+  pw.document.write('</body></html>');
+  pw.document.close(); pw.print();
 }
 
 async function loadScratchPhotos(idx, folderId) {
@@ -314,11 +333,161 @@ async function loadScratchPhotos(idx, folderId) {
   for (var i = 0; i < r.data.images.length; i++) {
     var img = r.data.images[i];
     var src = img.dataUrl || img.url || '';
-    if (src) {
-      html += '<div style="width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer;" onclick="showPhotoModal(this.querySelector(\'img\').src)"><img src="' + src + '" style="width:100%;height:100%;object-fit:cover;"></div>';
-    }
+    if (src) html += '<div style="width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer;" onclick="showPhotoModal(this.querySelector(\'img\').src)"><img src="' + src + '" style="width:100%;height:100%;object-fit:cover;"></div>';
   }
   el.innerHTML = html || '<div style="font-size:11px;color:var(--text3);">写真なし</div>';
+}
+
+// ========== 有効な契約タブ ==========
+
+async function loadContracts() {
+  var r = await callAPI('contract_list', {});
+  if (handleAPIError(r)) return;
+  var contracts = r.data.contracts || [];
+  if (contracts.length === 0) {
+    document.getElementById('contractList').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">有効な契約はありません</div>';
+    return;
+  }
+  var html = '<div class="section-label">有効な契約（' + contracts.length + '件）</div>';
+  for (var i = 0; i < contracts.length; i++) {
+    var c = contracts[i];
+    html += '<div class="list-card" onclick="loadDetail(\'' + escapeHtml(c['契約番号']) + '\')">'
+      + '<div class="list-top"><span class="list-customer">' + escapeHtml(c['顧客名'] || '') + '</span>'
+      + '<span class="status st-ready">' + escapeHtml(c['状態']) + '</span></div>'
+      + '<div class="list-plate">' + escapeHtml(c['ナンバー'] || '') + ' / ' + escapeHtml(c['車種'] || '') + '</div>'
+      + '<div class="list-detail">合計: ¥' + (Number(c['合計（税別）']) || 0).toLocaleString() + '</div>'
+      + '<div class="list-detail">' + formatDate(c['預かり日']) + ' 〜 ' + formatDate(c['返却予定日']) + '</div></div>';
+  }
+  document.getElementById('contractList').innerHTML = html;
+}
+
+// ========== 契約詳細 ==========
+
+async function loadDetail(contractNumber) {
+  showScr('scrDetail');
+  document.getElementById('detailContent').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">読み込み中...</div>';
+
+  var r = await callAPI('contract_detail', { contractNumber: contractNumber });
+  if (handleAPIError(r)) return;
+  currentContract = r.data.contract;
+  currentVersion = currentContract['版番号'];
+  var c = currentContract;
+  var contacts = r.data.contacts || [];
+
+  var html = '';
+  html += '<div class="confirm-box"><div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:8px;">契約情報</div>';
+  html += '<div class="confirm-row"><span class="confirm-label">契約番号</span><span class="confirm-value">' + escapeHtml(c['契約番号']) + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">状態</span><span class="confirm-value">' + escapeHtml(c['状態']) + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">契約区分</span><span class="confirm-value">' + escapeHtml(c['契約区分'] || c['種別'] || '') + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">預かり区分</span><span class="confirm-value">' + escapeHtml(c['預かり区分'] || '') + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">預かり日</span><span class="confirm-value">' + formatDate(c['預かり日']) + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">返却予定日</span><span class="confirm-value">' + formatDate(c['返却予定日']) + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">更新回数</span><span class="confirm-value">' + (c['更新回数'] || 0) + '回</span></div>';
+  html += '</div>';
+
+  html += '<div class="confirm-box"><div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:8px;">料金</div>';
+  html += '<div class="confirm-row"><span class="confirm-label">保管料（税別）</span><span class="confirm-value">¥' + (Number(c['保管料（税別）']) || 0).toLocaleString() + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">割引額</span><span class="confirm-value">¥' + (Number(c['割引額']) || 0).toLocaleString() + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">合計（税別）</span><span class="confirm-value" style="color:var(--orange);font-weight:700;">¥' + (Number(c['合計（税別）']) || 0).toLocaleString() + '</span></div>';
+  html += '</div>';
+
+  // 連絡状況
+  html += '<div class="confirm-box"><div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:8px;">連絡状況</div>';
+  html += '<div class="toggle-group" id="contactStatusGroup" style="flex-wrap:wrap;margin-bottom:10px;">';
+  var statuses = ['未連絡', '連絡済み', '返事待ち', '予約入り', '連絡不能', '督促済'];
+  for (var si = 0; si < statuses.length; si++) {
+    var stColor = (statuses[si] === '連絡不能' || statuses[si] === '督促済') ? ';color:var(--red)' : '';
+    html += '<span class="toggle-btn" data-value="' + statuses[si] + '" onclick="toggleCheck(this)" style="font-size:12px;padding:8px 12px' + stColor + '">' + statuses[si] + '</span>';
+  }
+  html += '</div>';
+  html += '<textarea class="form-input" rows="3" id="contactMemo" placeholder="連絡日時、内容、お客様の反応など" style="resize:vertical;margin-bottom:8px;"></textarea>';
+  html += '<button class="btn-secondary" style="color:var(--green);border-color:var(--green);" id="contactSaveBtn" onclick="saveContact()">連絡状況を保存</button>';
+
+  if (contacts.length > 0) {
+    html += '<div style="font-size:12px;font-weight:600;color:var(--text3);margin:12px 0 6px;">連絡履歴</div>';
+    for (var ci = 0; ci < contacts.length; ci++) {
+      var ct = contacts[ci];
+      html += '<div class="contact-log"><span style="font-weight:600;">' + escapeHtml(ct['連絡状況'] || '') + '</span> ' + formatDateTime(ct['連絡日時']) + '<br>' + escapeHtml(ct['連絡メモ'] || '') + '</div>';
+    }
+  }
+  html += '</div>';
+
+  // アクション
+  html += '<div class="confirm-box"><div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:8px;">アクション</div>';
+  html += '<button class="btn-secondary" style="color:var(--green);border-color:var(--green);" onclick="showRenewScreen()">契約を更新する</button>';
+  html += '<button class="btn-danger" id="closeBtn" onclick="closeContract()">契約を終了する</button>';
+  html += '</div>';
+
+  document.getElementById('detailContent').innerHTML = html;
+}
+
+// 連絡状況保存
+async function saveContact() {
+  if (!currentContract) return;
+  var status = getToggleValue('contactStatusGroup');
+  if (!status) { showError('連絡状況を選んでください'); return; }
+  startLoading(document.getElementById('contactSaveBtn'));
+  var r = await callAPI('contract_updateContact', {
+    contractNumber: currentContract['契約番号'],
+    contactStatus: status,
+    contactMemo: document.getElementById('contactMemo').value.trim()
+  });
+  stopLoading(document.getElementById('contactSaveBtn'));
+  if (handleAPIError(r)) return;
+  showSuccess('連絡状況を保存しました');
+  loadDetail(currentContract['契約番号']);
+}
+
+// 契約更新画面
+function showRenewScreen() {
+  if (!currentContract) return;
+  var c = currentContract;
+  var html = '<div class="confirm-box"><div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:8px;">現在の契約</div>';
+  html += '<div class="confirm-row"><span class="confirm-label">契約番号</span><span class="confirm-value">' + escapeHtml(c['契約番号']) + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">保管料</span><span class="confirm-value">¥' + (Number(c['保管料（税別）']) || 0).toLocaleString() + '</span></div>';
+  html += '<div class="confirm-row"><span class="confirm-label">更新回数</span><span class="confirm-value">' + (c['更新回数'] || 0) + '回</span></div></div>';
+  document.getElementById('renewInfo').innerHTML = html;
+  document.getElementById('renewReturnDate').value = '';
+  document.getElementById('renewMemo').value = '';
+  showScr('scrRenew');
+}
+
+async function doRenew() {
+  if (!currentContract) return;
+  startLoading(document.getElementById('renewBtn'));
+  var r = await callAPI('contract_renew', {
+    contractNumber: currentContract['契約番号'],
+    version: currentVersion,
+    idempotencyKey: generateIdempotencyKey(),
+    returnDate: document.getElementById('renewReturnDate').value,
+    renewMemo: document.getElementById('renewMemo').value.trim()
+  });
+  stopLoading(document.getElementById('renewBtn'));
+  if (handleAPIError(r)) return;
+  showSuccess('契約を更新しました');
+  loadDetail(currentContract['契約番号']);
+  showScr('scrDetail');
+}
+
+async function closeContract() {
+  if (!currentContract) return;
+  if (!confirmAction('この契約を終了しますか？')) return;
+  startLoading(document.getElementById('closeBtn'));
+  var r = await callAPI('contract_close', {
+    contractNumber: currentContract['契約番号'],
+    version: currentVersion
+  });
+  stopLoading(document.getElementById('closeBtn'));
+  if (handleAPIError(r)) return;
+  showSuccess('契約を終了しました');
+  loadContracts();
+  showScr('scrList');
+}
+
+function getStatusClass(st) {
+  if (st === '有効') return 'st-ready';
+  if (st === '終了' || st === '早期終了') return 'st-done';
+  return 'st-waiting';
 }
 
 loadList();
