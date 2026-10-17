@@ -90,7 +90,7 @@
   </div>
 
   <button class="btn-primary" id="saveBtn" onclick="doSave()">保存する</button>
-  <button class="btn-secondary" onclick="location.href='pit_work.html'">戻る</button>
+  <button class="btn-secondary" id="backBtn" onclick="history.back()">戻る</button>
 </div>
 
 <script>
@@ -372,11 +372,16 @@ async function doSave() {
 
 // 初期化
 async function init() {
-  if (!orderNumber) { goHome(); return; }
+  if (!orderNumber && !tireSetId) { goHome(); return; }
+
+  // orderNumberがない場合は閲覧モード（保存ボタン非表示）
+  if (!orderNumber) {
+    document.getElementById('saveBtn').style.display = 'none';
+  }
 
   // URLパラメータから顧客名・ナンバーを表示
   document.getElementById('infoName').textContent = paramCustomerName || '';
-  document.getElementById('infoPlate').textContent = paramPlate || orderNumber;
+  document.getElementById('infoPlate').textContent = paramPlate || orderNumber || '';
 
   renderCountBar();
   renderTireInputs();

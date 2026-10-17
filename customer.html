@@ -192,7 +192,10 @@ async function deleteCustomer() {
 }
 
 var paramId = getParam('customerId');
-if (paramId) loadDetail(paramId);
+if (paramId) {
+  document.getElementById('scrSearch').classList.remove('active');
+  loadDetail(paramId);
+}
 </script>
 </body>
 </html>

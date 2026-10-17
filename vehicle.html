@@ -185,7 +185,10 @@ async function deleteVehicle() {
 }
 
 var paramId = getParam('vehicleId');
-if (paramId) loadDetail(paramId);
+if (paramId) {
+  document.getElementById('scrSearch').classList.remove('active');
+  loadDetail(paramId);
+}
 </script>
 </body>
 </html>

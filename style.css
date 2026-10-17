@@ -21,15 +21,7 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
-:root { color-scheme: only light; }
-@media (prefers-color-scheme: dark) {
-  :root { color-scheme: only light !important; }
-  html, body, div, span, input, select, textarea, button, a, p, h1, h2, h3, h4, h5, h6, label {
-    background-color: revert !important;
-    color: revert !important;
-    border-color: revert !important;
-  }
-}
+:root { color-scheme: light only; }
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
