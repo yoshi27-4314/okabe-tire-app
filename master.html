@@ -323,7 +323,16 @@ async function doToggleStaff(enable) {
 }
 
 loadMaster();
-loadStaff();
+var isAdmin = (localStorage.getItem('role') || '') === 'ADMIN';
+if (isAdmin) {
+  loadStaff();
+} else {
+  document.querySelector('[onclick*="tabStaff"]').style.display = 'none';
+  document.getElementById('tabStaff').style.display = 'none';
+  document.getElementById('tabPrice').style.display = '';
+  document.querySelector('[onclick*="tabPrice"]').classList.add('active');
+  document.querySelector('[onclick*="tabStaff"]').classList.remove('active');
+}
 </script>
 </body>
 </html>
