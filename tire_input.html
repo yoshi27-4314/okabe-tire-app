@@ -255,17 +255,25 @@ async function onScratchPhoto(input, idx) {
 function doOcr(idx) {
   document.getElementById('t' + idx + '_file').click();
 }
-// 画像圧縮
-function compressImage(dataUrl, maxWidth, quality) {
+// 画像圧縮（OCR用: 保管不要なので高画質。1MB以下に抑える）
+function compressImage(dataUrl) {
   return new Promise(function(resolve) {
     var img = new Image();
     img.onload = function() {
       var w = img.width, h = img.height;
-      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      var maxW = 2048;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      if (h > maxW) { w = Math.round(w * maxW / h); h = maxW; }
       var canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      var quality = 0.92;
+      var result = canvas.toDataURL('image/jpeg', quality);
+      while (result.length > 1400000 && quality > 0.5) {
+        quality -= 0.1;
+        result = canvas.toDataURL('image/jpeg', quality);
+      }
+      resolve(result);
     };
     img.src = dataUrl;
   });
@@ -276,7 +284,7 @@ async function onTireCapture(input, idx) {
   var reader = new FileReader();
   reader.onload = async function(e) {
     showSuccess('画像を圧縮中...');
-    var compressed = await compressImage(e.target.result, 1600, 0.85);
+    var compressed = await compressImage(e.target.result);
     console.log('タイヤOCR画像サイズ:', Math.round(compressed.length / 1024) + 'KB');
     showSuccess('読み取り中...');
     var r = await callAPI('tire_ocrRead', { imageData: compressed });

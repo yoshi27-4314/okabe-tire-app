@@ -152,17 +152,28 @@ function showScr(id) {
   window.scrollTo(0, 0);
 }
 
-// 画像圧縮（スマホ写真は5-10MBあるため、1200px以下・JPEG品質0.7に圧縮）
-function compressImage(dataUrl, maxWidth, quality) {
+// 画像圧縮（OCR用: 保管不要なので高画質。ただし1枚1MB以下に抑える）
+function compressImage(dataUrl) {
   return new Promise(function(resolve) {
     var img = new Image();
     img.onload = function() {
       var w = img.width, h = img.height;
-      if (w > maxWidth) { h = Math.round(h * maxWidth / w); w = maxWidth; }
+      // 長辺2048pxに縮小（それ以下ならそのまま）
+      var maxW = 2048;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      if (h > maxW) { w = Math.round(w * maxW / h); h = maxW; }
       var canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      resolve(canvas.toDataURL('image/jpeg', quality));
+      // 高品質から試して1MB以下になるまで下げる
+      var quality = 0.92;
+      var result = canvas.toDataURL('image/jpeg', quality);
+      while (result.length > 1400000 && quality > 0.5) {
+        quality -= 0.1;
+        result = canvas.toDataURL('image/jpeg', quality);
+      }
+      console.log('圧縮結果: ' + w + 'x' + h + ' q=' + quality.toFixed(2) + ' ' + Math.round(result.length/1024) + 'KB');
+      resolve(result);
     };
     img.src = dataUrl;
   });
@@ -175,7 +186,7 @@ async function addImage(input) {
   if (!input.files || !input.files[0]) return;
   showSuccess('圧縮中...');
   var dataUrl = await readFileAsDataUrl(input.files[0]);
-  var compressed = await compressImage(dataUrl, 1600, 0.85);
+  var compressed = await compressImage(dataUrl);
   pendingImages.push(compressed);
   console.log('追加: ' + Math.round(compressed.length / 1024) + 'KB（合計' + pendingImages.length + '枚）');
   renderPreview();
@@ -189,7 +200,7 @@ async function addImages(input) {
   showSuccess(input.files.length + '枚を準備中...');
   for (var i = 0; i < input.files.length; i++) {
     var dataUrl = await readFileAsDataUrl(input.files[i]);
-    var compressed = await compressImage(dataUrl, 1600, 0.85);
+    var compressed = await compressImage(dataUrl);
     pendingImages.push(compressed);
   }
   console.log('追加完了: 合計' + pendingImages.length + '枚');
