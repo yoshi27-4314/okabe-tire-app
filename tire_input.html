@@ -239,18 +239,22 @@ async function onScratchPhoto(input, idx) {
       return;
     }
     // サムネイル追加
+    var savedDataUrl = e.target.result;
     if (!scratchPhotos[idx]) scratchPhotos[idx] = [];
-    scratchPhotos[idx].push({ fileId: r.data ? r.data.fileId : '', dataUrl: e.target.result });
+    scratchPhotos[idx].push({ fileId: r.data ? r.data.fileId : '', dataUrl: savedDataUrl });
     var photoArea = document.getElementById(id + '_photoArea');
-    var addBtn = photoArea.querySelector('.scratch-add');
     var thumb = document.createElement('div');
     thumb.className = 'scratch-thumb';
-    thumb.style.backgroundImage = 'url(' + e.target.result + ')';
+    thumb.style.backgroundImage = 'url(' + savedDataUrl + ')';
     thumb.style.backgroundSize = 'cover';
     thumb.style.backgroundPosition = 'center';
     thumb.textContent = '';
-    thumb.onclick = function() { window.open(e.target.result); };
-    photoArea.insertBefore(thumb, addBtn);
+    thumb.onclick = (function(url) { return function() {
+      var w = window.open('');
+      if (w) { w.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="' + url + '" style="max-width:100%;max-height:100vh;object-fit:contain;"></body></html>'); w.document.close(); }
+    }; })(savedDataUrl);
+    var firstLink = photoArea.querySelector('a');
+    if (firstLink) { photoArea.insertBefore(thumb, firstLink); } else { photoArea.appendChild(thumb); }
     showSuccess('写真を保存しました');
   };
   reader.readAsDataURL(file);
