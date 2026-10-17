@@ -298,19 +298,24 @@ function openDetail(orderNumber) {
 
   // 状態に応じてボタンを切り替え
   var isDone = selectedOrder.status === '作業完了' || selectedOrder.status === '契約発行済み';
+  var isWorking = selectedOrder.status === '作業中';
   var actHtml = '';
   if (isDone) {
     // 完了済み：タイヤ情報の閲覧のみ
     if (selectedOrder.tireSetId) {
       actHtml += '<button class="btn-primary" style="background:var(--blue);" onclick="navigateTo(\'tire_input.html\',{orderNumber:\'' + escapeHtml(selectedOrder.orderNumber) + '\',tireSetId:\'' + escapeHtml(selectedOrder.tireSetId) + '\',customerName:\'' + escapeHtml(selectedOrder.customerName) + '\',plate:\'' + escapeHtml(selectedOrder.plate) + '\'})">タイヤ情報を確認する</button>';
     }
+  } else if (isWorking) {
+    // 作業中：タイヤ情報入力へ
+    actHtml += '<button class="btn-primary" onclick="goToTireInput()">タイヤ情報を入力する</button>';
+    actHtml += '<button class="btn-danger" onclick="doCancel()">この作業を取り消す</button>';
   } else {
-    // 未完了：作業開始・取り消しボタンを表示
+    // 未着手：作業開始・取り消し
     actHtml += '<button class="btn-primary" id="startBtn" onclick="doStart()">履き替え作業を開始する</button>';
     actHtml += '<button class="btn-danger" onclick="doCancel()">この作業を取り消す</button>';
   }
-  // 予定日変更は完了済みでは非表示
-  document.getElementById('dateBtn').style.display = isDone ? 'none' : '';
+  // 予定日変更は未着手のみ表示
+  document.getElementById('dateBtn').style.display = (!isDone && !isWorking) ? '' : 'none';
   document.getElementById('actionBtns').innerHTML = actHtml;
 
   showScr('scrDetail');

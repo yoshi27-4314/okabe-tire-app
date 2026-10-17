@@ -295,8 +295,16 @@ async function doConfirm() {
 
   startLoading(document.getElementById('confirmBtn'));
 
-  // まず既存顧客・車両を検索
-  var lookup = await callAPI('workorder_lookup', { customerCode: code, plateNumber: plate });
+  // 顧客名・ナンバー全桁・車種・車台番号の4条件で既存車両を1回検索
+  var lookup = await callAPI('workorder_lookup', {
+    customerName: name,
+    area: document.getElementById('fArea').value.trim(),
+    classNo: document.getElementById('fClassNo').value.trim(),
+    kana: document.getElementById('fKana').value.trim(),
+    plateNumber: plate,
+    model: model,
+    vin: document.getElementById('fVin').value.trim(),
+  });
   stopLoading(document.getElementById('confirmBtn'));
   if (handleAPIError(lookup)) return;
 
@@ -304,45 +312,10 @@ async function doConfirm() {
   var vehicleId = '';
 
   if (lookup.data.found && lookup.data.customer) {
-    // 既存顧客が見つかった → 紐付けるか新規登録か選ぶ
-    var existName = lookup.data.customer['氏名'] || '';
-    var existPlate = lookup.data.vehicle ? [lookup.data.vehicle['地名'], lookup.data.vehicle['分類番号'], lookup.data.vehicle['かな'], lookup.data.vehicle['下4桁']].filter(Boolean).join(' ') : '';
-    var useExisting = confirm('既存の顧客が見つかりました。\n\n顧客名: ' + existName + '\nナンバー: ' + existPlate + '\n\nこの顧客に紐付けますか？\n\n「OK」→ この顧客に紐付ける\n「キャンセル」→ 新規登録する');
-
-    if (!useExisting) {
-      // 新規登録を選んだ
-      lookup.data.found = false;
-      lookup.data.customer = null;
-      lookup.data.vehicle = null;
-    }
-  }
-
-  if (lookup.data.found && lookup.data.customer) {
+    // 4条件一致 → 同じ車。そのまま紐付ける（上書きしない）
     customerId = lookup.data.customer['顧客ID'];
-    // 顧客情報を補完（空の項目だけ追加。既存データは上書きしない）
-    var ec = lookup.data.customer;
-    var updates = {};
-    var furigana = document.getElementById('fFurigana').value.trim();
-    var phone = document.getElementById('fPhone').value.trim();
-    var mobile = document.getElementById('fMobile').value.trim();
-    var address = document.getElementById('fAddress').value.trim();
-    var email = document.getElementById('fEmail').value.trim();
-    var salesRep = document.getElementById('fSalesRep').value.trim();
-    if (!ec['フリガナ'] && furigana) updates['フリガナ'] = furigana;
-    if (!ec['電話'] && phone) updates['電話'] = phone;
-    if (!ec['携帯'] && mobile) updates['携帯'] = mobile;
-    if (!ec['住所'] && address) updates['住所'] = address;
-    if (!ec['Eメール'] && email) updates['Eメール'] = email;
-    if (!ec['営業担当'] && salesRep) updates['営業担当'] = salesRep;
-    if (Object.keys(updates).length > 0) {
-      await callAPI('customer_update', {
-        customerId: customerId,
-        version: lookup.data.customer['版番号'],
-        updates: updates
-      });
-    }
   } else {
-    // 新規顧客登録
+    // 一致しない → 新規顧客登録
     var newCust = await callAPI('customer_create', {
       name: document.getElementById('fName').value.trim(),
       furigana: document.getElementById('fFurigana').value.trim(),
@@ -358,19 +331,8 @@ async function doConfirm() {
   }
 
   if (lookup.data.found && lookup.data.vehicle) {
+    // 4条件一致 → 同じ車。そのまま紐付ける（上書きしない）
     vehicleId = lookup.data.vehicle['車両ID'];
-    // 車両情報を補完（空の項目だけ追加）
-    var ev = lookup.data.vehicle;
-    var vUpdates = {};
-    if (!ev['地名'] && document.getElementById('fArea').value.trim()) vUpdates['地名'] = document.getElementById('fArea').value.trim();
-    if (!ev['分類番号'] && document.getElementById('fClassNo').value.trim()) vUpdates['分類番号'] = document.getElementById('fClassNo').value.trim();
-    if (!ev['かな'] && document.getElementById('fKana').value.trim()) vUpdates['かな'] = document.getElementById('fKana').value.trim();
-    if (!ev['メーカー'] && document.getElementById('fMaker').value.trim()) vUpdates['メーカー'] = document.getElementById('fMaker').value.trim();
-    if (!ev['車種名'] && document.getElementById('fModel').value.trim()) vUpdates['車種名'] = document.getElementById('fModel').value.trim();
-    if (!ev['車台番号'] && document.getElementById('fVin').value.trim()) vUpdates['車台番号'] = document.getElementById('fVin').value.trim();
-    if (Object.keys(vUpdates).length > 0) {
-      await callAPI('vehicle_update', { vehicleId: vehicleId, version: ev['版番号'], updates: vUpdates });
-    }
   } else {
     // 新規車両登録
     var newVeh = await callAPI('vehicle_create', {
