@@ -53,11 +53,16 @@
     <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none;" onchange="onCapture(this)">
     <div class="camera-area" onclick="document.getElementById('fileInput').click()" style="border-color:var(--blue);margin-top:10px;">
       <div class="camera-icon">📁</div>
-      <div class="camera-text" style="color:var(--blue);">ファイルから選ぶ</div>
+      <div class="camera-text" style="color:var(--blue);">ファイルから選ぶ（複数可）</div>
       <div class="camera-sub">保存済みの写真を読み込む</div>
     </div>
-    <input type="file" id="fileInput" accept="image/*" style="display:none;" onchange="onCapture(this)">
-    <div class="info-box">作業指示書を撮影すると、顧客名・ナンバー・車種などを自動で読み取ります。読み取り後に手修正もできます。</div>
+    <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" onchange="onCaptureMulti(this)">
+    <div id="previewArea" style="display:none;margin-top:10px;">
+      <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">選択した画像</div>
+      <div id="previewImages" style="display:flex;gap:8px;flex-wrap:wrap;"></div>
+      <button class="btn-primary" style="margin-top:10px;" id="ocrMultiBtn" onclick="doOcrMulti()">読み取り開始</button>
+    </div>
+    <div class="info-box">作業指示書を撮影すると、顧客名・ナンバー・車種などを自動で読み取ります。複数枚を選択すると精度が上がります。読み取り後に手修正もできます。</div>
     <button class="btn-secondary" onclick="showScr('scr2')" style="color:var(--brown);">手入力で進める</button>
     <button class="btn-secondary" onclick="goHome()">ホームに戻る</button>
   </div>
@@ -163,7 +168,9 @@ function compressImage(dataUrl, maxWidth, quality) {
   });
 }
 
-// STEP 1: 撮影
+var pendingImages = [];
+
+// STEP 1: カメラ撮影（1枚）
 async function onCapture(input) {
   if (!input.files || !input.files[0]) return;
   var file = input.files[0];
@@ -180,6 +187,46 @@ async function onCapture(input) {
   };
   reader.readAsDataURL(file);
   input.value = '';
+}
+
+// STEP 1: ファイル選択（複数枚）
+async function onCaptureMulti(input) {
+  if (!input.files || input.files.length === 0) return;
+  pendingImages = [];
+  var previewHtml = '';
+  showSuccess(input.files.length + '枚の画像を準備中...');
+
+  for (var i = 0; i < input.files.length; i++) {
+    var dataUrl = await readFileAsDataUrl(input.files[i]);
+    var compressed = await compressImage(dataUrl, 1200, 0.7);
+    pendingImages.push(compressed);
+    previewHtml += '<div style="width:60px;height:60px;border-radius:8px;overflow:hidden;border:1px solid var(--border);"><img src="' + compressed + '" style="width:100%;height:100%;object-fit:cover;"></div>';
+  }
+
+  document.getElementById('previewImages').innerHTML = previewHtml;
+  document.getElementById('previewArea').style.display = '';
+  input.value = '';
+}
+
+function readFileAsDataUrl(file) {
+  return new Promise(function(resolve) {
+    var r = new FileReader();
+    r.onload = function(e) { resolve(e.target.result); };
+    r.readAsDataURL(file);
+  });
+}
+
+async function doOcrMulti() {
+  if (pendingImages.length === 0) return;
+  startLoading(document.getElementById('ocrMultiBtn'));
+  showSuccess(pendingImages.length + '枚を読み取り中...');
+  var r = await callAPI('ocr_workorder', { images: pendingImages });
+  stopLoading(document.getElementById('ocrMultiBtn'));
+  if (handleAPIError(r)) return;
+  ocrFields = r.data.fields || {};
+  fillOcrFields(ocrFields);
+  document.getElementById('previewArea').style.display = 'none';
+  showScr('scr2');
 }
 
 function fillOcrFields(f) {
