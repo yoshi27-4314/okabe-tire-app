@@ -300,6 +300,7 @@ function showTop() {
 // --- 今日の作業状況 ---
 async function loadSummary() {
   var r = await callAPI('home_summary', {});
+  if (handleAPIError(r)) return;
   if (!r || !r.ok) {
     document.getElementById('countExchange').textContent = '-';
     document.getElementById('countOutbound').textContent = '-';

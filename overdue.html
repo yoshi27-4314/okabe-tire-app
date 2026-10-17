@@ -56,6 +56,7 @@ function loadTab(type, el) {
 
 async function loadOverdue(type) {
   var r = await callAPI('overdue_list', { tireType: type });
+  if (handleAPIError(r)) return;
   var data = (r && r.ok && r.data) ? r.data : { approaching: [], overdue: [], exceeded: [], counts: { approaching: 0, overdue: 0, exceeded: 0, total: 0 }, deadlineDate: '' };
 
   var deadlineLabel = type === '冬' ? '冬タイヤ → 夏タイヤ（タイヤホテル期日：4月20日）' : '夏タイヤ → 冬タイヤ（タイヤホテル期日：1月20日）';

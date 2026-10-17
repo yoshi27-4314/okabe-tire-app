@@ -90,6 +90,7 @@ function showTab(tabId, el) {
 // --- 出庫 ---
 async function loadOutbound() {
   var r = await callAPI('warehouse_outboundList', {});
+  if (handleAPIError(r)) return;
   var items = (r && r.ok && r.data) ? r.data.items || [] : [];
   document.getElementById('outCount').textContent = items.length;
   document.getElementById('outCount').style.display = items.length > 0 ? '' : 'none';
@@ -140,6 +141,7 @@ async function doRevertOutbound(tireSetId) {
 // --- 格納 ---
 async function loadStore() {
   var r = await callAPI('warehouse_storeList', {});
+  if (handleAPIError(r)) return;
   var items = (r && r.ok && r.data) ? r.data.items || [] : [];
   document.getElementById('storeCount').textContent = items.length;
   document.getElementById('storeCount').style.display = items.length > 0 ? '' : 'none';

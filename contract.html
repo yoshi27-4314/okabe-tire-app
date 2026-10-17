@@ -80,6 +80,7 @@ function showScr(id) {
 // 一覧
 async function loadList() {
   var r = await callAPI('contract_completedList', {});
+  if (handleAPIError(r)) return;
   var items = (r && r.ok && r.data) ? r.data.items || [] : [];
 
   if (items.length === 0) {

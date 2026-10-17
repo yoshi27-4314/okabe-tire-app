@@ -155,6 +155,7 @@ function changeMonth(delta) {
 async function loadMonth() {
   document.getElementById('calMonth').textContent = currentYear + '年' + currentMonth + '月';
   var r = await callAPI('pit_monthSummary', { year: currentYear, month: currentMonth });
+  if (handleAPIError(r)) return;
   monthCounts = (r && r.ok && r.data) ? r.data.counts || {} : {};
   renderCalendar();
   loadDay(selectedDate);
@@ -199,6 +200,7 @@ async function loadDay(date) {
   document.getElementById('calLabel').textContent = (d.getMonth()+1) + '月' + d.getDate() + '日（' + dow + '）の作業';
 
   var r = await callAPI('pit_listByDate', { date: date });
+  if (handleAPIError(r)) return;
   currentOrders = (r && r.ok && r.data) ? r.data.orders || [] : [];
 
   var pending = 0, working = 0, done = 0;
