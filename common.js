@@ -39,6 +39,14 @@ function getParam(name) {
   return url.get(name) || '';
 }
 
+// --- 画面切り替え（SPA内） ---
+function showScr(id) {
+  var s = document.querySelectorAll('.screen');
+  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
 // --- 日時フォーマット ---
 function formatDateTime(v) {
   if (!v) return '';
