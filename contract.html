@@ -141,13 +141,13 @@ async function loadPreview(orderNumber) {
   html += '<div class="preview-row"><span class="preview-label">住所</span><span class="preview-value" style="font-size:12px;">' + escapeHtml(c['住所'] || '') + '</span></div>';
   html += '</div>';
 
-  html += '<div class="preview-card"><div class="preview-title">車両情報 <span class="edit-link">編集</span></div>';
+  html += '<div class="preview-card"><div class="preview-title">車両情報 <span class="edit-link" onclick="navigateTo(\'vehicle.html\',{vehicleId:\'' + escapeHtml(v['車両ID']) + '\'})">編集</span></div>';
   html += '<div class="preview-row"><span class="preview-label">ナンバー</span><span class="preview-value">' + escapeHtml(plate) + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">メーカー</span><span class="preview-value">' + escapeHtml(v['メーカー'] || '') + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">車種</span><span class="preview-value">' + escapeHtml(v['車種名'] || '') + '</span></div>';
   html += '</div>';
 
-  html += '<div class="preview-card"><div class="preview-title">タイヤ情報（' + (ts['本数'] || '') + '本） <span class="edit-link">編集</span></div>';
+  html += '<div class="preview-card"><div class="preview-title">タイヤ情報（' + (ts['本数'] || '') + '本） <span class="edit-link" onclick="navigateTo(\'tire_input.html\',{orderNumber:\'' + escapeHtml(selectedOrder) + '\',tireSetId:\'' + escapeHtml(ts['タイヤセットID'] || '') + '\'})">編集</span></div>';
   html += '<div class="preview-row"><span class="preview-label">預かり区分</span><span class="preview-value">' + escapeHtml(ts['区分'] || '') + 'タイヤ預かり</span></div>';
   for (var k = 0; k < recs.length; k++) {
     var rec = recs[k];
