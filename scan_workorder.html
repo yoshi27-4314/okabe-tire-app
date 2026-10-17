@@ -290,7 +290,6 @@ async function doConfirm() {
   var phone = document.getElementById('fPhone').value.trim();
   var mobile = document.getElementById('fMobile').value.trim();
   if (!name) { showError('氏名を入力してください'); return; }
-  if (!phone && !mobile) { showError('電話番号または携帯番号を入力してください'); return; }
   if (!plate) { showError('ナンバー下4桁を入力してください'); return; }
 
   startLoading(document.getElementById('confirmBtn'));
