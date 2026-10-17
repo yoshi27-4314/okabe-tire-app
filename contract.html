@@ -71,18 +71,11 @@ if (!requireLogin()) {}
 var selectedOrder = null;
 var currentTireType = '';
 
-function showScr(id) {
-  var s = document.querySelectorAll('.screen');
-  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
-}
-
 // 一覧
 async function loadList() {
   var r = await callAPI('contract_completedList', {});
   if (handleAPIError(r)) return;
-  var items = (r && r.ok && r.data) ? r.data.items || [] : [];
+  var items = r.data.items || [];
 
   if (items.length === 0) {
     document.getElementById('completedList').innerHTML = '<div style="text-align:center;color:var(--text3);padding:20px;">発行待ちの契約はありません</div>';
@@ -92,7 +85,6 @@ async function loadList() {
   var html = '';
   var hasIssued = false;
 
-  // 発行待ち
   for (var i = 0; i < items.length; i++) {
     var it = items[i];
     if (it.status === '契約発行済み') continue;
@@ -105,7 +97,6 @@ async function loadList() {
     html += '</div>';
   }
 
-  // 発行済み
   for (var j = 0; j < items.length; j++) {
     var it2 = items[j];
     if (it2.status !== '契約発行済み') continue;
@@ -143,7 +134,6 @@ async function loadPreview(orderNumber) {
 
   var html = '';
 
-  // 顧客情報
   html += '<div class="preview-card"><div class="preview-title">顧客情報 <span class="edit-link" onclick="navigateTo(\'customer.html\',{customerId:\'' + escapeHtml(c['顧客ID']) + '\'})">編集</span></div>';
   html += '<div class="preview-row"><span class="preview-label">氏名</span><span class="preview-value">' + escapeHtml(c['氏名'] || '') + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">電話番号</span><span class="preview-value' + (!c['電話'] ? ' empty' : '') + '">' + escapeHtml(c['電話'] || '未入力') + '</span></div>';
@@ -151,14 +141,12 @@ async function loadPreview(orderNumber) {
   html += '<div class="preview-row"><span class="preview-label">住所</span><span class="preview-value" style="font-size:12px;">' + escapeHtml(c['住所'] || '') + '</span></div>';
   html += '</div>';
 
-  // 車両情報
   html += '<div class="preview-card"><div class="preview-title">車両情報 <span class="edit-link">編集</span></div>';
   html += '<div class="preview-row"><span class="preview-label">ナンバー</span><span class="preview-value">' + escapeHtml(plate) + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">メーカー</span><span class="preview-value">' + escapeHtml(v['メーカー'] || '') + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">車種</span><span class="preview-value">' + escapeHtml(v['車種名'] || '') + '</span></div>';
   html += '</div>';
 
-  // タイヤ情報
   html += '<div class="preview-card"><div class="preview-title">タイヤ情報（' + (ts['本数'] || '') + '本） <span class="edit-link">編集</span></div>';
   html += '<div class="preview-row"><span class="preview-label">預かり区分</span><span class="preview-value">' + escapeHtml(ts['区分'] || '') + 'タイヤ預かり</span></div>';
   for (var k = 0; k < recs.length; k++) {
@@ -170,7 +158,6 @@ async function loadPreview(orderNumber) {
     var groove = parseFloat(rec['残溝']) || 0;
     var grooveClass = groove > 0 && groove < 3 ? ' alert' : '';
     html += '<div class="tire-preview-row"><span class="tire-preview-label">残溝</span><span class="tire-preview-value' + grooveClass + '">' + escapeHtml(rec['残溝'] || '') + ' mm' + (groove > 0 && groove < 3 ? ' ⚠要交換' : '') + '</span></div>';
-    // 傷
     var scratches = [];
     if (rec['傷_サイドウォール'] === 'はい') scratches.push('サイドウォール');
     if (rec['傷_トレッド面'] === 'はい') scratches.push('トレッド面');
@@ -178,7 +165,6 @@ async function loadPreview(orderNumber) {
     if (scratches.length > 0) {
       html += '<div class="tire-preview-row"><span class="tire-preview-label">傷</span></div>';
       for (var s = 0; s < scratches.length; s++) html += '<span class="scratch-tag">' + scratches[s] + '</span>';
-      // 傷写真を表示
       if (rec['傷写真フォルダID']) {
         html += '<div id="photos_' + k + '" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"><div style="font-size:11px;color:var(--text3);">写真を読み込み中...</div></div>';
         loadScratchPhotos(k, rec['傷写真フォルダID']);
@@ -190,11 +176,9 @@ async function loadPreview(orderNumber) {
   }
   html += '</div>';
 
-  // 保管について
   html += '<div class="preview-card"><div class="preview-title">保管について</div>';
   html += '<div style="font-size:13px;color:var(--text2);line-height:1.6;">お預かりしたタイヤは、株式会社OKABE GROUPが管理する倉庫にて安全に保管いたします。</div></div>';
 
-  // 料金
   html += '<div class="price-card"><div class="price-title">料金</div>';
   html += '<div class="form-row"><label class="form-label">料金プラン</label><select class="form-input" id="pricePlanSelect" style="padding:10px;" onchange="calcPrice()">';
   html += '<option value="">選択してください</option>';
@@ -213,14 +197,12 @@ async function loadPreview(orderNumber) {
   html += '<div id="priceDisplay"></div>';
   html += '</div>';
 
-  // 返却予定日
   html += '<div class="preview-card"><div class="preview-title">返却予定日</div>';
   html += '<div class="form-row"><input class="form-input" type="date" id="returnDate" style="padding:10px 12px;"></div>';
   html += '</div>';
 
-  // ボタン
   html += '<button class="btn-primary" style="background:var(--green);" id="issueBtn" onclick="doIssue()">契約書を発行する</button>';
-    html += '<button class="btn-secondary" style="color:var(--blue);border-color:var(--blue);" onclick="doPrint()">PDF印刷（契約書）</button>';
+  html += '<button class="btn-secondary" style="color:var(--blue);border-color:var(--blue);" onclick="doPrint()">PDF印刷（契約書）</button>';
   html += '<button class="btn-secondary" onclick="showScr(\'scrList\')">一覧に戻る</button>';
 
   document.getElementById('previewContent').innerHTML = html;
@@ -243,16 +225,25 @@ function calcPrice() {
   document.getElementById('priceDisplay').innerHTML = html;
 }
 
+var issueLoading = false;
 async function doIssue() {
-  if (!selectedOrder) return;
+  if (!selectedOrder || issueLoading) return;
   var planSelect = document.getElementById('pricePlanSelect');
   var discountSelect = document.getElementById('discountSelect');
+
+  if (!planSelect.value) { showError('料金プランを選択してください'); return; }
+  var returnDate = document.getElementById('returnDate').value;
+  if (!returnDate) { showError('返却予定日を入力してください'); return; }
+
   var fee = Number(planSelect.options[planSelect.selectedIndex].dataset.fee) || 0;
   var rate = Number(discountSelect.options[discountSelect.selectedIndex].dataset.rate) || 0;
   var discount = Math.floor(fee * rate / 100);
   var total = fee - discount;
 
-  startLoading(document.getElementById('issueBtn'));
+  issueLoading = true;
+  var btn = document.getElementById('issueBtn');
+  btn.disabled = true;
+  startLoading(btn);
   var r = await callAPI('contract_issue', {
     orderNumber: selectedOrder,
     tireType: currentTireType || '',
@@ -261,9 +252,11 @@ async function doIssue() {
     discountRule: discountSelect.value,
     discountAmount: String(discount),
     total: String(total),
-    returnDate: document.getElementById('returnDate').value,
+    returnDate: returnDate,
   });
-  stopLoading(document.getElementById('issueBtn'));
+  stopLoading(btn);
+  btn.disabled = false;
+  issueLoading = false;
   if (handleAPIError(r)) return;
 
   showSuccess('契約書を発行しました（' + r.data.contractNumber + '）');
@@ -272,7 +265,6 @@ async function doIssue() {
 }
 
 function doPrint() {
-  // プレビュー画面の内容をそのまま印刷
   var printContent = document.getElementById('previewContent').innerHTML;
   var printWindow = window.open('', '_blank');
   printWindow.document.write('<html><head><title>タイヤホテル契約書</title>');
@@ -323,7 +315,7 @@ async function loadScratchPhotos(idx, folderId) {
     var img = r.data.images[i];
     var src = img.dataUrl || img.url || '';
     if (src) {
-      html += '<div style="width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer;" onclick="window.open(this.querySelector(\'img\').src)"><img src="' + src + '" style="width:100%;height:100%;object-fit:cover;"></div>';
+      html += '<div style="width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer;" onclick="showPhotoModal(this.querySelector(\'img\').src)"><img src="' + src + '" style="width:100%;height:100%;object-fit:cover;"></div>';
     }
   }
   el.innerHTML = html || '<div style="font-size:11px;color:var(--text3);">写真なし</div>';

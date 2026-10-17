@@ -145,41 +145,6 @@ if (!requireLogin()) {}
 
 var ocrFields = {};
 var registerResult = null;
-
-function showScr(id) {
-  var s = document.querySelectorAll('.screen');
-  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
-}
-
-// 画像圧縮（OCR用: 保管不要なので高画質。ただし1枚1MB以下に抑える）
-function compressImage(dataUrl) {
-  return new Promise(function(resolve) {
-    var img = new Image();
-    img.onload = function() {
-      var w = img.width, h = img.height;
-      // 長辺2048pxに縮小（それ以下ならそのまま）
-      var maxW = 2048;
-      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
-      if (h > maxW) { w = Math.round(w * maxW / h); h = maxW; }
-      var canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      // 高品質から試して1MB以下になるまで下げる
-      var quality = 0.92;
-      var result = canvas.toDataURL('image/jpeg', quality);
-      while (result.length > 1400000 && quality > 0.5) {
-        quality -= 0.1;
-        result = canvas.toDataURL('image/jpeg', quality);
-      }
-      console.log('圧縮結果: ' + w + 'x' + h + ' q=' + quality.toFixed(2) + ' ' + Math.round(result.length/1024) + 'KB');
-      resolve(result);
-    };
-    img.src = dataUrl;
-  });
-}
-
 var pendingImages = [];
 
 // カメラで1枚追加
@@ -189,7 +154,6 @@ async function addImage(input) {
   var dataUrl = await readFileAsDataUrl(input.files[0]);
   var compressed = await compressImage(dataUrl);
   pendingImages.push(compressed);
-  console.log('追加: ' + Math.round(compressed.length / 1024) + 'KB（合計' + pendingImages.length + '枚）');
   renderPreview();
   input.value = '';
   showSuccess(pendingImages.length + '枚追加済み');
@@ -204,7 +168,6 @@ async function addImages(input) {
     var compressed = await compressImage(dataUrl);
     pendingImages.push(compressed);
   }
-  console.log('追加完了: 合計' + pendingImages.length + '枚');
   renderPreview();
   input.value = '';
   showSuccess(pendingImages.length + '枚追加済み');
@@ -241,17 +204,15 @@ function readFileAsDataUrl(file) {
   });
 }
 
-// 読み取り実行（1枚でも複数枚でも同じ処理）
+// 読み取り実行
 async function doOcr() {
   if (pendingImages.length === 0) { showError('画像を追加してください'); return; }
   startLoading(document.getElementById('ocrBtn'));
   showSuccess(pendingImages.length + '枚を読み取り中...');
-  console.log('OCR送信: ' + pendingImages.length + '枚, 合計' + Math.round(pendingImages.reduce(function(a, b) { return a + b.length; }, 0) / 1024) + 'KB');
   var r = await callAPI('ocr_workorder', { images: pendingImages });
   stopLoading(document.getElementById('ocrBtn'));
   if (handleAPIError(r)) return;
   ocrFields = r.data.fields || {};
-  if (r.data.rawText) console.log('Gemini生レスポンス:', r.data.rawText);
   var filled = Object.values(ocrFields).filter(function(v) { return v; }).length;
   if (filled === 0) {
     showError('読み取れませんでした。撮り直すか、手入力で進めてください');
@@ -286,9 +247,6 @@ async function doConfirm() {
   var name = document.getElementById('fName').value.trim();
   var plate = document.getElementById('fPlate').value.trim();
   var model = document.getElementById('fModel').value.trim();
-  var code = document.getElementById('fCode').value.trim();
-  var phone = document.getElementById('fPhone').value.trim();
-  var mobile = document.getElementById('fMobile').value.trim();
   if (!name) { showError('氏名を入力してください'); return; }
   if (!plate) { showError('ナンバー下4桁を入力してください'); return; }
 
@@ -311,10 +269,8 @@ async function doConfirm() {
   var vehicleId = '';
 
   if (lookup.data.found && lookup.data.customer) {
-    // 4条件一致 → 同じ車。そのまま紐付ける（上書きしない）
     customerId = lookup.data.customer['顧客ID'];
   } else {
-    // 一致しない → 新規顧客登録
     var newCust = await callAPI('customer_create', {
       name: document.getElementById('fName').value.trim(),
       furigana: document.getElementById('fFurigana').value.trim(),
@@ -330,10 +286,8 @@ async function doConfirm() {
   }
 
   if (lookup.data.found && lookup.data.vehicle) {
-    // 4条件一致 → 同じ車。そのまま紐付ける（上書きしない）
     vehicleId = lookup.data.vehicle['車両ID'];
   } else {
-    // 新規車両登録
     var newVeh = await callAPI('vehicle_create', {
       customerId: customerId,
       area: document.getElementById('fArea').value.trim(),
@@ -387,7 +341,6 @@ function showStep3(data) {
   }
   document.getElementById('tireStatusArea').innerHTML = html;
 
-  // 作業予定日を今日に設定
   var today = new Date(Date.now() + 9*60*60*1000).toISOString().slice(0, 10);
   document.getElementById('fScheduleDate').value = today;
 
@@ -407,10 +360,7 @@ async function doAddToList() {
   });
   stopLoading(document.getElementById('addListBtn'));
 
-  if (r && !r.ok && r.code !== 'ERR_VERSION_CONFLICT') {
-    handleAPIError(r);
-    return;
-  }
+  if (handleAPIError(r)) return;
 
   showSuccess('リストに追加しました（' + registerResult.orderNumber + '）');
   registerResult = null;
@@ -428,7 +378,7 @@ async function doCancelOrder() {
   setTimeout(function() { goHome(); }, 1500);
 }
 
-// D1: ページ離脱時に未完了の伝票を自動取消（ブラウザバック対策）
+// ページ離脱時に未完了の伝票を自動取消（ブラウザバック対策）
 window.addEventListener('beforeunload', function() {
   if (registerResult && registerResult.orderNumber) {
     navigator.sendBeacon(API_URL, JSON.stringify({

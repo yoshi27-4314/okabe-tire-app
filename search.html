@@ -100,12 +100,6 @@ if (!requireLogin()) {}
 
 var searchResults = [];
 
-function showScr(id) {
-  var s = document.querySelectorAll('.screen');
-  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
-}
 
 function toggleExtra() {
   var el = document.getElementById('extraFields');

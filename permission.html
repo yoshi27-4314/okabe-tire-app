@@ -60,7 +60,6 @@ var permLabels = {
   'can_warehouse_storage': '倉庫作業'
 };
 var allStaff = [];
-function showScr(id) { var s = document.querySelectorAll('.screen'); for (var i = 0; i < s.length; i++) s[i].classList.remove('active'); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 async function loadStaff() {
   var r = await callAPI('admin_staffList', {});
   if (handleAPIError(r)) return;

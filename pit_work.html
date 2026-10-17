@@ -58,7 +58,6 @@
     <div class="header-title">ピット作業</div>
   </div>
   <div class="content">
-    <!-- カレンダー -->
     <div class="card" style="padding:12px;">
       <div class="cal-header">
         <div class="cal-arrow" onclick="changeMonth(-1)">◀</div>
@@ -70,14 +69,12 @@
       <div class="cal-selected-label" id="calLabel">-</div>
     </div>
 
-    <!-- サマリー -->
     <div class="summary-bar">
       <div class="summary-item"><div class="summary-num" style="color:var(--orange);" id="sumPending">-</div><div class="summary-label">予定</div></div>
       <div class="summary-item"><div class="summary-num" style="color:var(--blue);" id="sumWorking">-</div><div class="summary-label">作業中</div></div>
       <div class="summary-item"><div class="summary-num" style="color:var(--green);" id="sumDone">-</div><div class="summary-label">完了</div></div>
     </div>
 
-    <!-- 一覧 -->
     <div class="section-label" style="font-size:15px;">作業予定（タップで履き替え作業へ）</div>
     <div id="orderList"></div>
   </div>
@@ -117,14 +114,6 @@ var currentOrders = [];
 var selectedOrder = null;
 var monthCounts = {};
 
-function showScr(id) {
-  var s = document.querySelectorAll('.screen');
-  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
-}
-
-// --- カレンダー ---
 function todayStr() {
   var now = new Date();
   return now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
@@ -157,7 +146,7 @@ async function loadMonth() {
   document.getElementById('calMonth').textContent = currentYear + '年' + currentMonth + '月';
   var r = await callAPI('pit_monthSummary', { year: currentYear, month: currentMonth });
   if (handleAPIError(r)) return;
-  monthCounts = (r && r.ok && r.data) ? r.data.counts || {} : {};
+  monthCounts = r.data.counts || {};
   renderCalendar();
   loadDay(selectedDate);
 }
@@ -194,7 +183,6 @@ function selectDay(dateStr) {
   loadDay(dateStr);
 }
 
-// --- 日別一覧 ---
 async function loadDay(date) {
   var d = new Date(date);
   var dow = ['日','月','火','水','木','金','土'][d.getDay()];
@@ -202,7 +190,7 @@ async function loadDay(date) {
 
   var r = await callAPI('pit_listByDate', { date: date });
   if (handleAPIError(r)) return;
-  currentOrders = (r && r.ok && r.data) ? r.data.orders || [] : [];
+  currentOrders = r.data.orders || [];
 
   var pending = 0, working = 0, done = 0;
   for (var i = 0; i < currentOrders.length; i++) {
@@ -227,7 +215,6 @@ function renderOrderList() {
   var html = '';
   var hasCompleted = false;
 
-  // 未着手・作業中を先に
   for (var i = 0; i < currentOrders.length; i++) {
     var o = currentOrders[i];
     if (o.status === '作業完了' || o.status === '契約発行済み') continue;
@@ -250,7 +237,6 @@ function renderOrderList() {
     html += '</div>';
   }
 
-  // 完了
   for (var j = 0; j < currentOrders.length; j++) {
     var o2 = currentOrders[j];
     if (o2.status !== '作業完了' && o2.status !== '契約発行済み') continue;
@@ -268,7 +254,6 @@ function renderOrderList() {
   document.getElementById('orderList').innerHTML = html;
 }
 
-// --- 詳細 ---
 function openDetail(orderNumber) {
   for (var i = 0; i < currentOrders.length; i++) {
     if (currentOrders[i].orderNumber === orderNumber) {
@@ -296,32 +281,26 @@ function openDetail(orderNumber) {
 
   document.getElementById('dDate').value = selectedOrder.scheduledDate || '';
 
-  // 状態に応じてボタンを切り替え
   var isDone = selectedOrder.status === '作業完了' || selectedOrder.status === '契約発行済み';
   var isWorking = selectedOrder.status === '作業中';
   var actHtml = '';
   if (isDone) {
-    // 完了済み：タイヤ情報の閲覧のみ
     if (selectedOrder.tireSetId) {
       actHtml += '<button class="btn-primary" style="background:var(--blue);" onclick="navigateTo(\'tire_input.html\',{orderNumber:\'' + escapeHtml(selectedOrder.orderNumber) + '\',tireSetId:\'' + escapeHtml(selectedOrder.tireSetId) + '\',customerName:\'' + escapeHtml(selectedOrder.customerName) + '\',plate:\'' + escapeHtml(selectedOrder.plate) + '\'})">タイヤ情報を確認する</button>';
     }
   } else if (isWorking) {
-    // 作業中：タイヤ情報入力へ
     actHtml += '<button class="btn-primary" onclick="goToTireInput()">タイヤ情報を入力する</button>';
     actHtml += '<button class="btn-danger" onclick="doCancel()">この作業を取り消す</button>';
   } else {
-    // 未着手：作業開始・取り消し
     actHtml += '<button class="btn-primary" id="startBtn" onclick="doStart()">履き替え作業を開始する</button>';
     actHtml += '<button class="btn-danger" onclick="doCancel()">この作業を取り消す</button>';
   }
-  // 予定日変更は未着手のみ表示
   document.getElementById('dateBtn').style.display = (!isDone && !isWorking) ? '' : 'none';
   document.getElementById('actionBtns').innerHTML = actHtml;
 
   showScr('scrDetail');
 }
 
-// --- 予定日変更 ---
 async function doUpdateDate() {
   if (!selectedOrder) return;
   var newDate = document.getElementById('dDate').value;
@@ -339,7 +318,6 @@ async function doUpdateDate() {
   showScr('scrList');
 }
 
-// --- 作業開始 ---
 async function doStart() {
   if (!selectedOrder) return;
 
@@ -356,7 +334,6 @@ async function doStart() {
   });
 }
 
-// --- タイヤ入力へ遷移（作業中から） ---
 function goToTireInput() {
   if (!selectedOrder) return;
   navigateTo('tire_input.html', {
@@ -367,7 +344,6 @@ function goToTireInput() {
   });
 }
 
-// --- 取り消し ---
 async function doCancel() {
   if (!selectedOrder) return;
   if (!confirmAction('この作業を取り消しますか？')) return;

@@ -214,13 +214,6 @@
 </div>
 
 <script>
-// --- 画面切り替え ---
-function showScr(id) {
-  var s = document.querySelectorAll('.screen');
-  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
-  document.getElementById(id).classList.add('active');
-}
-
 // --- パスワード表示切り替え ---
 function togglePw(el) {
   var input = el.parentNode.querySelector('input');
@@ -302,12 +295,6 @@ function showTop() {
 async function loadSummary() {
   var r = await callAPI('home_summary', {});
   if (handleAPIError(r)) return;
-  if (!r || !r.ok) {
-    document.getElementById('countExchange').textContent = '-';
-    document.getElementById('countOutbound').textContent = '-';
-    document.getElementById('countStore').textContent = '-';
-    return;
-  }
   var d = r.data;
   document.getElementById('countExchange').textContent = d.exchange || 0;
   document.getElementById('countOutbound').textContent = d.outbound || 0;

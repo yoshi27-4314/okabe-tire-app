@@ -78,12 +78,6 @@ if (!requireLogin()) {}
 var currentCustomer = null;
 var currentVersion = null;
 
-function showScr(id) {
-  var s = document.querySelectorAll('.screen');
-  for (var i = 0; i < s.length; i++) s[i].classList.remove('active');
-  document.getElementById(id).classList.add('active');
-  window.scrollTo(0, 0);
-}
 
 async function doSearch() {
   var query = document.getElementById('searchQuery').value.trim();

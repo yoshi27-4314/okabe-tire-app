@@ -64,7 +64,6 @@ var allRacks = [];
 var allAssist = [];
 var editType = '', editId = '';
 
-function showScr(id) { var s = document.querySelectorAll('.screen'); for (var i = 0; i < s.length; i++) s[i].classList.remove('active'); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 function showTab(tabId, el) {
   ['tabStaff','tabRack','tabPrice','tabDiscount','tabWarehouse','tabAssist'].forEach(function(t){ document.getElementById(t).style.display = 'none'; });
   document.getElementById(tabId).style.display = '';
@@ -260,7 +259,9 @@ async function doSave() {
     if (handleAPIError(r)) return; await loadMaster();
   } else if (editType === 'staff') {
     if (editId) {
-      r = await callAPI('admin_updateStaff', { staffId: editId, updates: { '氏名': document.getElementById('eName').value, '役職': document.getElementById('eRole').value, '部門': document.getElementById('eDept').value, '兼任': document.getElementById('eConcurrent').value, '上長': document.getElementById('eSuperior').value } });
+      var staffData = allStaff.find(function(x){ return x['スタッフID']===editId; });
+      var ver = staffData ? staffData['版番号'] : undefined;
+      r = await callAPI('admin_updateStaff', { staffId: editId, version: ver, updates: { '氏名': document.getElementById('eName').value, '役職': document.getElementById('eRole').value, '部門': document.getElementById('eDept').value, '兼任': document.getElementById('eConcurrent').value, '上長': document.getElementById('eSuperior').value } });
     } else {
       var sid = document.getElementById('eStaffId').value.trim();
       var pw = document.getElementById('eTempPw').value.trim();

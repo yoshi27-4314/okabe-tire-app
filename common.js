@@ -119,3 +119,59 @@ function handleAPIError(result) {
 
 // --- 確認ダイアログ ---
 function confirmAction(msg) { return confirm(msg); }
+
+// --- 画像圧縮（OCR・タイヤ撮影・傷写真で共通） ---
+function compressImage(dataUrl) {
+  return new Promise(function(resolve) {
+    var img = new Image();
+    img.onload = function() {
+      var w = img.width, h = img.height;
+      var maxW = 2048;
+      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+      if (h > maxW) { w = Math.round(w * maxW / h); h = maxW; }
+      var canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      var quality = 0.92;
+      var result = canvas.toDataURL('image/jpeg', quality);
+      while (result.length > 1400000 && quality > 0.5) {
+        quality -= 0.1;
+        result = canvas.toDataURL('image/jpeg', quality);
+      }
+      resolve(result);
+    };
+    img.src = dataUrl;
+  });
+}
+
+// --- 写真拡大モーダル（傷写真タップで使用） ---
+function showPhotoModal(src) {
+  var overlay = document.getElementById('photo-modal');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'photo-modal';
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+    overlay.onclick = function() { overlay.style.display = 'none'; };
+    var imgEl = document.createElement('img');
+    imgEl.id = 'photo-modal-img';
+    imgEl.style.cssText = 'max-width:95%;max-height:90%;border-radius:8px;';
+    overlay.appendChild(imgEl);
+    document.body.appendChild(overlay);
+  }
+  document.getElementById('photo-modal-img').src = src;
+  overlay.style.display = 'flex';
+}
+
+// --- ブラウザバック時の未完了伝票取消（sendBeacon） ---
+function registerBeaconCancel(actionName, paramsFunc) {
+  window.addEventListener('beforeunload', function() {
+    var params = paramsFunc();
+    if (!params) return;
+    params.action = actionName;
+    params.sessionId = typeof getSessionId === 'function' ? getSessionId() : '';
+    navigator.sendBeacon(
+      typeof API_URL !== 'undefined' ? API_URL : '',
+      JSON.stringify(params)
+    );
+  });
+}

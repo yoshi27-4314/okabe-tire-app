@@ -22,8 +22,6 @@
 .tire-badge { font-size: 11px; padding: 3px 10px; border-radius: 10px; font-weight: 600; }
 .tire-badge.done { background: #E8F5E9; color: var(--green); }
 .tire-badge.empty { background: #F5F5F5; color: var(--text3); }
-.scan-btn { width: 100%; padding: 14px; font-size: 14px; font-weight: 600; color: var(--blue); background: #F0F7FF; border: 1.5px solid var(--blue); border-radius: 10px; cursor: pointer; margin-bottom: 12px; text-align: center; }
-.scan-btn:active { background: #D0E7FF; transform: scale(0.97); }
 .groove-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
 .pm-btn { height: 48px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 8px; background: var(--white); cursor: pointer; color: var(--orange); display: flex; align-items: center; justify-content: center; }
 .pm-btn:active { background: #FFF3EB; transform: scale(0.9); }
@@ -59,21 +57,17 @@
     <span class="info-bar-plate" id="infoPlate">-</span>
   </div>
 
-  <!-- 本数 -->
   <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">タイヤ本数</div>
   <div class="tire-count-bar" id="countBar"></div>
 
-  <!-- 預かり区分 -->
   <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">預かり区分</div>
   <div class="toggle-group" id="tireTypeGroup" style="margin-bottom:16px;">
     <span class="toggle-btn" data-value="夏" onclick="toggleCheck(this)">夏タイヤ預かり</span>
     <span class="toggle-btn" data-value="冬" onclick="toggleCheck(this)">冬タイヤ預かり</span>
   </div>
 
-  <!-- タイヤ個別入力 -->
   <div id="tireInputs"></div>
 
-  <!-- ナット -->
   <div class="nut-section">
     <div class="nut-title">ナット（共通）</div>
     <div class="toggle-group" id="nutGroup">
@@ -83,7 +77,6 @@
     </div>
   </div>
 
-  <!-- 全体メモ -->
   <div class="overall-memo">
     <div class="overall-title">全体メモ</div>
     <textarea class="memo-input" rows="3" id="overallMemo" placeholder="タイヤ全体に対するメモ"></textarea>
@@ -104,8 +97,12 @@ var tireCount = 4;
 var positions = ['左前', '右前', '左後', '右後', '5本目', '6本目'];
 var scratchFolderIds = {};
 var scratchPhotos = {};
+var tireOcrImages = {};
 
-// 本数バー
+function readFile(file) {
+  return new Promise(function(resolve) { var r = new FileReader(); r.onload = function(e) { resolve(e.target.result); }; r.readAsDataURL(file); });
+}
+
 function renderCountBar() {
   var html = '';
   for (var i = 1; i <= 6; i++) {
@@ -120,7 +117,6 @@ function setCount(n) {
   renderTireInputs();
 }
 
-// タイヤ入力欄を生成
 function renderTireInputs() {
   var html = '';
   for (var i = 0; i < tireCount; i++) {
@@ -164,7 +160,6 @@ function renderTireInputs() {
   document.getElementById('tireInputs').innerHTML = html;
 }
 
-// 残溝調整
 function adjGroove(idx, delta) {
   var el = document.getElementById('t' + idx + '_groove');
   var val = parseFloat(el.value) || 0;
@@ -176,7 +171,6 @@ function adjGroove(idx, delta) {
   alertEl.innerHTML = val < 3 ? '<div class="groove-alert">⚠ 要交換（3mm未満）</div>' : '';
 }
 
-// 傷チェック排他
 function onScratchNone(idx) {
   var id = 't' + idx;
   if (document.getElementById(id + '_sNone').checked) {
@@ -197,13 +191,11 @@ function onScratchCheck(idx) {
   }
 }
 
-// 傷写真のアップロード
 async function onScratchPhoto(input, idx) {
   if (!input.files || !input.files[0]) return;
   var id = 't' + idx;
   var pos = positions[idx];
 
-  // フォルダがなければ作成
   if (!scratchFolderIds[idx]) {
     showSuccess('フォルダ作成中...');
     var custName = document.getElementById('infoName').textContent || '';
@@ -216,7 +208,8 @@ async function onScratchPhoto(input, idx) {
       kana: '',
       subFolder: 'タイヤ' + (idx+1) + '_' + pos
     });
-    if (r && r.ok && r.data && r.data.folderId) {
+    if (handleAPIError(r)) { input.value = ''; return; }
+    if (r.data && r.data.folderId) {
       scratchFolderIds[idx] = r.data.folderId;
     } else {
       showError('フォルダ作成に失敗しました');
@@ -234,11 +227,8 @@ async function onScratchPhoto(input, idx) {
       folderId: scratchFolderIds[idx],
       position: pos
     });
-    if (!r || !r.ok) {
-      showError('アップロードに失敗しました');
-      return;
-    }
-    // サムネイル追加
+    if (handleAPIError(r)) return;
+
     var savedDataUrl = e.target.result;
     if (!scratchPhotos[idx]) scratchPhotos[idx] = [];
     scratchPhotos[idx].push({ fileId: r.data ? r.data.fileId : '', dataUrl: savedDataUrl });
@@ -249,10 +239,7 @@ async function onScratchPhoto(input, idx) {
     thumb.style.backgroundSize = 'cover';
     thumb.style.backgroundPosition = 'center';
     thumb.textContent = '';
-    thumb.onclick = (function(url) { return function() {
-      var w = window.open('');
-      if (w) { w.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="' + url + '" style="max-width:100%;max-height:100vh;object-fit:contain;"></body></html>'); w.document.close(); }
-    }; })(savedDataUrl);
+    thumb.onclick = (function(url) { return function() { showPhotoModal(url); }; })(savedDataUrl);
     var firstLink = photoArea.querySelector('a');
     if (firstLink) { photoArea.insertBefore(thumb, firstLink); } else { photoArea.appendChild(thumb); }
     showSuccess('写真を保存しました');
@@ -261,35 +248,6 @@ async function onScratchPhoto(input, idx) {
   input.value = '';
 }
 
-// 画像圧縮（OCR用: 保管不要なので高画質。1MB以下に抑える）
-function compressImage(dataUrl) {
-  return new Promise(function(resolve) {
-    var img = new Image();
-    img.onload = function() {
-      var w = img.width, h = img.height;
-      var maxW = 2048;
-      if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
-      if (h > maxW) { w = Math.round(w * maxW / h); h = maxW; }
-      var canvas = document.createElement('canvas');
-      canvas.width = w; canvas.height = h;
-      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      var quality = 0.92;
-      var result = canvas.toDataURL('image/jpeg', quality);
-      while (result.length > 1400000 && quality > 0.5) {
-        quality -= 0.1;
-        result = canvas.toDataURL('image/jpeg', quality);
-      }
-      resolve(result);
-    };
-    img.src = dataUrl;
-  });
-}
-function readFile(file) {
-  return new Promise(function(resolve) { var r = new FileReader(); r.onload = function(e) { resolve(e.target.result); }; r.readAsDataURL(file); });
-}
-
-// タイヤOCR: 画像追加
-var tireOcrImages = {};
 async function addTireImage(input, idx) {
   if (!input.files || !input.files[0]) return;
   if (!tireOcrImages[idx]) tireOcrImages[idx] = [];
@@ -327,7 +285,6 @@ function clearTireImages(idx) {
   renderTireOcrPreview(idx);
 }
 
-// タイヤOCR: 読み取り実行
 async function doTireOcr(idx) {
   var imgs = tireOcrImages[idx] || [];
   if (imgs.length === 0) { showError('画像を追加してください'); return; }
@@ -338,7 +295,6 @@ async function doTireOcr(idx) {
   if (btn) btn.textContent = '読み取り開始';
   if (handleAPIError(r)) return;
   var f = r.data.fields || {};
-  if (r.data.rawText) console.log('Gemini生レスポンス:', r.data.rawText);
   if (f['メーカー']) document.getElementById(id + '_maker').value = f['メーカー'];
   if (f['パターン']) document.getElementById(id + '_pattern').value = f['パターン'];
   if (f['サイズ']) document.getElementById(id + '_size').value = f['サイズ'];
@@ -346,7 +302,6 @@ async function doTireOcr(idx) {
   var filled = Object.values(f).filter(function(v) { return v; }).length;
   showSuccess(filled > 0 ? filled + '項目を読み取りました' : '読み取れませんでした');
 
-  // 1本目なら全本数にコピー
   if (idx === 0) {
     for (var i = 1; i < tireCount; i++) {
       var tid = 't' + i;
@@ -360,7 +315,6 @@ async function doTireOcr(idx) {
   renderTireOcrPreview(idx);
 }
 
-// 保存
 async function doSave() {
   var records = [];
   for (var i = 0; i < tireCount; i++) {
@@ -383,7 +337,6 @@ async function doSave() {
     });
   }
 
-  // 傷チェックのバリデーション（傷なし or 傷箇所のいずれかが必須）
   for (var j = 0; j < tireCount; j++) {
     var jid = 't' + j;
     var hasNone = document.getElementById(jid + '_sNone').checked;
@@ -410,34 +363,29 @@ async function doSave() {
 
   showSuccess('保存しました');
 
-  // 作業完了にする
   var rc = await callAPI('pit_complete', { orderNumber: orderNumber });
   if (handleAPIError(rc)) return;
 
   setTimeout(function() { location.href = 'pit_work.html'; }, 1500);
 }
 
-// 初期化
 async function init() {
   if (!orderNumber && !tireSetId) { goHome(); return; }
 
-  // orderNumberがない場合は閲覧モード（保存ボタン非表示）
   if (!orderNumber) {
     document.getElementById('saveBtn').style.display = 'none';
   }
 
-  // URLパラメータから顧客名・ナンバーを表示
   document.getElementById('infoName').textContent = paramCustomerName || '';
   document.getElementById('infoPlate').textContent = paramPlate || orderNumber || '';
 
   renderCountBar();
   renderTireInputs();
 
-  // 既存記録があれば読み込み
   if (tireSetId) {
     var tr = await callAPI('tire_getRecords', { tireSetId: tireSetId });
     if (handleAPIError(tr)) return;
-    if (tr && tr.ok && tr.data.records.length > 0) {
+    if (tr.data.records.length > 0) {
       var recs = tr.data.records;
       var ts = tr.data.tireSet;
       if (ts) {
