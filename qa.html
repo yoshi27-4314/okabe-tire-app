@@ -237,7 +237,8 @@ function showQaTab(tab, el) {
 function tgl(el) { var b = el.nextElementSibling; var a = el.querySelector('span'); if (b.classList.contains('open')) { b.classList.remove('open'); a.textContent = '▼'; } else { b.classList.add('open'); a.textContent = '▲'; } }
 async function loadMessages() {
   var r = await callAPI('chat_list', {});
-  var msgs = (r && r.ok && r.data) ? r.data.messages || [] : [];
+  if (handleAPIError(r)) return;
+  var msgs = r.data.messages || [];
   var area = document.getElementById('tabChat');
   if (msgs.length === 0) { area.innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px;">まだメッセージはありません</div>'; return; }
   var h = '';

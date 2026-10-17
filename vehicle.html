@@ -123,6 +123,7 @@ async function loadDetail(vehicleId) {
   // 預かりタイヤ（この車両に紐づくもののみ）
   var tireHtml = '';
   var tr = await callAPI('warehouse_searchTires', { vehicleId: vehicleId });
+  if (handleAPIError(tr)) return;
   var tires = (tr && tr.ok && tr.data) ? tr.data.results || [] : [];
   if (tires.length === 0) {
     tireHtml = '<div style="text-align:center;color:var(--text3);padding:20px;">預かりタイヤなし</div>';

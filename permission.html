@@ -63,7 +63,8 @@ var allStaff = [];
 function showScr(id) { var s = document.querySelectorAll('.screen'); for (var i = 0; i < s.length; i++) s[i].classList.remove('active'); document.getElementById(id).classList.add('active'); window.scrollTo(0,0); }
 async function loadStaff() {
   var r = await callAPI('admin_staffList', {});
-  var list = (r && r.ok && r.data) ? r.data.staffList || [] : [];
+  if (handleAPIError(r)) return;
+  var list = r.data.staffList || [];
   list.sort(function(a,b){ return (a['スタッフID']||'').localeCompare(b['スタッフID']||''); });
   allStaff = list;
   var html = '';

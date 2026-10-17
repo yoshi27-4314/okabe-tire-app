@@ -77,23 +77,27 @@ function showTab(tabId, el) {
 // === データ読み込み ===
 async function loadMaster() {
   var r = await callAPI('admin_masterTop', {});
-  masterData = (r && r.ok && r.data) ? r.data : {};
+  if (handleAPIError(r)) return;
+  masterData = r.data || {};
   renderPrice(); renderDiscount(); renderWarehouse();
 }
 async function loadStaff() {
   var r = await callAPI('admin_staffList', {});
-  allStaff = (r && r.ok && r.data) ? r.data.staffList || [] : [];
+  if (handleAPIError(r)) return;
+  allStaff = r.data.staffList || [];
   allStaff.sort(function(a,b){ return (a['スタッフID']||'').localeCompare(b['スタッフID']||''); });
   renderStaff();
 }
 async function loadRacks() {
   var r = await callAPI('warehouse_rackList', {});
-  allRacks = (r && r.ok && r.data) ? r.data.racks || [] : [];
+  if (handleAPIError(r)) return;
+  allRacks = r.data.racks || [];
   renderRacks();
 }
 async function loadAssist() {
   var r = await callAPI('getInputAssist', { type: '' });
-  allAssist = (r && r.ok && r.data) ? r.data.items || [] : [];
+  if (handleAPIError(r)) return;
+  allAssist = r.data.items || [];
   renderAssist();
 }
 
@@ -288,12 +292,15 @@ async function doSave() {
 async function doDelete() {
   if (!confirmAction('削除しますか？')) return;
   var r;
-  if (editType === 'price') { r = await callAPI('admin_updatePricePlan', { planId: editId, delete: true }); await loadMaster(); }
-  else if (editType === 'discount') { r = await callAPI('admin_updateDiscountRule', { ruleId: editId, delete: true }); await loadMaster(); }
-  else if (editType === 'warehouse') { r = await callAPI('admin_updateFacility', { type: 'warehouse', id: editId, delete: true }); await loadMaster(); }
-  else if (editType === 'rack') { r = await callAPI('admin_updateFacility', { type: 'rack', id: editId, delete: true }); await loadRacks(); }
-  else if (editType === 'assist') { r = await callAPI('admin_manageInputAssist', { assistId: editId, delete: true }); await loadAssist(); }
-  if (r && handleAPIError(r)) return;
+  if (editType === 'price') r = await callAPI('admin_updatePricePlan', { planId: editId, delete: true });
+  else if (editType === 'discount') r = await callAPI('admin_updateDiscountRule', { ruleId: editId, delete: true });
+  else if (editType === 'warehouse') r = await callAPI('admin_updateFacility', { type: 'warehouse', id: editId, delete: true });
+  else if (editType === 'rack') r = await callAPI('admin_updateFacility', { type: 'rack', id: editId, delete: true });
+  else if (editType === 'assist') r = await callAPI('admin_manageInputAssist', { assistId: editId, delete: true });
+  if (handleAPIError(r)) return;
+  if (editType === 'rack') await loadRacks();
+  else if (editType === 'assist') await loadAssist();
+  else await loadMaster();
   showSuccess('削除しました');
   showScr('scrTop');
 }
