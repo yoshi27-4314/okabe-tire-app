@@ -413,6 +413,7 @@ async function doAddToList() {
   }
 
   showSuccess('リストに追加しました（' + registerResult.orderNumber + '）');
+  registerResult = null;
   setTimeout(function() { goHome(); }, 1500);
 }
 
@@ -422,9 +423,21 @@ async function doCancelOrder() {
   if (!confirmAction('取り消しますか？')) return;
   var r = await callAPI('workorder_cancel', { orderNumber: registerResult.orderNumber });
   if (handleAPIError(r)) return;
+  registerResult = null;
   showSuccess('取り消しました');
   setTimeout(function() { goHome(); }, 1500);
 }
+
+// D1: ページ離脱時に未完了の伝票を自動取消（ブラウザバック対策）
+window.addEventListener('beforeunload', function() {
+  if (registerResult && registerResult.orderNumber) {
+    navigator.sendBeacon(API_URL, JSON.stringify({
+      action: 'workorder_cancel',
+      sessionId: getSessionId(),
+      orderNumber: registerResult.orderNumber
+    }));
+  }
+});
 </script>
 </body>
 </html>
