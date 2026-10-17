@@ -134,20 +134,20 @@ async function loadPreview(orderNumber) {
 
   var html = '';
 
-  html += '<div class="preview-card"><div class="preview-title">顧客情報 <span class="edit-link" onclick="navigateTo(\'customer.html\',{customerId:\'' + (c['顧客ID'] || '') + '\'})">編集</span></div>';
+  html += '<div class="preview-card"><div class="preview-title">顧客情報 <a href="javascript:void(0)" class="edit-link" onclick="navigateTo(\'customer.html\',{customerId:\'' + (c['顧客ID'] || '') + '\'})">編集</a></div>';
   html += '<div class="preview-row"><span class="preview-label">氏名</span><span class="preview-value">' + escapeHtml(c['氏名'] || '') + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">電話番号</span><span class="preview-value' + (!c['電話'] ? ' empty' : '') + '">' + escapeHtml(c['電話'] || '未入力') + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">携帯番号</span><span class="preview-value">' + escapeHtml(c['携帯'] || '') + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">住所</span><span class="preview-value" style="font-size:12px;">' + escapeHtml(c['住所'] || '') + '</span></div>';
   html += '</div>';
 
-  html += '<div class="preview-card"><div class="preview-title">車両情報 <span class="edit-link" onclick="navigateTo(\'vehicle.html\',{vehicleId:\'' + (v['車両ID'] || '') + '\'})">編集</span></div>';
+  html += '<div class="preview-card"><div class="preview-title">車両情報 <a href="javascript:void(0)" class="edit-link" onclick="navigateTo(\'vehicle.html\',{vehicleId:\'' + (v['車両ID'] || '') + '\'})">編集</a></div>';
   html += '<div class="preview-row"><span class="preview-label">ナンバー</span><span class="preview-value">' + escapeHtml(plate) + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">メーカー</span><span class="preview-value">' + escapeHtml(v['メーカー'] || '') + '</span></div>';
   html += '<div class="preview-row"><span class="preview-label">車種</span><span class="preview-value">' + escapeHtml(v['車種名'] || '') + '</span></div>';
   html += '</div>';
 
-  html += '<div class="preview-card"><div class="preview-title">タイヤ情報（' + (ts['本数'] || '') + '本） <span class="edit-link" onclick="navigateTo(\'tire_input.html\',{orderNumber:\'' + (selectedOrder || '') + '\',tireSetId:\'' + (ts['タイヤセットID'] || '') + '\'})">編集</span></div>';
+  html += '<div class="preview-card"><div class="preview-title">タイヤ情報（' + (ts['本数'] || '') + '本） <a href="javascript:void(0)" class="edit-link" onclick="navigateTo(\'tire_input.html\',{orderNumber:\'' + (selectedOrder || '') + '\',tireSetId:\'' + (ts['タイヤセットID'] || '') + '\'})">編集</a></div>';
   html += '<div class="preview-row"><span class="preview-label">預かり区分</span><span class="preview-value">' + escapeHtml(ts['区分'] || '') + 'タイヤ預かり</span></div>';
   for (var k = 0; k < recs.length; k++) {
     var rec = recs[k];
