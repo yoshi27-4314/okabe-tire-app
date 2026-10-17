@@ -3,21 +3,21 @@
    ============================================================ */
 
 :root {
-  --orange: #E86A2A;
-  --orange-dark: #C4551E;
-  --brown: #5C4033;
-  --green: #006B3F;
-  --red: #C41E3A;
-  --blue: #2563EB;
+  --orange: #2E86C1;
+  --orange-dark: #2471A3;
+  --brown: #2C3E50;
+  --green: #27AE60;
+  --red: #E74C3C;
+  --blue: #E67E22;
   --white: #FFFFFF;
-  --cream: #FAF8F5;
-  --text: #2C2C2C;
-  --text2: #6B6B6B;
-  --text3: #9B9B9B;
-  --border: #E0D6C8;
-  --border-light: #F0EBE3;
-  --shadow-sm: 0 1px 3px rgba(92,64,51,0.08);
-  --shadow-md: 0 4px 12px rgba(92,64,51,0.12);
+  --cream: #FBFCFD;
+  --text: #2C3E50;
+  --text2: #7F8C8D;
+  --text3: #BDC3C7;
+  --border: #D5DBDB;
+  --border-light: #EBF0F0;
+  --shadow-sm: 0 1px 3px rgba(44,62,80,0.06);
+  --shadow-md: 0 4px 12px rgba(44,62,80,0.08);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -33,7 +33,7 @@ body {
 }
 
 @media (min-width: 481px) {
-  body { background: #E8E2DA; }
+  body { background: #E8EEF2; }
   .page { background: var(--cream); box-shadow: 0 0 20px rgba(0,0,0,0.1); }
 }
 
