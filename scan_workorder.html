@@ -421,7 +421,8 @@ async function doAddToList() {
 async function doCancelOrder() {
   if (!registerResult) { goHome(); return; }
   if (!confirmAction('取り消しますか？')) return;
-  await callAPI('workorder_cancel', { orderNumber: registerResult.orderNumber });
+  var r = await callAPI('workorder_cancel', { orderNumber: registerResult.orderNumber });
+  if (handleAPIError(r)) return;
   showSuccess('取り消しました');
   setTimeout(function() { goHome(); }, 1500);
 }

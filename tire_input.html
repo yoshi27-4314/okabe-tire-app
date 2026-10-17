@@ -407,7 +407,8 @@ async function doSave() {
   showSuccess('保存しました');
 
   // 作業完了にする
-  await callAPI('pit_complete', { orderNumber: orderNumber });
+  var rc = await callAPI('pit_complete', { orderNumber: orderNumber });
+  if (handleAPIError(rc)) return;
 
   setTimeout(function() { location.href = 'pit_work.html'; }, 1500);
 }
@@ -431,6 +432,7 @@ async function init() {
   // 既存記録があれば読み込み
   if (tireSetId) {
     var tr = await callAPI('tire_getRecords', { tireSetId: tireSetId });
+    if (handleAPIError(tr)) return;
     if (tr && tr.ok && tr.data.records.length > 0) {
       var recs = tr.data.records;
       var ts = tr.data.tireSet;
