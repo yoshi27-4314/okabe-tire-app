@@ -5,17 +5,17 @@
 :root {
   --orange: #2E86C1;
   --orange-dark: #2471A3;
-  --brown: #2C3E50;
-  --green: #27AE60;
+  --brown: #34495E;
+  --green: #2E86C1;
   --red: #E74C3C;
-  --blue: #E67E22;
+  --blue: #C0392B;
   --white: #FFFFFF;
-  --cream: #FBFCFD;
+  --cream: #F7F9FA;
   --text: #2C3E50;
-  --text2: #7F8C8D;
-  --text3: #BDC3C7;
+  --text2: #5D6D7E;
+  --text3: #95A5A6;
   --border: #D5DBDB;
-  --border-light: #EBF0F0;
+  --border-light: #ECF0F1;
   --shadow-sm: 0 1px 3px rgba(44,62,80,0.06);
   --shadow-md: 0 4px 12px rgba(44,62,80,0.08);
 }
