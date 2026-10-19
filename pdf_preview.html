@@ -27,12 +27,13 @@ body { font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; background: #888
 .row-value { flex: 1; font-size: 12pt; padding: 1mm 2mm; }
 .notice { font-size: 11pt; line-height: 1.6; margin-bottom: 3mm; }
 .notice-title { font-size: 12pt; font-weight: bold; margin-bottom: 1mm; }
-.terms-title { text-align: center; font-size: 20pt; font-weight: bold; margin-bottom: 7mm; }
-.article-title { font-size: 13pt; font-weight: bold; margin-top: 5mm; margin-bottom: 1mm; }
-.article-body { font-size: 12pt; line-height: 1.8; margin-bottom: 2mm; padding-left: 1mm; }
+.terms-title { text-align: center; font-size: 20pt; font-weight: bold; margin-bottom: 6mm; }
+.article-title { font-size: 13pt; font-weight: bold; margin-top: 4mm; margin-bottom: 1mm; }
+.article-body { font-size: 11pt; line-height: 1.7; margin-bottom: 2mm; padding-left: 1mm; }
 .tire-table { width: 100%; border-collapse: collapse; font-size: 11pt; }
 .tire-table td, .tire-table th { padding: 1mm 2mm; border-bottom: 0.3pt solid #eee; }
 .tire-table th { background: #f0ebe3; font-weight: bold; text-align: left; }
+.sign-area { text-align: center; margin-top: 10mm; padding-top: 4mm; border-top: 0.5pt solid #ccc; }
 .no-print { position: fixed; top: 10px; right: 20px; z-index: 100; display: flex; gap: 8px; }
 .no-print button { padding: 10px 20px; font-size: 14px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; color: #fff; }
 .btn-print { background: #5C4033; }
@@ -63,14 +64,18 @@ async function loadPdfData() {
   var ts = r.data.tireSet || {};
   var recs = r.data.tireRecords || [];
   var order = r.data.order || {};
+  var staffMap = r.data.staffMap || {};
 
   var plate = [veh['地名'], veh['分類番号'], veh['かな'], veh['下4桁']].filter(Boolean).join(' ');
   var address = (cust['郵便番号'] ? '\u3012' + cust['郵便番号'] + ' ' : '') + (cust['住所'] || '');
 
+  var staffId = order['作成者'] || '';
+  var staffName = staffMap[staffId] || staffId;
+
   var d = {
     orderNumber: order['伝票番号'] || orderNumber,
     date: order['登録日時'] || '',
-    staff: order['作成者'] || '',
+    staffName: staffName,
     custName: cust['氏名'] || '',
     phone: cust['電話'] || '',
     mobile: cust['携帯'] || '',
@@ -82,6 +87,7 @@ async function loadPdfData() {
     tireType: ts['区分'] || '',
     tireCount: ts['本数'] || '4',
     recs: recs,
+    staffMap: staffMap,
   };
 
   document.getElementById('pdfContent').innerHTML = page1(d) + page2() + page3(d);
@@ -97,7 +103,7 @@ function companyHeader() {
 function orderInfo(d) {
   return '<div class="order-info"><div>受付番号: ' + esc(d.orderNumber) + '</div>'
     + '<div>受付日時: ' + esc(formatDateTime(d.date)) + '</div>'
-    + '<div>受付担当: ' + esc(d.staff) + '</div></div>';
+    + '<div>受付担当: ' + esc(d.staffName) + '</div></div>';
 }
 
 function custVeh(d) {
@@ -114,7 +120,20 @@ function custVeh(d) {
 }
 
 function tireDetail(d) {
-  var h = '<div class="section"><div class="section-title">お預かりタイヤ（' + esc(d.tireType) + 'タイヤ ' + esc(d.tireCount) + '本）</div>';
+  var h = '<div class="section"><div class="section-title" style="display:flex;justify-content:space-between;">お預かりタイヤ（' + esc(d.tireType) + 'タイヤ ' + esc(d.tireCount) + '本）';
+  var checkerIds = [];
+  for (var c = 0; c < d.recs.length; c++) {
+    var cid = d.recs[c]['チェック者'] || '';
+    if (cid && checkerIds.indexOf(cid) === -1) checkerIds.push(cid);
+  }
+  if (checkerIds.length > 0) {
+    var checkerNames = [];
+    for (var cn = 0; cn < checkerIds.length; cn++) {
+      checkerNames.push(d.staffMap[checkerIds[cn]] || checkerIds[cn]);
+    }
+    h += '<span style="font-weight:normal;font-size:10pt;">チェック担当: ' + esc(checkerNames.join(', ')) + '</span>';
+  }
+  h += '</div>';
   h += '<table class="tire-table"><tr><th>位置</th><th>メーカー</th><th>パターン</th><th>サイズ</th><th>残溝</th><th>ホイール</th><th>キャップ</th><th>傷</th></tr>';
   for (var i = 0; i < d.recs.length; i++) {
     var rec = d.recs[i];
@@ -147,12 +166,12 @@ function page2() {
     + '<div class="article-title">第五条 保証と免責</div><div class="article-body">保管期間中、管理者の落ち度による著しい損傷・盗難・火災が発生した場合、時価額賠償にて保証致します。但し天災・経年劣化・保管前の傷を除きます。</div>'
     + '<div class="article-title">第六条 個人情報の取り扱い</div><div class="article-body">当社は取得した個人情報をタイヤ保管業務以外には利用致しません。</div>'
     + '<div class="article-title">第七条 同時契約</div><div class="article-body">車輛名義が同名義人又は同居人の車輛に限る。</div>'
-    + '<div style="text-align:center;margin-top:15mm;padding-top:5mm;border-top:0.5pt solid #ccc;"><div style="font-size:11pt;font-weight:bold;margin-bottom:10mm;">上記条項に同意します。</div><div style="font-size:10pt;margin-bottom:10mm;">令和　　年　　月　　日</div><div style="display:inline-flex;align-items:flex-end;gap:3mm;"><div style="font-size:10pt;">契約者</div><div style="width:60mm;border-bottom:0.5pt solid #222;height:10mm;"></div><div style="font-size:11pt;margin-bottom:1mm;">&#12958;</div></div></div></div>';
+    + '<div class="sign-area"><div style="font-size:11pt;font-weight:bold;margin-bottom:8mm;">上記条項に同意します。</div><div style="font-size:10pt;margin-bottom:8mm;">令和　　年　　月　　日</div><div style="display:inline-flex;align-items:flex-end;gap:3mm;"><div style="font-size:10pt;">契約者</div><div style="width:60mm;border-bottom:0.5pt solid #222;height:10mm;"></div><div style="font-size:11pt;margin-bottom:1mm;">&#12958;</div></div></div></div>';
 }
 
 function page3(d) {
   return '<div class="page page-break"><div class="doc-title">タイヤ保管 受付確認書（会社控え）</div>' + companyHeader() + orderInfo(d) + custVeh(d) + tireDetail(d)
-    + '<div style="margin-top:8mm;text-align:center;"><div style="font-size:9pt;color:#666;margin-bottom:6mm;">上記の内容を確認し、タイヤ保管契約に同意します。</div><div style="display:inline-flex;align-items:flex-end;gap:3mm;"><div style="font-size:10pt;">契約者</div><div style="width:60mm;border-bottom:0.5pt solid #222;height:10mm;"></div><div style="font-size:11pt;margin-bottom:1mm;">&#12958;</div></div></div></div>';
+    + '<div class="sign-area" style="margin-top:6mm;"><div style="font-size:9pt;color:#666;margin-bottom:5mm;">上記の内容を確認し、タイヤ保管契約に同意します。</div><div style="display:inline-flex;align-items:flex-end;gap:3mm;"><div style="font-size:10pt;">契約者</div><div style="width:60mm;border-bottom:0.5pt solid #222;height:10mm;"></div><div style="font-size:11pt;margin-bottom:1mm;">&#12958;</div></div></div></div>';
 }
 
 loadPdfData();
