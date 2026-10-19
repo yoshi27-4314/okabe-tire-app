@@ -271,35 +271,65 @@ async function doConfirm() {
   if (lookup.data.found && lookup.data.customer) {
     customerId = lookup.data.customer['顧客ID'];
   } else {
-    var newCust = await callAPI('customer_create', {
-      name: document.getElementById('fName').value.trim(),
-      furigana: document.getElementById('fFurigana').value.trim(),
-      phone: document.getElementById('fPhone').value.trim(),
-      mobile: document.getElementById('fMobile').value.trim(),
-      address: document.getElementById('fAddress').value.trim(),
-      email: document.getElementById('fEmail').value.trim(),
-      customerCode: document.getElementById('fCode').value.trim(),
-      salesRep: document.getElementById('fSalesRep').value.trim(),
-    });
-    if (handleAPIError(newCust)) return;
-    customerId = newCust.data.customerId;
+    // 顧客コードで既存顧客を検索（旧Excelデータとの照合）
+    var custCode = document.getElementById('fCode').value.trim();
+    if (custCode) {
+      var custSearch = await callAPI('customer_search', { query: custCode });
+      if (custSearch && custSearch.ok && custSearch.data.customers) {
+        for (var ci = 0; ci < custSearch.data.customers.length; ci++) {
+          if (custSearch.data.customers[ci]['顧客コード'] === custCode) {
+            customerId = custSearch.data.customers[ci]['顧客ID'];
+            break;
+          }
+        }
+      }
+    }
+    if (!customerId) {
+      var newCust = await callAPI('customer_create', {
+        name: document.getElementById('fName').value.trim(),
+        furigana: document.getElementById('fFurigana').value.trim(),
+        phone: document.getElementById('fPhone').value.trim(),
+        mobile: document.getElementById('fMobile').value.trim(),
+        address: document.getElementById('fAddress').value.trim(),
+        email: document.getElementById('fEmail').value.trim(),
+        customerCode: custCode,
+        salesRep: document.getElementById('fSalesRep').value.trim(),
+      });
+      if (handleAPIError(newCust)) return;
+      customerId = newCust.data.customerId;
+    }
   }
 
   if (lookup.data.found && lookup.data.vehicle) {
     vehicleId = lookup.data.vehicle['車両ID'];
   } else {
-    var newVeh = await callAPI('vehicle_create', {
-      customerId: customerId,
-      area: document.getElementById('fArea').value.trim(),
-      classNo: document.getElementById('fClassNo').value.trim(),
-      kana: document.getElementById('fKana').value.trim(),
-      plateNum: document.getElementById('fPlate').value.trim(),
-      maker: document.getElementById('fMaker').value.trim(),
-      model: document.getElementById('fModel').value.trim(),
-      vin: document.getElementById('fVin').value.trim(),
-    });
-    if (handleAPIError(newVeh)) return;
-    vehicleId = newVeh.data.vehicleId;
+    // 既存顧客の車両から下4桁で検索
+    if (customerId && plate) {
+      var vehSearch = await callAPI('vehicle_search', { query: plate });
+      if (vehSearch && vehSearch.ok && vehSearch.data.vehicles) {
+        for (var vi = 0; vi < vehSearch.data.vehicles.length; vi++) {
+          var v = vehSearch.data.vehicles[vi];
+          if (v['顧客ID'] === customerId && v['下4桁'] === plate) {
+            vehicleId = v['車両ID'];
+            break;
+          }
+        }
+      }
+    }
+    if (!vehicleId) {
+      var newVeh = await callAPI('vehicle_create', {
+        customerId: customerId,
+        area: document.getElementById('fArea').value.trim(),
+        classNo: document.getElementById('fClassNo').value.trim(),
+        kana: document.getElementById('fKana').value.trim(),
+        plateNum: document.getElementById('fPlate').value.trim(),
+        maker: document.getElementById('fMaker').value.trim(),
+        model: document.getElementById('fModel').value.trim(),
+        vin: document.getElementById('fVin').value.trim(),
+      });
+      if (handleAPIError(newVeh)) return;
+      vehicleId = newVeh.data.vehicleId;
+    }
   }
 
   // 作業伝票を登録
