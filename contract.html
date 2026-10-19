@@ -241,8 +241,10 @@ async function loadPreview(orderNumber) {
   html += '<div class="form-row"><input class="form-input" type="date" id="returnDate" style="padding:10px 12px;"></div>';
   html += '</div>';
 
-  html += '<button class="btn-primary" style="background:var(--green);" id="issueBtn" onclick="doIssue()">契約書を発行する</button>';
-  html += '<button class="btn-secondary" style="color:var(--blue);border-color:var(--blue);" onclick="navigateTo(\'pdf_preview.html\',{orderNumber:\'' + (selectedOrder || '') + '\'})">PDF印刷（契約書3枚）</button>';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--brown);margin-bottom:6px;">① 契約書を発行する</div>';
+  html += '<button class="btn-primary" style="background:var(--blue);margin-bottom:16px;" onclick="navigateTo(\'pdf_preview.html\',{orderNumber:\'' + (selectedOrder || '') + '\'})">PDF印刷（契約書3枚）</button>';
+  html += '<div style="font-size:13px;font-weight:700;color:var(--brown);margin-bottom:6px;">② 契約内容を保管する</div>';
+  html += '<button class="btn-primary" style="background:var(--green);margin-bottom:16px;" id="issueBtn" onclick="doIssue()">有効な契約に保管</button>';
   html += '<button class="btn-secondary" onclick="showScr(\'scrList\')">一覧に戻る</button>';
 
   document.getElementById('previewContent').innerHTML = html;
