@@ -242,7 +242,7 @@ async function loadPreview(orderNumber) {
   html += '</div>';
 
   html += '<button class="btn-primary" style="background:var(--green);" id="issueBtn" onclick="doIssue()">契約書を発行する</button>';
-  html += '<button class="btn-secondary" style="color:var(--blue);border-color:var(--blue);" onclick="doPrint()">PDF印刷（契約書）</button>';
+  html += '<button class="btn-secondary" style="color:var(--blue);border-color:var(--blue);" onclick="navigateTo(\'pdf_preview.html\',{orderNumber:\'' + (selectedOrder || '') + '\'})">PDF印刷（契約書3枚）</button>';
   html += '<button class="btn-secondary" onclick="showScr(\'scrList\')">一覧に戻る</button>';
 
   document.getElementById('previewContent').innerHTML = html;
