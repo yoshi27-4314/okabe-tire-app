@@ -334,7 +334,7 @@ async function loadScratchPhotos(idx, folderId) {
   var html = '';
   for (var i = 0; i < r.data.images.length; i++) {
     var img = r.data.images[i];
-    var src = img.dataUrl || img.url || '';
+    var src = img.base64 || img.dataUrl || img.url || '';
     if (src) html += '<div style="width:60px;height:60px;border-radius:6px;overflow:hidden;border:1px solid var(--border);cursor:pointer;" onclick="showPhotoModal(this.querySelector(\'img\').src)"><img src="' + src + '" style="width:100%;height:100%;object-fit:cover;"></div>';
   }
   el.innerHTML = html || '<div style="font-size:11px;color:var(--text3);">写真なし</div>';

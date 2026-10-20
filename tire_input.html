@@ -448,7 +448,7 @@ async function loadSavedPhotos(idx, folderId) {
   if (!scratchPhotos[idx]) scratchPhotos[idx] = [];
   for (var i = 0; i < r.data.images.length; i++) {
     var img = r.data.images[i];
-    var src = img.dataUrl || img.url || '';
+    var src = img.base64 || img.dataUrl || img.url || '';
     if (!src) continue;
     scratchPhotos[idx].push({ fileId: img.fileId || '', dataUrl: src });
     var thumb = document.createElement('div');
