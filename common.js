@@ -123,21 +123,21 @@ function confirmAction(msg) { return confirm(msg); }
 // --- 強制リロード ---
 function forceReload() { location.reload(true); }
 
-// --- 画像圧縮（傷写真保存用: 高品質） ---
+// --- 画像圧縮（タイヤ写真保存用） ---
 function compressImage(dataUrl) {
   return new Promise(function(resolve) {
     var img = new Image();
     img.onload = function() {
       var w = img.width, h = img.height;
-      var maxW = 2048;
+      var maxW = 1280;
       if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
       if (h > maxW) { w = Math.round(w * maxW / h); h = maxW; }
       var canvas = document.createElement('canvas');
       canvas.width = w; canvas.height = h;
       canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-      var quality = 0.92;
+      var quality = 0.8;
       var result = canvas.toDataURL('image/jpeg', quality);
-      while (result.length > 1400000 && quality > 0.5) {
+      while (result.length > 700000 && quality > 0.5) {
         quality -= 0.1;
         result = canvas.toDataURL('image/jpeg', quality);
       }
