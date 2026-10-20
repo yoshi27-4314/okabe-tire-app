@@ -50,7 +50,9 @@ body {
   top: 0;
   z-index: 100;
 }
-.header-title { font-size: 15px; font-weight: 700; color: var(--brown); }
+.header-title { font-size: 15px; font-weight: 700; color: var(--brown); flex: 1; }
+.reload-btn { padding: 6px 10px; font-size: 16px; color: var(--text2); background: var(--cream); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; margin-left: auto; }
+.reload-btn:active { background: var(--border); transform: scale(0.95); }
 .home-btn {
   padding: 6px 12px;
   font-size: 13px;

@@ -15,7 +15,7 @@
 <div id="scrSearch" class="screen active">
   <div class="header">
     <button class="home-btn" onclick="goHome()">ホーム</button>
-    <div class="header-title">車両台帳</div>
+    <div class="header-title">車両台帳</div><button class="reload-btn" onclick="forceReload()">↻</button>
   </div>
   <div class="content">
     <div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -31,7 +31,7 @@
   <div class="header">
     <button class="home-btn" onclick="goHome()">ホーム</button>
     <button class="back-btn" onclick="goBackFromDetail()">< 戻る</button>
-    <div class="header-title">車両詳細</div>
+    <div class="header-title">車両詳細</div><button class="reload-btn" onclick="forceReload()">↻</button>
   </div>
   <div class="content">
     <div class="card" id="vehicleInfo"></div>
@@ -47,7 +47,7 @@
   <div class="header">
     <button class="home-btn" onclick="goHome()">ホーム</button>
     <button class="back-btn" onclick="showScr('scrDetail')">< 戻る</button>
-    <div class="header-title">車両情報の編集</div>
+    <div class="header-title">車両情報の編集</div><button class="reload-btn" onclick="forceReload()">↻</button>
   </div>
   <div class="content">
     <div class="card">

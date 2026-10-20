@@ -120,6 +120,9 @@ function handleAPIError(result) {
 // --- 確認ダイアログ ---
 function confirmAction(msg) { return confirm(msg); }
 
+// --- 強制リロード ---
+function forceReload() { location.reload(true); }
+
 // --- 画像圧縮（傷写真保存用: 高品質） ---
 function compressImage(dataUrl) {
   return new Promise(function(resolve) {
