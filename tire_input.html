@@ -56,6 +56,7 @@
     <span class="info-bar-name" id="infoName">-</span>
     <span class="info-bar-plate" id="infoPlate">-</span>
   </div>
+  <div id="checkerInfo" style="display:none;background:var(--white);border:1px solid var(--border-light);border-radius:10px;padding:8px 14px;margin-bottom:14px;font-size:13px;color:var(--brown);font-weight:600;"></div>
 
   <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">タイヤ本数</div>
   <div class="tire-count-bar" id="countBar"></div>
@@ -370,9 +371,18 @@ async function init() {
   if (tireSetId) {
     var tr = await callAPI('tire_getRecords', { tireSetId: tireSetId });
     if (handleAPIError(tr)) return;
+    var staffMap = tr.data.staffMap || {};
     if (tr.data.records.length > 0) {
       var recs = tr.data.records;
       var ts = tr.data.tireSet;
+      // チェック担当者を表示（最後のレコードのチェック者）
+      var lastChecker = recs[recs.length - 1]['チェック者'] || '';
+      if (lastChecker) {
+        var checkerName = staffMap[lastChecker] || lastChecker;
+        var checkerEl = document.getElementById('checkerInfo');
+        checkerEl.textContent = 'チェック担当: ' + checkerName;
+        checkerEl.style.display = '';
+      }
       if (ts) {
         if (ts['本数']) { tireCount = Number(ts['本数']); renderCountBar(); renderTireInputs(); }
         document.getElementById('overallMemo').value = ts['全体メモ'] || '';
