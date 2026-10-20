@@ -478,29 +478,16 @@ async function init() {
   }
 }
 
-async function loadSavedPhotos(idx, folderId) {
+function loadSavedPhotos(idx, folderId) {
   var id = 't' + idx;
-  var r = await callAPI('photo_getImage', { folderId: folderId, listOnly: true });
-  if (!r || !r.ok || !r.data) return;
-  var images = r.data.images || [];
-  if (images.length === 0) return;
   var photoArea = document.getElementById(id + '_photoArea');
-  if (!scratchPhotos[idx]) scratchPhotos[idx] = [];
-  for (var i = 0; i < images.length; i++) {
-    var img = images[i];
-    var fileId = img.fileId || '';
-    if (!fileId) continue;
-    var driveUrl = 'https://lh3.googleusercontent.com/d/' + fileId;
-    scratchPhotos[idx].push({ fileId: fileId, dataUrl: driveUrl });
-    var thumb = document.createElement('div');
-    thumb.className = 'scratch-thumb';
-    thumb.style.backgroundImage = 'url(' + driveUrl + ')';
-    thumb.style.backgroundSize = 'cover';
-    thumb.style.backgroundPosition = 'center';
-    thumb.onclick = (function(url) { return function() { showPhotoModal(url); }; })(driveUrl);
-    var firstLink = photoArea.querySelector('a');
-    if (firstLink) { photoArea.insertBefore(thumb, firstLink); } else { photoArea.appendChild(thumb); }
-  }
+  var link = document.createElement('a');
+  link.href = 'https://drive.google.com/drive/folders/' + folderId;
+  link.target = '_blank';
+  link.style.cssText = 'display:block;padding:10px;background:#E8F5E9;border:1px solid var(--green);border-radius:8px;text-align:center;color:var(--green);font-weight:600;font-size:13px;text-decoration:none;margin-bottom:6px;';
+  link.textContent = '📂 保存済み写真を見る（Googleドライブ）';
+  var firstLink = photoArea.querySelector('a');
+  if (firstLink) { photoArea.insertBefore(link, firstLink); } else { photoArea.appendChild(link); }
 }
 
 init();
