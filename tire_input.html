@@ -98,6 +98,7 @@ var positions = ['左前', '右前', '左後', '右後', '5本目', '6本目'];
 var scratchFolderIds = {};
 var scratchPhotos = {};
 var tireOcrImages = {};
+var uploadingCount = 0;
 
 function readFile(file) {
   return new Promise(function(resolve) { var r = new FileReader(); r.onload = function(e) { resolve(e.target.result); }; r.readAsDataURL(file); });
@@ -195,6 +196,12 @@ async function onScratchPhoto(input, idx) {
   if (!input.files || !input.files[0]) return;
   var id = 't' + idx;
   var pos = positions[idx];
+  var file = input.files[0];
+  input.value = '';
+
+  uploadingCount++;
+  document.getElementById('saveBtn').disabled = true;
+  document.getElementById('saveBtn').textContent = '写真アップロード中...';
 
   if (!scratchFolderIds[idx]) {
     showSuccess('フォルダ作成中...');
@@ -208,44 +215,42 @@ async function onScratchPhoto(input, idx) {
       kana: '',
       subFolder: 'タイヤ' + (idx+1) + '_' + pos
     });
-    if (handleAPIError(r)) { input.value = ''; return; }
+    if (handleAPIError(r)) { uploadingCount--; if (uploadingCount <= 0) { document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').textContent = '保存する'; } return; }
     if (r.data && r.data.folderId) {
       scratchFolderIds[idx] = r.data.folderId;
     } else {
       showError('フォルダ作成に失敗しました');
-      input.value = '';
+      uploadingCount--; if (uploadingCount <= 0) { document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').textContent = '保存する'; }
       return;
     }
   }
 
-  var file = input.files[0];
-  var reader = new FileReader();
-  reader.onload = async function(e) {
-    showSuccess('アップロード中...');
-    var r = await callAPI('photo_upload', {
-      imageData: e.target.result,
-      folderId: scratchFolderIds[idx],
-      position: pos
-    });
-    if (handleAPIError(r)) return;
+  showSuccess('アップロード中...');
+  var dataUrl = await readFile(file);
+  var r2 = await callAPI('photo_upload', {
+    imageData: dataUrl,
+    folderId: scratchFolderIds[idx],
+    position: pos
+  });
 
-    var savedDataUrl = e.target.result;
-    if (!scratchPhotos[idx]) scratchPhotos[idx] = [];
-    scratchPhotos[idx].push({ fileId: r.data ? r.data.fileId : '', dataUrl: savedDataUrl });
-    var photoArea = document.getElementById(id + '_photoArea');
-    var thumb = document.createElement('div');
-    thumb.className = 'scratch-thumb';
-    thumb.style.backgroundImage = 'url(' + savedDataUrl + ')';
-    thumb.style.backgroundSize = 'cover';
-    thumb.style.backgroundPosition = 'center';
-    thumb.textContent = '';
-    thumb.onclick = (function(url) { return function() { showPhotoModal(url); }; })(savedDataUrl);
-    var firstLink = photoArea.querySelector('a');
-    if (firstLink) { photoArea.insertBefore(thumb, firstLink); } else { photoArea.appendChild(thumb); }
-    showSuccess('写真を保存しました');
-  };
-  reader.readAsDataURL(file);
-  input.value = '';
+  uploadingCount--;
+  if (uploadingCount <= 0) { document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').textContent = '保存する'; }
+
+  if (handleAPIError(r2)) return;
+
+  if (!scratchPhotos[idx]) scratchPhotos[idx] = [];
+  scratchPhotos[idx].push({ fileId: r2.data ? r2.data.fileId : '', dataUrl: dataUrl });
+  var photoArea = document.getElementById(id + '_photoArea');
+  var thumb = document.createElement('div');
+  thumb.className = 'scratch-thumb';
+  thumb.style.backgroundImage = 'url(' + dataUrl + ')';
+  thumb.style.backgroundSize = 'cover';
+  thumb.style.backgroundPosition = 'center';
+  thumb.textContent = '';
+  thumb.onclick = (function(url) { return function() { showPhotoModal(url); }; })(dataUrl);
+  var firstLink = photoArea.querySelector('a');
+  if (firstLink) { photoArea.insertBefore(thumb, firstLink); } else { photoArea.appendChild(thumb); }
+  showSuccess('写真を保存しました');
 }
 
 async function addTireImage(input, idx) {
