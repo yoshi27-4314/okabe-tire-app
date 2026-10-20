@@ -173,7 +173,12 @@ function compressImageForOcr(dataUrl) {
 
 // --- 写真拡大表示（専用ページでピンチズーム可能） ---
 function showPhotoModal(src) {
-  sessionStorage.setItem('photoSrc', src);
+  try {
+    sessionStorage.setItem('photoSrc', src);
+  } catch (e) {
+    sessionStorage.clear();
+    try { sessionStorage.setItem('photoSrc', src); } catch (e2) { alert('画像が大きすぎて表示できません'); return; }
+  }
   location.href = 'photo_viewer.html';
 }
 
