@@ -480,21 +480,24 @@ async function init() {
 
 async function loadSavedPhotos(idx, folderId) {
   var id = 't' + idx;
-  var r = await callAPI('photo_getImage', { folderId: folderId });
-  if (!r || !r.ok || !r.data || !r.data.images || r.data.images.length === 0) return;
+  var r = await callAPI('photo_getImage', { folderId: folderId, listOnly: true });
+  if (!r || !r.ok || !r.data) return;
+  var images = r.data.images || [];
+  if (images.length === 0) return;
   var photoArea = document.getElementById(id + '_photoArea');
   if (!scratchPhotos[idx]) scratchPhotos[idx] = [];
-  for (var i = 0; i < r.data.images.length; i++) {
-    var img = r.data.images[i];
-    var src = img.base64 || img.dataUrl || img.url || '';
-    if (!src) continue;
-    scratchPhotos[idx].push({ fileId: img.fileId || '', dataUrl: src });
+  for (var i = 0; i < images.length; i++) {
+    var img = images[i];
+    var fileId = img.fileId || '';
+    if (!fileId) continue;
+    var driveUrl = 'https://lh3.googleusercontent.com/d/' + fileId;
+    scratchPhotos[idx].push({ fileId: fileId, dataUrl: driveUrl });
     var thumb = document.createElement('div');
     thumb.className = 'scratch-thumb';
-    thumb.style.backgroundImage = 'url(' + src + ')';
+    thumb.style.backgroundImage = 'url(' + driveUrl + ')';
     thumb.style.backgroundSize = 'cover';
     thumb.style.backgroundPosition = 'center';
-    thumb.onclick = (function(url) { return function() { showPhotoModal(url); }; })(src);
+    thumb.onclick = (function(url) { return function() { showPhotoModal(url); }; })(driveUrl);
     var firstLink = photoArea.querySelector('a');
     if (firstLink) { photoArea.insertBefore(thumb, firstLink); } else { photoArea.appendChild(thumb); }
   }
