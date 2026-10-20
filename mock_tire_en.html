@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en" style="color-scheme:only light;">
+<head>
+<meta charset="UTF-8">
+<meta name="color-scheme" content="light">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Tire Information - OKABE Tire Hotel DX</title>
+<link rel="stylesheet" href="style.css">
+<style>
+.info-bar { background: var(--white); border: 1px solid var(--border-light); border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; }
+.info-bar-name { font-weight: 700; color: var(--brown); }
+.info-bar-plate { color: var(--text2); }
+.tire-count-bar { display: flex; gap: 6px; margin-bottom: 16px; }
+.tire-count-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: 600; text-align: center; border: 1.5px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text3); cursor: pointer; }
+.tire-count-btn.active { border-color: var(--orange); background: #FFF3EB; color: var(--orange); }
+.tire-section { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+.tire-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--orange); }
+.tire-pos { font-size: 15px; font-weight: 700; color: var(--brown); }
+.groove-row { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.pm-btn { height: 48px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 8px; background: var(--white); cursor: pointer; color: var(--orange); display: flex; align-items: center; justify-content: center; }
+.groove-input { width: 70px; height: 48px; text-align: center; padding: 8px; font-size: 24px; font-weight: 700; border: 1.5px solid var(--border); border-radius: 8px; }
+.scratch-checks { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.scratch-check { display: flex; align-items: center; gap: 4px; font-size: 13px; cursor: pointer; }
+.scratch-check input { width: 20px; height: 20px; accent-color: var(--orange); }
+.memo-input { width: 100%; padding: 8px 12px; font-size: 14px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--cream); resize: vertical; min-height: 40px; }
+.nut-section { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+.nut-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--brown); }
+.overall-memo { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
+.overall-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--brown); }
+.mock-label { background: var(--red); color: white; text-align: center; padding: 8px; font-size: 13px; font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="mock-label">MOCK - English Version</div>
+
+<div class="header">
+  <button class="home-btn">Home</button>
+  <button class="back-btn">< Back</button>
+  <div class="header-title">Tire Information</div>
+</div>
+
+<div class="content" style="padding-bottom:40px;">
+  <div class="info-bar">
+    <span class="info-bar-name">Fujie Shoji Co., Ltd.</span>
+    <span class="info-bar-plate">1137</span>
+  </div>
+
+  <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">Number of Tires</div>
+  <div class="tire-count-bar">
+    <div class="tire-count-btn">1</div>
+    <div class="tire-count-btn">2</div>
+    <div class="tire-count-btn">3</div>
+    <div class="tire-count-btn active">4</div>
+    <div class="tire-count-btn">5</div>
+    <div class="tire-count-btn">6</div>
+  </div>
+
+  <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">Storage Type</div>
+  <div class="toggle-group" style="margin-bottom:16px;">
+    <span class="toggle-btn checked" data-value="summer">Summer Tires</span>
+    <span class="toggle-btn" data-value="winter">Winter Tires</span>
+  </div>
+
+  <div class="tire-section">
+    <div class="tire-header"><span class="tire-pos">Tire 1 : Front Left</span></div>
+    <div style="display:flex;gap:6px;margin-bottom:10px;">
+      <a style="flex:1;text-align:center;padding:10px;font-size:13px;font-weight:600;color:var(--blue);background:#F0F7FF;border:1px solid var(--blue);border-radius:8px;cursor:pointer;">📷 Camera</a>
+      <a style="flex:1;text-align:center;padding:10px;font-size:13px;font-weight:600;color:var(--blue);background:#F0F7FF;border:1px solid var(--blue);border-radius:8px;cursor:pointer;">📁 File</a>
+    </div>
+    <div class="form-row"><label class="form-label">Maker</label><input class="form-input" placeholder="BRIDGESTONE" value="BRIDGESTONE"></div>
+    <div class="form-row"><label class="form-label">Pattern</label><input class="form-input" placeholder="BLIZZAK VRX3" value="ECOPIA EP150"></div>
+    <div class="form-row"><label class="form-label">Size</label><input class="form-input" placeholder="195/65R15" value="155/65R14"></div>
+    <div class="form-row"><label class="form-label">Manufacture Date</label><input class="form-input" placeholder="2024.20" value="2023.35"></div>
+    <div class="form-row"><label class="form-label">Wheel</label>
+      <div class="toggle-group"><span class="toggle-btn checked">Alloy</span><span class="toggle-btn">Steel</span></div>
+    </div>
+    <div class="form-row"><label class="form-label">Hub Cap</label>
+      <div class="toggle-group"><span class="toggle-btn">Yes</span><span class="toggle-btn checked">No</span></div>
+    </div>
+    <div class="form-row"><label class="form-label">Tread Depth</label>
+      <div class="groove-row">
+        <button class="pm-btn" style="width:48px;font-size:22px;">+</button>
+        <button class="pm-btn" style="width:40px;font-size:16px;">+</button>
+        <input class="groove-input" type="text" value="4.0">
+        <button class="pm-btn" style="width:40px;font-size:16px;">&minus;</button>
+        <button class="pm-btn" style="width:48px;font-size:22px;">&minus;</button>
+        <span style="font-size:14px;color:var(--text2);margin-left:4px;">mm</span>
+      </div>
+    </div>
+    <div class="form-row"><label class="form-label">Damage Check</label>
+      <div class="scratch-checks">
+        <label class="scratch-check"><input type="checkbox" checked> No Damage</label>
+        <label class="scratch-check"><input type="checkbox"> Sidewall</label>
+        <label class="scratch-check"><input type="checkbox"> Tread</label>
+        <label class="scratch-check"><input type="checkbox"> Rim</label>
+      </div>
+    </div>
+    <div><label class="form-label" style="margin-top:6px;">Tire Photo</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        <a style="font-size:12px;color:var(--blue);cursor:pointer;margin-right:10px;">📷 Take Photo</a>
+        <a style="font-size:12px;color:var(--blue);cursor:pointer;">📁 Choose File</a>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:10px;"><label class="form-label">Memo (this tire)</label><textarea class="memo-input" placeholder="Notes for this tire"></textarea></div>
+  </div>
+
+  <div class="nut-section">
+    <div class="nut-title">Lug Nuts (All Tires)</div>
+    <div class="toggle-group">
+      <span class="toggle-btn">Customer Keeps</span>
+      <span class="toggle-btn checked">In Vehicle</span>
+      <span class="toggle-btn">Shared</span>
+    </div>
+  </div>
+
+  <div class="overall-memo">
+    <div class="overall-title">Overall Memo</div>
+    <textarea class="memo-input" rows="3" placeholder="Notes for all tires"></textarea>
+  </div>
+
+  <button class="btn-primary">Save</button>
+  <button class="btn-secondary">Back</button>
+</div>
+</body>
+</html>
