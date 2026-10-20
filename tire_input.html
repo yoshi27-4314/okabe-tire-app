@@ -83,7 +83,8 @@
     <textarea class="memo-input" rows="3" id="overallMemo" placeholder="タイヤ全体に対するメモ"></textarea>
   </div>
 
-  <button class="btn-primary" id="saveBtn" onclick="doSave()">保存する</button>
+  <button class="btn-secondary" id="tempSaveBtn" onclick="doTempSave()" style="color:var(--blue);border-color:var(--blue);margin-bottom:8px;">一時保存（途中でも保存）</button>
+  <button class="btn-primary" id="saveBtn" onclick="doSave()">保存して作業完了</button>
   <button class="btn-secondary" id="backBtn" onclick="history.back()">戻る</button>
 </div>
 
@@ -209,8 +210,9 @@ async function onScratchPhoto(input, idx) {
     }
   }
 
-  showSuccess('アップロード中...');
-  var dataUrl = await readFile(file);
+  showSuccess('圧縮してアップロード中...');
+  var rawDataUrl = await readFile(file);
+  var dataUrl = await compressImage(rawDataUrl);
   var r2 = await callAPI('photo_upload', {
     imageData: dataUrl,
     folderId: scratchFolderIds[idx],
@@ -304,7 +306,7 @@ async function doTireOcr(idx) {
   renderTireOcrPreview(idx);
 }
 
-async function doSave() {
+function collectRecords() {
   var records = [];
   for (var i = 0; i < tireCount; i++) {
     var id = 't' + i;
@@ -326,13 +328,48 @@ async function doSave() {
       memo: document.getElementById(id + '_memo').value.trim(),
     });
   }
+  return records;
+}
 
-  // 写真が1枚もない本がないかチェック
+// 一時保存（バリデーションなし）
+async function doTempSave() {
+  var records = collectRecords();
+  startLoading(document.getElementById('tempSaveBtn'));
+  var r = await callAPI('tire_save', {
+    orderNumber: orderNumber,
+    tireCount: tireCount,
+    tireType: getToggleValue('tireTypeGroup'),
+    nut: getToggleValue('nutGroup'),
+    overallMemo: document.getElementById('overallMemo').value.trim(),
+    records: records,
+  });
+  stopLoading(document.getElementById('tempSaveBtn'));
+  if (handleAPIError(r)) return;
+  showSuccess('一時保存しました');
+}
+
+// 保存して作業完了（必須項目チェック付き）
+async function doSave() {
+  var records = collectRecords();
+  var errors = [];
+
   for (var j = 0; j < tireCount; j++) {
+    var rec = records[j];
+    var label = (j+1) + '本目';
+    if (!rec.maker) errors.push(label + 'のメーカーが未入力');
+    if (!rec.size) errors.push(label + 'のサイズが未入力');
+    if (!rec.wheelType) errors.push(label + 'のホイール種別が未選択');
+    if (!rec.cap) errors.push(label + 'のキャップが未選択');
     if (!scratchFolderIds[j] && !(scratchPhotos[j] && scratchPhotos[j].length > 0)) {
-      showError((j+1) + '本目のタイヤの写真がありません。写真を1枚以上撮影してください');
-      return;
+      errors.push(label + 'のタイヤ写真がありません');
     }
+  }
+  if (!getToggleValue('tireTypeGroup')) errors.push('預かり区分（夏/冬）が未選択');
+  if (!getToggleValue('nutGroup')) errors.push('ナットが未選択');
+
+  if (errors.length > 0) {
+    showError(errors[0]);
+    return;
   }
 
   startLoading(document.getElementById('saveBtn'));
@@ -360,6 +397,7 @@ async function init() {
 
   if (!orderNumber) {
     document.getElementById('saveBtn').style.display = 'none';
+    document.getElementById('tempSaveBtn').style.display = 'none';
   }
 
   document.getElementById('infoName').textContent = paramCustomerName || '';
