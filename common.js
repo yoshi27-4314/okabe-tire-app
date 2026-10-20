@@ -168,17 +168,21 @@ function compressImageForOcr(dataUrl) {
   });
 }
 
-// --- 写真拡大モーダル（傷写真タップで使用） ---
+// --- 写真拡大モーダル（ピンチズーム対応） ---
 function showPhotoModal(src) {
   var overlay = document.getElementById('photo-modal');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.id = 'photo-modal';
-    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-    overlay.onclick = function() { overlay.style.display = 'none'; };
+    overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10000;display:flex;align-items:center;justify-content:center;overflow:auto;-webkit-overflow-scrolling:touch;';
+    var closeBtn = document.createElement('div');
+    closeBtn.style.cssText = 'position:fixed;top:12px;right:16px;z-index:10001;width:40px;height:40px;background:rgba(255,255,255,0.9);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#333;cursor:pointer;';
+    closeBtn.textContent = '✕';
+    closeBtn.onclick = function() { overlay.style.display = 'none'; };
+    overlay.appendChild(closeBtn);
     var imgEl = document.createElement('img');
     imgEl.id = 'photo-modal-img';
-    imgEl.style.cssText = 'max-width:95%;max-height:90%;border-radius:8px;';
+    imgEl.style.cssText = 'max-width:none;max-height:none;width:100%;touch-action:pinch-zoom;';
     overlay.appendChild(imgEl);
     document.body.appendChild(overlay);
   }
