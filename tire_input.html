@@ -146,12 +146,13 @@ function renderTireInputs() {
     html += '<button class="pm-btn" style="width:48px;font-size:22px;" onclick="adjGroove(' + i + ',-1)">&minus;</button>';
     html += '<span style="font-size:14px;color:var(--text2);margin-left:4px;">mm</span></div>';
     html += '<div id="' + id + '_grooveAlert"></div></div>';
-    html += '<div class="form-row"><label class="form-label">傷チェック</label>';
+    html += '<div class="form-row"><label class="form-label">タイヤ状態</label>';
     html += '<div class="scratch-checks">';
-    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sNone" onchange="onScratchNone(' + i + ')"> 傷なし</label>';
-    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sSide" onchange="onScratchCheck(' + i + ')"> サイドウォール</label>';
-    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sTread" onchange="onScratchCheck(' + i + ')"> トレッド面</label>';
-    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sRim" onchange="onScratchCheck(' + i + ')"> リム</label>';
+    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sNone"> 小傷</label>';
+    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sSide"> サイドウォール</label>';
+    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sRim"> リム</label>';
+    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sTread"> ホイールディスク</label>';
+    html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sOther"> その他</label>';
     html += '</div>';
     html += '<div id="' + id + '_scratchPhotos"><label class="form-label" style="margin-top:6px;">タイヤの写真</label><div class="scratch-photos" id="' + id + '_photoArea"><a onclick="document.getElementById(\'' + id + '_sCam\').click()" style="font-size:12px;color:var(--blue);cursor:pointer;margin-right:10px;">📷 カメラで撮影</a><a onclick="document.getElementById(\'' + id + '_sFile\').click()" style="font-size:12px;color:var(--blue);cursor:pointer;">📁 ファイルから追加</a></div><input type="file" id="' + id + '_sCam" accept="image/*" capture="environment" style="display:none;" onchange="onScratchPhoto(this,' + i + ')"><input type="file" id="' + id + '_sFile" accept="image/*" multiple style="display:none;" onchange="onScratchPhoto(this,' + i + ')"></div>';
     html += '</div>';
@@ -172,21 +173,7 @@ function adjGroove(idx, delta) {
   alertEl.innerHTML = val < 3 ? '<div class="groove-alert">⚠ 要交換（3mm未満）</div>' : '';
 }
 
-function onScratchNone(idx) {
-  var id = 't' + idx;
-  if (document.getElementById(id + '_sNone').checked) {
-    document.getElementById(id + '_sSide').checked = false;
-    document.getElementById(id + '_sTread').checked = false;
-    document.getElementById(id + '_sRim').checked = false;
-  }
-}
-function onScratchCheck(idx) {
-  var id = 't' + idx;
-  var hasScratch = document.getElementById(id + '_sSide').checked || document.getElementById(id + '_sTread').checked || document.getElementById(id + '_sRim').checked;
-  if (hasScratch) {
-    document.getElementById(id + '_sNone').checked = false;
-  }
-}
+// チェックボックスは独立（排他制御なし）
 
 async function onScratchPhoto(input, idx) {
   if (!input.files || !input.files[0]) return;
@@ -333,19 +320,16 @@ async function doSave() {
       scratchSidewall: document.getElementById(id + '_sSide').checked ? 'はい' : '',
       scratchTread: document.getElementById(id + '_sTread').checked ? 'はい' : '',
       scratchRim: document.getElementById(id + '_sRim').checked ? 'はい' : '',
+      scratchOther: document.getElementById(id + '_sOther').checked ? 'はい' : '',
       scratchPhotoFolderId: scratchFolderIds[i] || '',
       memo: document.getElementById(id + '_memo').value.trim(),
     });
   }
 
+  // 写真が1枚もない本がないかチェック
   for (var j = 0; j < tireCount; j++) {
-    var jid = 't' + j;
-    var hasNone = document.getElementById(jid + '_sNone').checked;
-    var hasSide = document.getElementById(jid + '_sSide').checked;
-    var hasTread = document.getElementById(jid + '_sTread').checked;
-    var hasRim = document.getElementById(jid + '_sRim').checked;
-    if (!hasNone && !hasSide && !hasTread && !hasRim) {
-      showError((j+1) + '本目の傷チェックが未確認です。「傷なし」または傷の箇所にチェックを入れてください');
+    if (!scratchFolderIds[j] && !(scratchPhotos[j] && scratchPhotos[j].length > 0)) {
+      showError((j+1) + '本目のタイヤの写真がありません。写真を1枚以上撮影してください');
       return;
     }
   }
@@ -423,14 +407,16 @@ async function init() {
             cBtns[ci].classList.toggle('checked', cBtns[ci].dataset.value === rec['キャップ']);
           }
         }
-        // 傷チェックを復元
+        // タイヤ状態チェックを復元
         if (rec['傷なし'] === 'はい') document.getElementById(tid + '_sNone').checked = true;
         if (rec['傷_サイドウォール'] === 'はい') document.getElementById(tid + '_sSide').checked = true;
         if (rec['傷_トレッド面'] === 'はい') document.getElementById(tid + '_sTread').checked = true;
         if (rec['傷_リム'] === 'はい') document.getElementById(tid + '_sRim').checked = true;
-        // 傷写真フォルダIDを復元
+        if (rec['傷_その他'] === 'はい') { var sOther = document.getElementById(tid + '_sOther'); if (sOther) sOther.checked = true; }
+        // 写真フォルダIDを復元 + 写真を読み込んで表示
         if (rec['傷写真フォルダID']) {
           scratchFolderIds[i] = rec['傷写真フォルダID'];
+          loadSavedPhotos(i, rec['傷写真フォルダID']);
         }
       }
       // ナットを復元（最初のレコードから取得）
@@ -441,6 +427,28 @@ async function init() {
         }
       }
     }
+  }
+}
+
+async function loadSavedPhotos(idx, folderId) {
+  var id = 't' + idx;
+  var r = await callAPI('photo_getImage', { folderId: folderId });
+  if (!r || !r.ok || !r.data || !r.data.images || r.data.images.length === 0) return;
+  var photoArea = document.getElementById(id + '_photoArea');
+  if (!scratchPhotos[idx]) scratchPhotos[idx] = [];
+  for (var i = 0; i < r.data.images.length; i++) {
+    var img = r.data.images[i];
+    var src = img.dataUrl || img.url || '';
+    if (!src) continue;
+    scratchPhotos[idx].push({ fileId: img.fileId || '', dataUrl: src });
+    var thumb = document.createElement('div');
+    thumb.className = 'scratch-thumb';
+    thumb.style.backgroundImage = 'url(' + src + ')';
+    thumb.style.backgroundSize = 'cover';
+    thumb.style.backgroundPosition = 'center';
+    thumb.onclick = (function(url) { return function() { showPhotoModal(url); }; })(src);
+    var firstLink = photoArea.querySelector('a');
+    if (firstLink) { photoArea.insertBefore(thumb, firstLink); } else { photoArea.appendChild(thumb); }
   }
 }
 
