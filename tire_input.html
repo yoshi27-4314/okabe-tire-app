@@ -153,7 +153,7 @@ function renderTireInputs() {
     html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sTread" onchange="onScratchCheck(' + i + ')"> トレッド面</label>';
     html += '<label class="scratch-check"><input type="checkbox" id="' + id + '_sRim" onchange="onScratchCheck(' + i + ')"> リム</label>';
     html += '</div>';
-    html += '<div id="' + id + '_scratchPhotos" style="display:none;"><label class="form-label" style="margin-top:6px;">傷の写真</label><div class="scratch-photos" id="' + id + '_photoArea"><a onclick="document.getElementById(\'' + id + '_sCam\').click()" style="font-size:12px;color:var(--blue);cursor:pointer;margin-right:10px;">📷 カメラで撮影</a><a onclick="document.getElementById(\'' + id + '_sFile\').click()" style="font-size:12px;color:var(--blue);cursor:pointer;">📁 ファイルから追加</a></div><input type="file" id="' + id + '_sCam" accept="image/*" capture="environment" style="display:none;" onchange="onScratchPhoto(this,' + i + ')"><input type="file" id="' + id + '_sFile" accept="image/*" multiple style="display:none;" onchange="onScratchPhoto(this,' + i + ')"></div>';
+    html += '<div id="' + id + '_scratchPhotos"><label class="form-label" style="margin-top:6px;">タイヤの写真</label><div class="scratch-photos" id="' + id + '_photoArea"><a onclick="document.getElementById(\'' + id + '_sCam\').click()" style="font-size:12px;color:var(--blue);cursor:pointer;margin-right:10px;">📷 カメラで撮影</a><a onclick="document.getElementById(\'' + id + '_sFile\').click()" style="font-size:12px;color:var(--blue);cursor:pointer;">📁 ファイルから追加</a></div><input type="file" id="' + id + '_sCam" accept="image/*" capture="environment" style="display:none;" onchange="onScratchPhoto(this,' + i + ')"><input type="file" id="' + id + '_sFile" accept="image/*" multiple style="display:none;" onchange="onScratchPhoto(this,' + i + ')"></div>';
     html += '</div>';
     html += '<div class="form-row" style="margin-top:10px;"><label class="form-label">メモ（この1本）</label><textarea class="memo-input" id="' + id + '_memo" placeholder="この1本に対するメモ"></textarea></div>';
     html += '</div>';
@@ -178,7 +178,6 @@ function onScratchNone(idx) {
     document.getElementById(id + '_sSide').checked = false;
     document.getElementById(id + '_sTread').checked = false;
     document.getElementById(id + '_sRim').checked = false;
-    document.getElementById(id + '_scratchPhotos').style.display = 'none';
   }
 }
 function onScratchCheck(idx) {
@@ -186,9 +185,6 @@ function onScratchCheck(idx) {
   var hasScratch = document.getElementById(id + '_sSide').checked || document.getElementById(id + '_sTread').checked || document.getElementById(id + '_sRim').checked;
   if (hasScratch) {
     document.getElementById(id + '_sNone').checked = false;
-    document.getElementById(id + '_scratchPhotos').style.display = '';
-  } else {
-    document.getElementById(id + '_scratchPhotos').style.display = 'none';
   }
 }
 
@@ -396,6 +392,13 @@ async function init() {
       if (ts) {
         if (ts['本数']) { tireCount = Number(ts['本数']); renderCountBar(); renderTireInputs(); }
         document.getElementById('overallMemo').value = ts['全体メモ'] || '';
+        // 預かり区分を復元
+        if (ts['区分']) {
+          var typeBtns = document.querySelectorAll('#tireTypeGroup .toggle-btn');
+          for (var tb = 0; tb < typeBtns.length; tb++) {
+            typeBtns[tb].classList.toggle('checked', typeBtns[tb].dataset.value === ts['区分']);
+          }
+        }
       }
       for (var i = 0; i < recs.length && i < 6; i++) {
         var rec = recs[i];
@@ -405,6 +408,37 @@ async function init() {
         document.getElementById(tid + '_size').value = rec['サイズ'] || '';
         document.getElementById(tid + '_mfg').value = rec['製造年月'] || '';
         document.getElementById(tid + '_groove').value = rec['残溝'] || '5.0';
+        document.getElementById(tid + '_memo').value = rec['メモ'] || '';
+        // ホイール種別を復元
+        if (rec['ホイール種別']) {
+          var wBtns = document.querySelectorAll('#' + tid + '_wheel .toggle-btn');
+          for (var wi = 0; wi < wBtns.length; wi++) {
+            wBtns[wi].classList.toggle('checked', wBtns[wi].dataset.value === rec['ホイール種別']);
+          }
+        }
+        // キャップを復元
+        if (rec['キャップ']) {
+          var cBtns = document.querySelectorAll('#' + tid + '_cap .toggle-btn');
+          for (var ci = 0; ci < cBtns.length; ci++) {
+            cBtns[ci].classList.toggle('checked', cBtns[ci].dataset.value === rec['キャップ']);
+          }
+        }
+        // 傷チェックを復元
+        if (rec['傷なし'] === 'はい') document.getElementById(tid + '_sNone').checked = true;
+        if (rec['傷_サイドウォール'] === 'はい') document.getElementById(tid + '_sSide').checked = true;
+        if (rec['傷_トレッド面'] === 'はい') document.getElementById(tid + '_sTread').checked = true;
+        if (rec['傷_リム'] === 'はい') document.getElementById(tid + '_sRim').checked = true;
+        // 傷写真フォルダIDを復元
+        if (rec['傷写真フォルダID']) {
+          scratchFolderIds[i] = rec['傷写真フォルダID'];
+        }
+      }
+      // ナットを復元（最初のレコードから取得）
+      if (recs[0] && recs[0]['ナット']) {
+        var nBtns = document.querySelectorAll('#nutGroup .toggle-btn');
+        for (var ni = 0; ni < nBtns.length; ni++) {
+          nBtns[ni].classList.toggle('checked', nBtns[ni].dataset.value === recs[0]['ナット']);
+        }
       }
     }
   }
