@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.5, maximum-scale=5.0, user-scalable=yes">
+<title>タイヤ写真</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #000; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+img { max-width: 100%; max-height: 100vh; object-fit: contain; }
+.back-btn { position: fixed; top: 12px; left: 12px; z-index: 100; padding: 8px 16px; font-size: 14px; font-weight: 700; color: #fff; background: rgba(0,0,0,0.6); border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer; }
+.back-btn:active { background: rgba(255,255,255,0.3); }
+</style>
+</head>
+<body>
+<button class="back-btn" onclick="history.back()">← 戻る</button>
+<img id="photo" src="">
+<script>
+var src = sessionStorage.getItem('photoSrc') || '';
+if (src) {
+  document.getElementById('photo').src = src;
+}
+</script>
+</body>
+</html>

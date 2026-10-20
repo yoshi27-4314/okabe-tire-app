@@ -171,13 +171,10 @@ function compressImageForOcr(dataUrl) {
   });
 }
 
-// --- 写真拡大表示（新しいページで開いてピンチズーム可能） ---
+// --- 写真拡大表示（専用ページでピンチズーム可能） ---
 function showPhotoModal(src) {
-  var w = window.open('');
-  if (w) {
-    w.document.write('<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"><title>タイヤ写真</title></head><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh;"><img src="' + src + '" style="max-width:100%;max-height:100vh;object-fit:contain;"></body></html>');
-    w.document.close();
-  }
+  sessionStorage.setItem('photoSrc', src);
+  location.href = 'photo_viewer.html';
 }
 
 // --- ブラウザバック時の未完了伝票取消（sendBeacon） ---
