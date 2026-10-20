@@ -173,13 +173,25 @@ function compressImageForOcr(dataUrl) {
 
 // --- 写真拡大表示（専用ページでピンチズーム可能） ---
 function showPhotoModal(src) {
-  try {
-    sessionStorage.setItem('photoSrc', src);
-  } catch (e) {
-    sessionStorage.clear();
-    try { sessionStorage.setItem('photoSrc', src); } catch (e2) { alert('画像が大きすぎて表示できません'); return; }
-  }
-  location.href = 'photo_viewer.html';
+  var img = new Image();
+  img.onload = function() {
+    var w = img.width, h = img.height;
+    var maxW = 1600;
+    if (w > maxW) { h = Math.round(h * maxW / w); w = maxW; }
+    if (h > maxW) { w = Math.round(w * maxW / h); h = maxW; }
+    var canvas = document.createElement('canvas');
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    var compressed = canvas.toDataURL('image/jpeg', 0.85);
+    try {
+      sessionStorage.clear();
+      sessionStorage.setItem('photoSrc', compressed);
+      location.href = 'photo_viewer.html';
+    } catch (e) {
+      alert('画像の表示に失敗しました');
+    }
+  };
+  img.src = src;
 }
 
 // --- ブラウザバック時の未完了伝票取消（sendBeacon） ---
