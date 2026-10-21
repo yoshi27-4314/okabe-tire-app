@@ -414,6 +414,15 @@ async function loadDetail(contractNumber) {
   }
   html += '</div>';
 
+  // 印刷
+  var printCount = Number(c['印刷回数']) || 0;
+  html += '<div class="confirm-box"><div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:8px;">印刷</div>';
+  if (printCount > 0) {
+    html += '<div style="font-size:12px;color:var(--text2);margin-bottom:8px;">印刷済み: ' + printCount + '回（最新: ' + escapeHtml(c['契約番号']) + '-' + printCount + '）</div>';
+  }
+  html += '<button class="btn-secondary" style="color:var(--blue);border-color:var(--blue);" onclick="doPrintContract(\'' + escapeHtml(c['契約番号']) + '\',\'' + escapeHtml(c['伝票番号'] || '') + '\')">PDF印刷（契約書3枚）</button>';
+  html += '</div>';
+
   // アクション
   html += '<div class="confirm-box"><div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:8px;">アクション</div>';
   html += '<button class="btn-secondary" style="color:var(--green);border-color:var(--green);" onclick="showRenewScreen()">契約を更新する</button>';
@@ -484,6 +493,13 @@ async function closeContract() {
   showSuccess('契約を終了しました');
   loadContracts();
   showScr('scrList');
+}
+
+async function doPrintContract(contractNumber, orderNumber) {
+  var r = await callAPI('contract_print', { contractNumber: contractNumber });
+  if (handleAPIError(r)) return;
+  showSuccess('印刷番号: ' + r.data.printNumber + '（' + r.data.printCount + '回目）');
+  navigateTo('pdf_preview.html', { orderNumber: orderNumber, printNumber: r.data.printNumber });
 }
 
 function getStatusClass(st) {

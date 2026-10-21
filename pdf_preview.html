@@ -50,6 +50,7 @@ body { font-family: 'Hiragino Mincho ProN', 'Yu Mincho', serif; background: #888
 
 <script>
 var orderNumber = getParam('orderNumber');
+var printNumber = getParam('printNumber');
 function esc(v) { return escapeHtml(v || ''); }
 
 async function loadPdfData() {
@@ -101,7 +102,8 @@ function companyHeader() {
 }
 
 function orderInfo(d) {
-  return '<div class="order-info"><div>受付番号: ' + esc(d.orderNumber) + '</div>'
+  var numDisplay = printNumber ? printNumber : d.orderNumber;
+  return '<div class="order-info"><div>管理番号: ' + esc(numDisplay) + '</div>'
     + '<div>受付日時: ' + esc(formatDateTime(d.date)) + '</div>'
     + '<div>受付担当: ' + esc(d.staffName) + '</div></div>';
 }
