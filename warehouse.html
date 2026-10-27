@@ -108,13 +108,18 @@ async function loadOutbound() {
     html += '<div class="task-card"' + (isOut ? ' style="opacity:0.5;"' : '') + '>';
     html += '<div class="task-top"><span class="task-customer">' + escapeHtml(it.customerName) + '</span>';
     html += '<span class="status ' + (isOut ? 'st-done' : 'st-ready') + '">' + (isOut ? '出庫済み' : '出庫準備') + '</span></div>';
+    if (it.returnOnly) html += '<div style="color:var(--red);font-weight:700;font-size:12px;margin-bottom:4px;">返却のみ</div>';
     html += '<div class="task-plate">' + escapeHtml(it.plate) + '</div>';
     html += '<div class="task-detail">' + escapeHtml(it.model) + '</div>';
     html += '<div class="task-detail">' + escapeHtml(it.tireType || '') + 'タイヤ ' + escapeHtml(it.tireCount || '') + '本</div>';
     html += '<div class="task-rack">棚 : ' + escapeHtml(it.rack) + '</div>';
     if (it.scheduledDate) html += '<div class="task-date">作業予定日 : ' + escapeHtml(it.scheduledDate) + '</div>';
+    if (it.memo) html += '<div class="task-detail" style="color:var(--text3);margin-top:2px;">' + escapeHtml(it.memo) + '</div>';
     if (!isOut) {
       html += '<button class="outbound-btn" onclick="doOutbound(\'' + escapeHtml(it.tireSetId) + '\')">出庫する</button>';
+    } else if (it.returnOnly) {
+      html += '<button class="outbound-btn" style="background:var(--green);" onclick="doReturnComplete(\'' + escapeHtml(it.orderNumber) + '\')">返却完了</button>';
+      html += '<button class="revert-btn" onclick="doRevertOutbound(\'' + escapeHtml(it.tireSetId) + '\')">出庫を取り消す</button>';
     } else {
       html += '<button class="revert-btn" onclick="doRevertOutbound(\'' + escapeHtml(it.tireSetId) + '\')">出庫を取り消す</button>';
     }
@@ -128,6 +133,17 @@ async function doOutbound(tireSetId) {
   var r = await callAPI('warehouse_outbound', { tireSetId: tireSetId });
   if (handleAPIError(r)) return;
   showSuccess('出庫しました');
+  loadOutbound();
+}
+
+async function doReturnComplete(orderNumber) {
+  var closeContract = confirm('タイヤの返却が完了しました。契約を終了しますか？');
+  var r = await callAPI('workorder_returnComplete', {
+    orderNumber: orderNumber,
+    closeContract: closeContract ? 'はい' : 'いいえ',
+  });
+  if (handleAPIError(r)) return;
+  showSuccess(closeContract ? '返却完了・契約を終了しました' : '返却完了しました');
   loadOutbound();
 }
 

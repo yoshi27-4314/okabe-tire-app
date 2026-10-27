@@ -333,6 +333,11 @@ function showStep3(data) {
     html += '<div class="tire-detail">' + escapeHtml(data.storedTire.type || '') + ' ' + escapeHtml(data.storedTire.count || '') + '本セット</div>';
     html += '<div class="tire-rack">棚番号 : ' + escapeHtml(data.storedTire.rack || '') + '</div></div>';
     html += '<div class="info-box">預かりタイヤがあります。出庫準備リストに追加して、倉庫から取り出してください。</div>';
+    html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee;">';
+    html += '<div style="font-size:13px;color:var(--text2);margin-bottom:6px;">タイヤの返却だけの場合</div>';
+    html += '<div style="margin-bottom:8px;"><label style="font-size:12px;color:var(--text3);">返却予定日</label><input type="date" id="returnDate" class="form-input" style="margin-top:4px;"></div>';
+    html += '<button class="btn-primary" style="width:100%;background:#fff;color:var(--red);border:2px solid var(--red);" onclick="doReturnOnly()">タイヤ返却のみ</button>';
+    html += '</div>';
     document.getElementById('addListBtn').textContent = '出庫準備リストに追加する';
     document.getElementById('addListBtn').style.background = 'var(--blue)';
   } else {
@@ -366,6 +371,21 @@ async function doAddToList() {
   if (handleAPIError(r)) return;
 
   showSuccess('リストに追加しました（' + registerResult.orderNumber + '）');
+  registerResult = null;
+  setTimeout(function() { goHome(); }, 1500);
+}
+
+// タイヤ返却のみ
+async function doReturnOnly() {
+  if (!registerResult) return;
+  if (!confirm('返却処理を行います。よろしいですか？')) return;
+  var returnDate = document.getElementById('returnDate') ? document.getElementById('returnDate').value : '';
+  var r = await callAPI('workorder_setReturnOnly', {
+    orderNumber: registerResult.orderNumber,
+    returnDate: returnDate,
+  });
+  if (handleAPIError(r)) return;
+  showSuccess('返却のみで出庫準備リストに追加しました');
   registerResult = null;
   setTimeout(function() { goHome(); }, 1500);
 }
