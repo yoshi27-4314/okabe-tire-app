@@ -72,6 +72,22 @@ async function loadOverdue(type) {
 
   var lhtml = '';
 
+  // 返却予約済み
+  var reserved = data.returnReserved || [];
+  if (reserved.length > 0) {
+    lhtml += '<div class="section-label" style="color:var(--green);">返却予約済み（' + reserved.length + '件）</div>';
+    for (var ri = 0; ri < reserved.length; ri++) {
+      var rit = reserved[ri];
+      lhtml += '<div class="overdue-card" style="border-color:var(--green);"><div class="overdue-top"><span class="overdue-customer">' + escapeHtml(rit.customerName) + '</span><span class="status" style="background:var(--green);color:var(--white);">返却予約</span></div>';
+      lhtml += '<div class="overdue-plate">' + escapeHtml(rit.plate) + '</div>';
+      lhtml += '<div class="overdue-detail">' + escapeHtml(rit.model) + '</div>';
+      lhtml += '<div class="overdue-detail">棚 : ' + escapeHtml(rit.rack) + '</div>';
+      if (rit.memo) lhtml += '<div class="overdue-detail">' + escapeHtml(rit.memo) + '</div>';
+      if (rit.scheduledDate) lhtml += '<div class="overdue-date" style="color:var(--green);">作業予定日 : ' + escapeHtml(rit.scheduledDate) + '</div>';
+      lhtml += '</div>';
+    }
+  }
+
   if (data.approaching.length > 0) {
     lhtml += '<div class="section-label" style="color:var(--orange);">① 返却予定日まで14日以内（' + data.approaching.length + '件）</div>';
     for (var i = 0; i < data.approaching.length; i++) {
