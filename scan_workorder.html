@@ -137,6 +137,7 @@
     <button class="btn-primary" id="addListBtn" onclick="doAddToList()" style="margin-top:12px;">リストに追加する</button>
     <button class="btn-secondary" onclick="showScr('scr2')">読み取り結果を修正する</button>
     <button class="btn-danger" onclick="doCancelOrder()">取り消してホームへ</button>
+    <div id="returnOnlyArea"></div>
   </div>
 </div>
 
@@ -333,19 +334,22 @@ function showStep3(data) {
     html += '<div class="tire-detail">' + escapeHtml(data.storedTire.type || '') + ' ' + escapeHtml(data.storedTire.count || '') + '本セット</div>';
     html += '<div class="tire-rack">棚番号 : ' + escapeHtml(data.storedTire.rack || '') + '</div></div>';
     html += '<div class="info-box">預かりタイヤがあります。出庫準備リストに追加して、倉庫から取り出してください。</div>';
-    html += '<div style="margin-top:12px;padding-top:12px;border-top:1px solid #eee;">';
-    html += '<div style="font-size:13px;color:var(--text2);margin-bottom:6px;">タイヤの返却だけの場合</div>';
-    html += '<div style="margin-bottom:8px;"><label style="font-size:12px;color:var(--text3);">返却予定日</label><input type="date" id="returnDate" class="form-input" style="margin-top:4px;"></div>';
-    html += '<button class="btn-primary" style="width:100%;background:#fff;color:var(--red);border:2px solid var(--red);" onclick="doReturnOnly()">タイヤ返却のみ</button>';
-    html += '</div>';
     document.getElementById('addListBtn').textContent = '出庫準備リストに追加する';
     document.getElementById('addListBtn').style.background = 'var(--blue)';
+    // 返却のみエリア（取り消しボタンの下に表示）
+    var retHtml = '<div style="margin-top:16px;padding-top:16px;border-top:1px solid #eee;">';
+    retHtml += '<div style="font-size:13px;color:var(--text2);margin-bottom:6px;">タイヤの返却だけの場合</div>';
+    retHtml += '<div style="margin-bottom:8px;"><label style="font-size:12px;color:var(--text3);">返却予定日</label><input type="date" id="returnDate" class="form-input" style="margin-top:4px;"></div>';
+    retHtml += '<button class="btn-primary" style="width:100%;background:#fff;color:var(--red);border:2px solid var(--red);" onclick="doReturnOnly()">タイヤ返却のみ</button>';
+    retHtml += '</div>';
+    document.getElementById('returnOnlyArea').innerHTML = retHtml;
   } else {
     html += '<div class="tire-status none"><div class="tire-notfound">預かりタイヤなし（新規）</div>';
     html += '<div class="tire-detail">新規のお客様、または預かりタイヤが登録されていません</div></div>';
     html += '<div class="info-box">新規の預かりです。作業予定リストに追加してください。</div>';
     document.getElementById('addListBtn').textContent = '作業予定リストに追加する';
     document.getElementById('addListBtn').style.background = 'var(--orange)';
+    document.getElementById('returnOnlyArea').innerHTML = '';
   }
   document.getElementById('tireStatusArea').innerHTML = html;
 
