@@ -22,25 +22,35 @@
 </head>
 <body>
 
-<!-- トップ -->
-<div id="scrTop" class="screen active">
+<!-- トップメニュー -->
+<div id="scrMenu" class="screen active">
   <div class="header">
     <button class="home-btn" onclick="goHome()">ホーム</button>
     <div class="header-title">設定</div><button class="reload-btn" onclick="forceReload()">↻</button>
   </div>
   <div class="content">
-    <div class="tab-bar" style="overflow-x:auto;">
-      <div class="tab-item active" onclick="showTab('tabStaff',this)">スタッフ</div>
-      <div class="tab-item" onclick="showTab('tabRack',this)">棚番</div>
-      <div class="tab-item" onclick="showTab('tabPrice',this)">料金</div>
-      <div class="tab-item" onclick="showTab('tabDiscount',this)">割引</div>
-      <div class="tab-item" onclick="showTab('tabWarehouse',this)">倉庫</div>
-      <div class="tab-item" onclick="showTab('tabAssist',this)">入力補助</div>
-      <div class="tab-item" onclick="showTab('tabGroup',this);loadGroups()">割引グループ</div>
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="master-item" style="cursor:pointer;" onclick="openSetting('tabStaff')"><div><div class="master-name">スタッフ管理</div><div class="master-sub">スタッフの追加・編集・パスワード再設定</div></div><span style="color:var(--text3);font-size:18px;">›</span></div>
+      <div class="master-item" style="cursor:pointer;" onclick="openSetting('tabPrice')"><div><div class="master-name">料金プラン</div><div class="master-sub">保管料の設定</div></div><span style="color:var(--text3);font-size:18px;">›</span></div>
+      <div class="master-item" style="cursor:pointer;" onclick="openSetting('tabDiscount')"><div><div class="master-name">台数割引</div><div class="master-sub">複数台契約の割引ルール</div></div><span style="color:var(--text3);font-size:18px;">›</span></div>
+      <div class="master-item" style="cursor:pointer;" onclick="openSetting('tabGroup')"><div><div class="master-name">割引グループ</div><div class="master-sub">複数顧客をグループにまとめて割引適用</div></div><span style="color:var(--text3);font-size:18px;">›</span></div>
+      <div class="master-item" style="cursor:pointer;" onclick="openSetting('tabWarehouse')"><div><div class="master-name">倉庫</div><div class="master-sub">倉庫の追加・編集</div></div><span style="color:var(--text3);font-size:18px;">›</span></div>
+      <div class="master-item" style="cursor:pointer;" onclick="openSetting('tabRack')"><div><div class="master-name">棚番</div><div class="master-sub">棚番の一覧・追加</div></div><span style="color:var(--text3);font-size:18px;">›</span></div>
+      <div class="master-item" style="cursor:pointer;" onclick="openSetting('tabAssist')"><div><div class="master-name">入力補助</div><div class="master-sub">メーカー・サイズ・車名の候補リスト</div></div><span style="color:var(--text3);font-size:18px;">›</span></div>
     </div>
+  </div>
+</div>
+
+<!-- 各設定画面 -->
+<div id="scrTop" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="showScr('scrMenu')">戻る</button>
+    <div class="header-title" id="settingTitle">設定</div><button class="reload-btn" onclick="forceReload()">↻</button>
+  </div>
+  <div class="content">
     <div id="tabPrice" style="display:none;"><div class="section-label">料金プラン</div><div id="priceList"></div><button class="btn-primary" onclick="openEdit('price','')">新しいプランを追加</button></div>
     <div id="tabDiscount" style="display:none;"><div class="section-label">台数割引</div><div id="discountList"></div><button class="btn-primary" onclick="openEdit('discount','')">新しい割引ルールを追加</button></div>
-    <div id="tabStaff"><div style="display:flex;gap:8px;margin-bottom:12px;"><input class="form-input" type="text" id="staffQuery" placeholder="スタッフ名で検索" style="flex:1;"><button style="padding:12px 16px;font-size:13px;font-weight:700;color:var(--white);background:var(--orange);border:none;border-radius:8px;cursor:pointer;" onclick="renderStaff()">検索</button></div><div class="section-label" id="staffCount">スタッフ</div><div id="staffList"></div><button class="btn-primary" onclick="openEdit('staff','')">新しいスタッフを追加</button></div>
+    <div id="tabStaff" style="display:none;"><div style="display:flex;gap:8px;margin-bottom:12px;"><input class="form-input" type="text" id="staffQuery" placeholder="スタッフ名で検索" style="flex:1;"><button style="padding:12px 16px;font-size:13px;font-weight:700;color:var(--white);background:var(--orange);border:none;border-radius:8px;cursor:pointer;" onclick="renderStaff()">検索</button></div><div class="section-label" id="staffCount">スタッフ</div><div id="staffList"></div><button class="btn-primary" onclick="openEdit('staff','')">新しいスタッフを追加</button></div>
     <div id="tabWarehouse" style="display:none;"><div class="section-label">倉庫</div><div id="warehouseList"></div><button class="btn-primary" onclick="openEdit('warehouse','')">新しい倉庫を追加</button></div>
     <div id="tabRack" style="display:none;"><div class="section-label">棚番一覧</div><div id="rackList"></div><button class="btn-primary" onclick="openEdit('rack','')">新しい棚番を追加</button></div>
     <div id="tabAssist" style="display:none;"><div class="toggle-group" id="assistTypeGroup" style="margin-bottom:12px;"><span class="toggle-btn checked" data-value="tire_maker" onclick="toggleCheck(this);renderAssist()">メーカー</span><span class="toggle-btn" data-value="tire_size" onclick="toggleCheck(this);renderAssist()">サイズ</span><span class="toggle-btn" data-value="car_name" onclick="toggleCheck(this);renderAssist()">車名</span></div><div id="assistList"></div><button class="btn-primary" onclick="openEdit('assist','')">新しい入力補助を追加</button></div>
@@ -325,16 +335,31 @@ async function doToggleStaff(enable) {
   showScr('scrTop');
 }
 
+var settingTitles = {
+  tabStaff: 'スタッフ管理',
+  tabPrice: '料金プラン',
+  tabDiscount: '台数割引',
+  tabGroup: '割引グループ',
+  tabWarehouse: '倉庫',
+  tabRack: '棚番',
+  tabAssist: '入力補助',
+};
+function openSetting(tabId) {
+  // 全タブ非表示
+  var tabs = ['tabStaff','tabPrice','tabDiscount','tabGroup','tabWarehouse','tabRack','tabAssist'];
+  for (var i = 0; i < tabs.length; i++) document.getElementById(tabs[i]).style.display = 'none';
+  document.getElementById(tabId).style.display = '';
+  document.getElementById('settingTitle').textContent = settingTitles[tabId] || '設定';
+  showScr('scrTop');
+  if (tabId === 'tabStaff') loadStaff();
+  if (tabId === 'tabGroup') loadGroups();
+}
+
 loadMaster();
 var isAdmin = (localStorage.getItem('role') || '') === 'ADMIN';
-if (isAdmin) {
-  loadStaff();
-} else {
-  document.querySelector('[onclick*="tabStaff"]').style.display = 'none';
-  document.getElementById('tabStaff').style.display = 'none';
-  document.getElementById('tabPrice').style.display = '';
-  document.querySelector('[onclick*="tabPrice"]').classList.add('active');
-  document.querySelector('[onclick*="tabStaff"]').classList.remove('active');
+if (!isAdmin) {
+  var staffMenu = document.querySelector('[onclick*="tabStaff"]');
+  if (staffMenu) staffMenu.style.display = 'none';
 }
 
 // --- 割引グループ ---
@@ -375,7 +400,7 @@ function openGroupCreate() {
 function openGroupDetail(groupId) {
   var g = groupData.find(function(x) { return x.groupId === groupId; });
   if (!g) return;
-  var h = '<div class="header"><button class="home-btn" onclick="showScr(\'scrTop\');loadGroups()">戻る</button><div class="header-title">' + escapeHtml(g.groupName) + '</div><button class="reload-btn" onclick="forceReload()">↻</button></div>';
+  var h = '<div class="header"><button class="home-btn" onclick="openSetting(\'tabGroup\')">戻る</button><div class="header-title">' + escapeHtml(g.groupName) + '</div><button class="reload-btn" onclick="forceReload()">↻</button></div>';
   h += '<div class="content">';
   h += '<div class="section-label">所属顧客（' + g.members.length + '名 / ' + g.totalCars + '台）</div>';
   for (var i = 0; i < g.members.length; i++) {
