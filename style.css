@@ -271,8 +271,8 @@ body {
 .loading { opacity: 0.5; pointer-events: none; }
 
 /* --- 全画面スピナー --- */
-#globalSpinner { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; display: none; }
+#globalSpinner { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.7); flex-direction: column; align-items: center; justify-content: center; z-index: 9999; display: none; }
 #globalSpinner.show { display: flex; }
-#globalSpinner .sp-circle { width: 44px; height: 44px; border: 4px solid var(--border-light); border-top: 4px solid var(--orange); border-radius: 50%; animation: sp-spin 0.8s linear infinite; }
-#globalSpinner .sp-text { margin-top: 14px; font-size: 14px; color: var(--text2); font-weight: 600; }
+#globalSpinner .sp-circle { width: 44px; height: 44px; border: 4px solid #E4E9ED; border-top: 4px solid #2E86C1; border-radius: 50%; animation: sp-spin 0.8s linear infinite; }
+#globalSpinner .sp-text { margin-top: 14px; font-size: 14px; color: #5A6A78; font-weight: 600; }
 @keyframes sp-spin { to { transform: rotate(360deg); } }
