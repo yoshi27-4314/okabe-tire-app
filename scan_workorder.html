@@ -252,9 +252,10 @@ async function doConfirm() {
 
   startLoading(document.getElementById('confirmBtn'));
 
-  // 顧客名・ナンバー全桁・車種・車台番号の4条件で既存車両を1回検索
+  // 顧客コード・顧客名・ナンバー全桁・車種・車台番号で既存車両を検索
   var lookup = await callAPI('workorder_lookup', {
     customerName: name,
+    customerCode: document.getElementById('fCode').value.trim(),
     area: document.getElementById('fArea').value.trim(),
     classNo: document.getElementById('fClassNo').value.trim(),
     kana: document.getElementById('fKana').value.trim(),
