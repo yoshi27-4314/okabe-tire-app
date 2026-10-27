@@ -149,7 +149,15 @@
         <div class="step-row"><span class="step-num">6</span><span class="step-text">預かりタイヤの有無が自動判定される</span></div>
         <div class="step-row"><span class="step-num">7</span><span class="step-text">作業予定日を選択して「リストに追加する」</span></div>
       </div>
-      <div class="info-box">必須項目：氏名・連絡先（電話か携帯のどちらか）・ナンバー下4桁。間違えたら「撮り直す」で戻れます。</div>
+      <div style="margin-top:8px;font-size:13px;font-weight:700;color:var(--red);margin-bottom:4px;">タイヤ返却のみの場合</div>
+      <div style="font-size:13px;margin-bottom:6px;">預かりタイヤがあるお客様で、タイヤを返すだけ（新しい預かりなし）の場合：</div>
+      <div class="op-box">
+        <div class="step-row"><span class="step-num">1</span><span class="step-text">返却予定日を入力</span></div>
+        <div class="step-row"><span class="step-num">2</span><span class="step-text">「タイヤ返却のみ」ボタンをタップ</span></div>
+        <div class="step-row"><span class="step-num">3</span><span class="step-text">確認ダイアログでOK → 出庫準備リストに追加される</span></div>
+      </div>
+      <div class="info-box">返却のみの場合、出庫タブに「返却のみ」と赤字で表示されます。出庫後に「返却完了」ボタンで契約も自動終了できます。</div>
+      <div class="info-box">顧客コードで自動照合されます。指示書にコードがあれば、名前が多少違っても既存顧客として認識されます。</div>
     </div></div>
 
     <!-- 2. ピット作業 -->
@@ -206,6 +214,8 @@
           <div class="step-row"><span class="step-num">2</span><span class="step-text">出庫完了。棚番号・本数を確認して倉庫から出す</span></div>
         </div>
         <div style="font-size:12px;color:var(--red);margin-top:4px;">間違えた場合：「出庫を取り消す」（72時間以内）</div>
+        <div style="margin-top:8px;font-size:13px;font-weight:700;color:var(--green);margin-bottom:4px;">返却のみの場合</div>
+        <div style="font-size:13px;">「返却のみ」と赤字で表示されるカードは、出庫後に「返却完了」ボタン（緑色）が表示されます。お客様にタイヤを渡したら「返却完了」をタップしてください。契約を終了するか確認されます。</div>
       </div>
       <div style="margin-bottom:10px;">
         <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:4px;">格納タブ</div>
@@ -244,6 +254,7 @@
           <div class="step-row"><span class="step-num">6</span><span class="step-text">「有効な契約に保管」で契約確定</span></div>
         </div>
         <div class="info-box">PDF契約書は3枚構成：お客様控え・契約条項・会社控え。</div>
+        <div class="info-box">新しい契約を発行すると、同じ車両の古い契約は自動で終了します。手動で終了する必要はありません。</div>
       </div>
 
       <div>
@@ -286,8 +297,25 @@
       </div>
     </div></div>
 
-    <!-- 8. トラブル対応 -->
-    <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">8. トラブル対応<span>▼</span></div><div class="guide-body">
+    <!-- 8. 割引グループ -->
+    <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">8. 割引グループ<span>▼</span></div><div class="guide-body">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:6px;">ホーム → 「設定」→「割引グループ」タブ</div>
+      <div style="font-size:13px;margin-bottom:8px;">顧客コードが違う複数のお客様をグループにまとめて、合算台数で割引を適用できます。例：法人と代表者個人を1つのグループにする。</div>
+      <div class="op-box">
+        <div class="op-label">操作手順</div>
+        <div class="step-row"><span class="step-num">1</span><span class="step-text">「新しいグループを作成」でグループ名を入力</span></div>
+        <div class="step-row"><span class="step-num">2</span><span class="step-text">グループをタップして詳細画面を開く</span></div>
+        <div class="step-row"><span class="step-num">3</span><span class="step-text">「顧客を追加」で名前またはコードで検索して追加</span></div>
+      </div>
+      <div style="font-size:13px;margin-top:8px;margin-bottom:4px;font-weight:700;color:var(--brown);">自動割引判定</div>
+      <div style="display:flex;flex-direction:column;gap:4px;">
+        <div style="font-size:12px;">2台以上 → 10%OFF / 3台以上 → 20%OFF / 5台以上 → 30%OFF / 10台以上 → 50%OFF</div>
+      </div>
+      <div class="info-box">グループ内の有効な契約台数が自動でカウントされ、割引が判定されます。</div>
+    </div></div>
+
+    <!-- 9. トラブル対応 -->
+    <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">9. トラブル対応<span>▼</span></div><div class="guide-body">
       <div style="margin-bottom:8px;padding:8px;background:var(--cream);border-radius:6px;">
         <div style="font-size:13px;font-weight:700;color:var(--red);margin-bottom:2px;">ログインできない</div>
         <div style="font-size:12px;">ID・パスワードを確認。5回間違えるとロックされます。管理者に解除を依頼してください。</div>
@@ -319,7 +347,7 @@
     </div></div>
 
     <!-- 9. お問い合わせ -->
-    <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">9. お問い合わせ<span>▼</span></div><div class="guide-body">
+    <div class="guide-sec"><div class="guide-title" onclick="tgl(this)">10. お問い合わせ<span>▼</span></div><div class="guide-body">
       株式会社クリアメンテ 浅野<br>携帯 : 090-3449-1833
     </div></div>
   </div>
