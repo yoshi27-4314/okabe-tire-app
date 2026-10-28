@@ -199,9 +199,11 @@ async function loadPreview(orderNumber) {
     var grooveClass = groove > 0 && groove < 3 ? ' alert' : '';
     html += '<div class="tire-preview-row"><span class="tire-preview-label">残溝</span><span class="tire-preview-value' + grooveClass + '">' + escapeHtml(rec['残溝'] || '') + ' mm' + (groove > 0 && groove < 3 ? ' ⚠要交換' : '') + '</span></div>';
     var scratches = [];
+    if (rec['傷なし'] === 'はい') scratches.push('小傷');
     if (rec['傷_サイドウォール'] === 'はい') scratches.push('サイドウォール');
     if (rec['傷_トレッド面'] === 'はい') scratches.push('トレッド面');
     if (rec['傷_リム'] === 'はい') scratches.push('リム');
+    if (rec['傷_その他'] === 'はい') scratches.push('その他');
     if (scratches.length > 0) {
       html += '<div class="tire-preview-row"><span class="tire-preview-label">傷</span></div>';
       for (var s = 0; s < scratches.length; s++) html += '<span class="scratch-tag">' + scratches[s] + '</span>';
@@ -209,8 +211,6 @@ async function loadPreview(orderNumber) {
         html += '<div id="photos_' + k + '" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;"><div style="font-size:11px;color:var(--text3);">写真を読み込み中...</div></div>';
         loadScratchPhotos(k, rec['傷写真フォルダID']);
       }
-    } else if (rec['傷なし'] === 'はい') {
-      html += '<div class="tire-preview-row"><span class="tire-preview-label">傷</span><span class="tire-preview-value" style="color:var(--green);">傷なし</span></div>';
     }
     html += '</div>';
   }

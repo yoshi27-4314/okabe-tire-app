@@ -140,10 +140,12 @@ function tireDetail(d) {
   for (var i = 0; i < d.recs.length; i++) {
     var rec = d.recs[i];
     var scratches = [];
+    if (rec['傷なし'] === 'はい') scratches.push('小傷');
     if (rec['傷_サイドウォール'] === 'はい') scratches.push('側面');
     if (rec['傷_トレッド面'] === 'はい') scratches.push('トレッド');
     if (rec['傷_リム'] === 'はい') scratches.push('リム');
-    var scratchText = rec['傷なし'] === 'はい' ? 'なし' : scratches.join(',') || '';
+    if (rec['傷_その他'] === 'はい') scratches.push('その他');
+    var scratchText = scratches.join(',') || '';
     h += '<tr><td>' + esc(rec['ポジション']) + '</td><td>' + esc(rec['メーカー']) + '</td><td>' + esc(rec['パターン']) + '</td><td>' + esc(rec['サイズ']) + '</td><td>' + esc(rec['残溝']) + 'mm</td><td>' + esc(rec['ホイール種別']) + '</td><td>' + esc(rec['キャップ']) + '</td><td>' + scratchText + '</td></tr>';
   }
   h += '</table></div>';
