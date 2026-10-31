@@ -41,14 +41,15 @@
 .nut-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--brown); }
 .overall-memo { background: var(--white); border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
 .overall-title { font-size: 14px; font-weight: 700; color: var(--brown); margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--brown); }
+.warning-bar { background: #FFF3E0; border: 1.5px solid #FF9800; border-radius: 10px; padding: 10px 14px; margin-bottom: 14px; font-size: 13px; color: #E65100; font-weight: 600; line-height: 1.6; }
 </style>
 </head>
 <body>
 
 <div class="header">
   <button class="home-btn" onclick="goHome()">ホーム</button>
-  <button class="back-btn" onclick="history.back()">< 戻る</button>
-  <div class="header-title">タイヤ情報入力</div><button class="reload-btn" onclick="forceReload()">↻</button>
+  <button class="back-btn" onclick="history.back()">&lt; 戻る</button>
+  <div class="header-title">タイヤ情報入力</div><button class="reload-btn" onclick="forceReload()">&#8635;</button>
 </div>
 
 <div class="content" style="padding-bottom:40px;">
@@ -57,6 +58,7 @@
     <span class="info-bar-plate" id="infoPlate">-</span>
   </div>
   <div id="checkerInfo" style="display:none;background:var(--white);border:1px solid var(--border-light);border-radius:10px;padding:8px 14px;margin-bottom:14px;font-size:13px;color:var(--brown);font-weight:600;"></div>
+  <div id="warningArea"></div>
 
   <div style="font-size:12px;font-weight:600;color:var(--brown);margin-bottom:6px;">タイヤ本数</div>
   <div class="tire-count-bar" id="countBar"></div>
@@ -96,7 +98,6 @@ var tireSetId = getParam('tireSetId');
 var paramCustomerName = getParam('customerName');
 var paramPlate = getParam('plate');
 var tireCount = 4;
-var positions = ['左前', '右前', '左後', '右後', '5本目', '6本目'];
 var scratchFolderIds = {};
 var scratchPhotos = {};
 var tireOcrImages = {};
@@ -121,6 +122,7 @@ function setCount(n) {
 }
 
 function renderTireInputs() {
+  var positions = getPositions(tireCount);
   var html = '';
   for (var i = 0; i < tireCount; i++) {
     var pos = positions[i];
@@ -172,15 +174,13 @@ function adjGroove(idx, delta) {
   if (val > 20) val = 20;
   el.value = val.toFixed(1);
   var alertEl = document.getElementById('t' + idx + '_grooveAlert');
-  alertEl.innerHTML = val < 3 ? '<div class="groove-alert">⚠ 要交換（3mm未満）</div>' : '';
+  alertEl.innerHTML = val < 3 ? '<div class="groove-alert">&#9888; 要交換（3mm未満）</div>' : '';
 }
-
-// チェックボックスは独立（排他制御なし）
 
 async function onScratchPhoto(input, idx) {
   if (!input.files || !input.files[0]) return;
   var id = 't' + idx;
-  var pos = positions[idx];
+  var pos = getPositions(tireCount)[idx];
   var file = input.files[0];
   input.value = '';
 
@@ -200,12 +200,12 @@ async function onScratchPhoto(input, idx) {
       kana: '',
       subFolder: 'タイヤ' + (idx+1) + '_' + pos
     });
-    if (handleAPIError(r)) { uploadingCount--; if (uploadingCount <= 0) { document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').textContent = '保存する'; } return; }
+    if (handleAPIError(r)) { uploadingCount--; if (uploadingCount <= 0) { document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').textContent = '保存して作業完了'; } return; }
     if (r.data && r.data.folderId) {
       scratchFolderIds[idx] = r.data.folderId;
     } else {
       showError('フォルダ作成に失敗しました');
-      uploadingCount--; if (uploadingCount <= 0) { document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').textContent = '保存する'; }
+      uploadingCount--; if (uploadingCount <= 0) { document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').textContent = '保存して作業完了'; }
       return;
     }
   }
@@ -220,7 +220,7 @@ async function onScratchPhoto(input, idx) {
   });
 
   uploadingCount--;
-  if (uploadingCount <= 0) { document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').textContent = '保存する'; }
+  if (uploadingCount <= 0) { document.getElementById('saveBtn').disabled = false; document.getElementById('saveBtn').textContent = '保存して作業完了'; }
 
   if (handleAPIError(r2)) return;
 
@@ -307,6 +307,7 @@ async function doTireOcr(idx) {
 }
 
 function collectRecords() {
+  var positions = getPositions(tireCount);
   var records = [];
   for (var i = 0; i < tireCount; i++) {
     var id = 't' + i;
@@ -331,7 +332,6 @@ function collectRecords() {
   return records;
 }
 
-// 一時保存（バリデーションなし）
 async function doTempSave() {
   var records = collectRecords();
   startLoading(document.getElementById('tempSaveBtn'));
@@ -348,7 +348,6 @@ async function doTempSave() {
   showSuccess('一時保存しました');
 }
 
-// 保存して作業完了（必須項目チェック付き）
 async function doSave() {
   var records = collectRecords();
   var errors = [];
@@ -413,7 +412,7 @@ async function init() {
     if (tr.data.records.length > 0) {
       var recs = tr.data.records;
       var ts = tr.data.tireSet;
-      // チェック担当者を表示（最後のレコードのチェック者）
+
       var lastChecker = recs[recs.length - 1]['チェック者'] || '';
       if (lastChecker) {
         var checkerName = staffMap[lastChecker] || lastChecker;
@@ -421,10 +420,10 @@ async function init() {
         checkerEl.textContent = 'チェック担当: ' + checkerName;
         checkerEl.style.display = '';
       }
+
       if (ts) {
         if (ts['本数']) { tireCount = Number(ts['本数']); renderCountBar(); renderTireInputs(); }
         document.getElementById('overallMemo').value = ts['全体メモ'] || '';
-        // 預かり区分を復元
         if (ts['区分']) {
           var typeBtns = document.querySelectorAll('#tireTypeGroup .toggle-btn');
           for (var tb = 0; tb < typeBtns.length; tb++) {
@@ -432,42 +431,50 @@ async function init() {
           }
         }
       }
-      for (var i = 0; i < recs.length && i < 6; i++) {
+
+      // 名前マッチングでレコードを正しいスロットに配置
+      var currentPositions = getPositions(tireCount);
+      var usedSlots = {};
+      var unmatchedRecs = [];
+
+      for (var i = 0; i < recs.length; i++) {
         var rec = recs[i];
-        var tid = 't' + i;
-        document.getElementById(tid + '_maker').value = rec['メーカー'] || '';
-        document.getElementById(tid + '_pattern').value = rec['パターン'] || '';
-        document.getElementById(tid + '_size').value = rec['サイズ'] || '';
-        document.getElementById(tid + '_mfg').value = rec['製造年月'] || '';
-        document.getElementById(tid + '_groove').value = rec['残溝'] || '5.0';
-        document.getElementById(tid + '_memo').value = rec['メモ'] || '';
-        // ホイール種別を復元
-        if (rec['ホイール種別']) {
-          var wBtns = document.querySelectorAll('#' + tid + '_wheel .toggle-btn');
-          for (var wi = 0; wi < wBtns.length; wi++) {
-            wBtns[wi].classList.toggle('checked', wBtns[wi].dataset.value === rec['ホイール種別']);
-          }
-        }
-        // キャップを復元
-        if (rec['キャップ']) {
-          var cBtns = document.querySelectorAll('#' + tid + '_cap .toggle-btn');
-          for (var ci = 0; ci < cBtns.length; ci++) {
-            cBtns[ci].classList.toggle('checked', cBtns[ci].dataset.value === rec['キャップ']);
-          }
-        }
-        // タイヤ状態チェックを復元
-        if (rec['傷なし'] === 'はい') document.getElementById(tid + '_sNone').checked = true;
-        if (rec['傷_サイドウォール'] === 'はい') document.getElementById(tid + '_sSide').checked = true;
-        if (rec['傷_トレッド面'] === 'はい') document.getElementById(tid + '_sTread').checked = true;
-        if (rec['傷_リム'] === 'はい') document.getElementById(tid + '_sRim').checked = true;
-        if (rec['傷_その他'] === 'はい') { var sOther = document.getElementById(tid + '_sOther'); if (sOther) sOther.checked = true; }
-        // 写真フォルダIDを復元 + 写真を読み込んで表示
-        if (rec['傷写真フォルダID']) {
-          scratchFolderIds[i] = rec['傷写真フォルダID'];
-          loadSavedPhotos(i, rec['傷写真フォルダID']);
+        var posName = rec['ポジション'] || '';
+        var slotIdx = currentPositions.indexOf(posName);
+        if (posName && slotIdx !== -1 && !usedSlots[slotIdx]) {
+          usedSlots[slotIdx] = true;
+          restoreRecordToSlot(slotIdx, rec);
+        } else {
+          unmatchedRecs.push(rec);
         }
       }
-      // ナットを復元（最初のレコードから取得）
+
+      var unmatchedWarnings = [];
+      for (var u = 0; u < unmatchedRecs.length; u++) {
+        var placed = false;
+        for (var s = 0; s < tireCount; s++) {
+          if (!usedSlots[s]) {
+            usedSlots[s] = true;
+            restoreRecordToSlot(s, unmatchedRecs[u]);
+            var oldPos = unmatchedRecs[u]['ポジション'] || '';
+            if (oldPos) {
+              unmatchedWarnings.push('「' + oldPos + '」のデータを「' + currentPositions[s] + '」に仮配置しました');
+            }
+            placed = true;
+            break;
+          }
+        }
+      }
+
+      if (unmatchedWarnings.length > 0) {
+        var warnHtml = '<div class="warning-bar">&#9888; 旧データの位置名が現在の形式と異なります。内容を確認してから保存してください。<br>';
+        for (var w = 0; w < unmatchedWarnings.length; w++) {
+          warnHtml += unmatchedWarnings[w] + '<br>';
+        }
+        warnHtml += '</div>';
+        document.getElementById('warningArea').innerHTML = warnHtml;
+      }
+
       if (recs[0] && recs[0]['ナット']) {
         var nBtns = document.querySelectorAll('#nutGroup .toggle-btn');
         for (var ni = 0; ni < nBtns.length; ni++) {
@@ -475,6 +482,37 @@ async function init() {
         }
       }
     }
+  }
+}
+
+function restoreRecordToSlot(slotIdx, rec) {
+  var tid = 't' + slotIdx;
+  document.getElementById(tid + '_maker').value = rec['メーカー'] || '';
+  document.getElementById(tid + '_pattern').value = rec['パターン'] || '';
+  document.getElementById(tid + '_size').value = rec['サイズ'] || '';
+  document.getElementById(tid + '_mfg').value = rec['製造年月'] || '';
+  document.getElementById(tid + '_groove').value = rec['残溝'] || '5.0';
+  document.getElementById(tid + '_memo').value = rec['メモ'] || '';
+  if (rec['ホイール種別']) {
+    var wBtns = document.querySelectorAll('#' + tid + '_wheel .toggle-btn');
+    for (var wi = 0; wi < wBtns.length; wi++) {
+      wBtns[wi].classList.toggle('checked', wBtns[wi].dataset.value === rec['ホイール種別']);
+    }
+  }
+  if (rec['キャップ']) {
+    var cBtns = document.querySelectorAll('#' + tid + '_cap .toggle-btn');
+    for (var ci = 0; ci < cBtns.length; ci++) {
+      cBtns[ci].classList.toggle('checked', cBtns[ci].dataset.value === rec['キャップ']);
+    }
+  }
+  if (rec['傷なし'] === 'はい') document.getElementById(tid + '_sNone').checked = true;
+  if (rec['傷_サイドウォール'] === 'はい') document.getElementById(tid + '_sSide').checked = true;
+  if (rec['傷_トレッド面'] === 'はい') document.getElementById(tid + '_sTread').checked = true;
+  if (rec['傷_リム'] === 'はい') document.getElementById(tid + '_sRim').checked = true;
+  if (rec['傷_その他'] === 'はい') { var sOther = document.getElementById(tid + '_sOther'); if (sOther) sOther.checked = true; }
+  if (rec['傷写真フォルダID']) {
+    scratchFolderIds[slotIdx] = rec['傷写真フォルダID'];
+    loadSavedPhotos(slotIdx, rec['傷写真フォルダID']);
   }
 }
 

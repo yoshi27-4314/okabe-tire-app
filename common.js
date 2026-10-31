@@ -2,6 +2,31 @@
 // common.js — 共通関数
 // ============================================================
 
+// --- タイヤ位置名（本数に応じた表示名と順番） ---
+function getPositions(count) {
+  if (count === 6) return ['右前', '右後外側', '右後内側', '左後外側', '左後内側', '左前'];
+  if (count === 5) return ['右前', '右後', '左後', '左前', '5本目'];
+  if (count === 4) return ['右前', '右後', '左後', '左前'];
+  // 1〜3本: 本数不定のため番号表示
+  var result = [];
+  for (var i = 1; i <= count; i++) result.push(i + '本目');
+  return result;
+}
+
+// --- タイヤレコードを位置順に並び替え ---
+function sortByPosition(records, tireCount) {
+  var order = getPositions(tireCount);
+  var sorted = records.slice();
+  sorted.sort(function(a, b) {
+    var ai = order.indexOf(a['ポジション'] || '');
+    var bi = order.indexOf(b['ポジション'] || '');
+    if (ai === -1) ai = 999;
+    if (bi === -1) bi = 999;
+    return ai - bi;
+  });
+  return sorted;
+}
+
 // --- トグルボタン（ラジオ式） ---
 function toggleCheck(el) {
   if (el.classList.contains('checked')) {

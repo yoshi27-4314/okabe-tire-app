@@ -169,7 +169,7 @@ async function loadPreview(orderNumber) {
   var v = d.vehicle || {};
   var ts = d.tireSet || {};
   currentTireType = ts['区分'] || '';
-  var recs = d.tireRecords || [];
+  var recs = sortByPosition(d.tireRecords || [], Number(ts['本数']) || 4);
   var plate = [v['地名'], v['分類番号'], v['かな'], v['下4桁']].filter(Boolean).join(' ');
 
   var html = '';

@@ -63,7 +63,7 @@ async function loadPdfData() {
   var cust = r.data.customer || {};
   var veh = r.data.vehicle || {};
   var ts = r.data.tireSet || {};
-  var recs = r.data.tireRecords || [];
+  var recs = sortByPosition(r.data.tireRecords || [], Number(ts['本数']) || 4);
   var order = r.data.order || {};
   var staffMap = r.data.staffMap || {};
 
