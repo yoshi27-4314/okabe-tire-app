@@ -139,7 +139,10 @@ function renderStaff() {
   for (var i = 0; i < list.length; i++) {
     var s = list[i];
     var disabled = s['有効'] === 'いいえ';
-    h += '<div class="master-item"' + (disabled ? ' style="opacity:0.4;"' : '') + '><div><div class="master-name">' + escapeHtml(s['氏名']) + (disabled ? ' <span style="color:var(--red);font-size:11px;">無効</span>' : '') + '</div><div class="master-sub">' + escapeHtml(s['スタッフID']) + ' / ' + escapeHtml(s['役職']||'') + ' / ' + escapeHtml(s['部門']||'') + '</div></div><div class="master-actions"><button class="edit-btn" onclick="openEdit(\'staff\',\'' + escapeHtml(s['スタッフID']) + '\')">編集</button></div></div>';
+    var locked = s['ロック'] === 'はい';
+    var itemStyle = disabled ? ' style="opacity:0.4;"' : locked ? ' style="border-color:#FECACA;background:#FFFBFB;"' : '';
+    var badge = disabled ? ' <span style="color:var(--red);font-size:11px;">無効</span>' : locked ? ' <span style="display:inline-block;background:#FEE2E2;color:var(--red);font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;margin-left:6px;">ロック中</span>' : '';
+    h += '<div class="master-item"' + itemStyle + '><div><div class="master-name">' + escapeHtml(s['氏名']) + badge + '</div><div class="master-sub">' + escapeHtml(s['スタッフID']) + ' / ' + escapeHtml(s['役職']||'') + ' / ' + escapeHtml(s['部門']||'') + '</div></div><div class="master-actions"><button class="edit-btn" onclick="openEdit(\'staff\',\'' + escapeHtml(s['スタッフID']) + '\')">編集</button></div></div>';
   }
   document.getElementById('staffList').innerHTML = h || '<div style="color:var(--text3);padding:8px;">データなし</div>';
 }
@@ -198,6 +201,13 @@ function openEdit(type, id) {
   } else if (type === 'staff') {
     var s = allStaff.find(function(x){ return x['スタッフID']===id; });
     document.getElementById('editTitle').textContent = isNew ? 'スタッフ追加' : 'スタッフ編集';
+    if (!isNew && s && s['ロック'] === 'はい') {
+      h += '<div id="lockAlert" style="background:#FEF2F2;border:2px solid #FECACA;border-radius:12px;padding:16px;margin-bottom:16px;">';
+      h += '<div style="font-size:14px;font-weight:700;color:var(--red);">このアカウントはロックされています</div>';
+      h += '<div style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.6;">パスワードを5回間違えたため、ログインがロックされています。<br>解除するとログイン失敗回数がリセットされ、再びログインできるようになります。</div>';
+      h += '<button style="width:100%;padding:14px;font-size:15px;font-weight:700;color:var(--white);background:var(--red);border:none;border-radius:10px;cursor:pointer;margin-top:12px;" onclick="doUnlockAccount()">ロックを解除する</button>';
+      h += '</div>';
+    }
     h += '<div class="card">';
     if (isNew) {
       h += '<div class="form-row"><label class="form-label">スタッフID <span style="color:var(--red);font-size:16px;font-weight:700;">*</span></label><input class="form-input" id="eStaffId" placeholder="S-XXXX"></div>';
@@ -325,6 +335,18 @@ async function doResetPw() {
   var r = await callAPI('admin_updateStaff', { staffId: editId, resetPassword: true, tempPassword: pw });
   if (handleAPIError(r)) return;
   showSuccess('パスワードをリセットしました');
+}
+async function doUnlockAccount() {
+  if (!confirmAction(escapeHtml(allStaff.find(function(x){return x['スタッフID']===editId;})['氏名']) + 'さんのロックを解除しますか？\nログイン失敗回数がリセットされます。')) return;
+  var r = await callAPI('admin_unlockAccount', { targetStaffId: editId });
+  if (handleAPIError(r)) return;
+  var el = document.getElementById('lockAlert');
+  if (el) {
+    el.style.background = '#ECFDF5';
+    el.style.borderColor = '#A7F3D0';
+    el.innerHTML = '<div style="font-size:14px;font-weight:700;color:#065F46;">ロックを解除しました</div><div style="font-size:13px;color:var(--text2);margin-top:4px;line-height:1.6;">' + escapeHtml(allStaff.find(function(x){return x['スタッフID']===editId;})['氏名']) + 'さんのログインが再び可能になりました。<br>保存ボタンを押す必要はありません。このまま戻れます。</div>';
+  }
+  await loadStaff();
 }
 async function doToggleStaff(enable) {
   if (!confirmAction(enable ? 'このスタッフを有効化しますか？' : 'このスタッフを無効化しますか？\nログインできなくなります。')) return;
