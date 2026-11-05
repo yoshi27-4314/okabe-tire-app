@@ -135,7 +135,10 @@ async function loadDetail(vehicleId) {
         + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(ti.tireSet ? ti.tireSet['区分'] || '' : '') + 'タイヤ ' + escapeHtml(ti.tireSet ? ti.tireSet['本数'] || '' : '') + '本</div>'
         + '<div style="font-size:12px;color:var(--text3);">' + escapeHtml(locStatus) + '</div>'
         + '</div>'
-        + (isActive ? '<button style="padding:6px 10px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;border:none;background:#FEE2E2;color:var(--red);" onclick="doEndCustody(\'' + escapeHtml(tsId) + '\')">預かり終了</button>' : '')
+        + (isActive ? '<div style="display:flex;flex-direction:column;gap:4px;">'
+          + '<button style="padding:6px 10px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;border:none;background:var(--border-light);color:var(--text2);" onclick="doChangeVehicle(\'' + escapeHtml(tsId) + '\')">車両変更</button>'
+          + '<button style="padding:6px 10px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;border:none;background:#FEE2E2;color:var(--red);" onclick="doEndCustody(\'' + escapeHtml(tsId) + '\')">預かり終了</button>'
+          + '</div>' : '')
         + '</div>'
         + '</div>';
     }
@@ -191,10 +194,35 @@ async function doEndCustody(tireSetId) {
   loadDetail(currentVehicle['車両ID']);
 }
 
+// === 車両変更 ===
+async function doChangeVehicle(tireSetId) {
+  var query = prompt('移動先の車両を検索してください（ナンバー・車種・顧客名）');
+  if (!query) return;
+  var r = await callAPI('vehicle_search', { query: query });
+  if (handleAPIError(r)) return;
+  var vehicles = r.data.vehicles || [];
+  if (vehicles.length === 0) { showError('車両が見つかりません'); return; }
+  var names = vehicles.map(function(v, i) {
+    var plate = [v['地名'], v['分類番号'], v['かな'], v['下4桁']].filter(Boolean).join(' ');
+    return (i+1) + ': ' + (plate || '未登録') + '（' + (v['車種名']||'') + ' / ' + (v['顧客名']||'') + '）';
+  }).join('\n');
+  var idx = prompt('移動先の車両を番号で選んでください:\n' + names);
+  if (!idx) return;
+  var sel = vehicles[parseInt(idx) - 1];
+  if (!sel) { showError('無効な番号です'); return; }
+  if (sel['車両ID'] === currentVehicle['車両ID']) { showError('同じ車両です'); return; }
+  var plate = [sel['地名'], sel['分類番号'], sel['かな'], sel['下4桁']].filter(Boolean).join(' ');
+  if (!confirmAction('このタイヤを「' + (plate || '未登録') + '（' + (sel['車種名']||'') + '）」に移動しますか？')) return;
+  var r2 = await callAPI('tire_changeVehicle', { tireSetId: tireSetId, newVehicleId: sel['車両ID'] });
+  if (handleAPIError(r2)) return;
+  showSuccess('車両を変更しました');
+  loadDetail(currentVehicle['車両ID']);
+}
+
 // === 車両削除 ===
 async function deleteVehicle() {
   if (!currentVehicle) return;
-  if (!confirmAction('この車両を削除しますか？\n\nタイヤが紐づいている場合は削除できません。')) return;
+  if (!confirmAction('この車両を削除しますか？\n\n預かり中のタイヤがある場合、タイヤの車両紐づけが解除されます（預かりは継続します）。')) return;
   var r = await callAPI('vehicle_delete', { vehicleId: currentVehicle['車両ID'] });
   if (handleAPIError(r)) return;
   showSuccess('削除しました');
