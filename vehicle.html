@@ -74,7 +74,7 @@ if (!requireLogin()) {}
 var currentVehicle = null;
 var currentVersion = null;
 
-
+// === 検索 ===
 async function doSearch() {
   var query = document.getElementById('searchQuery').value.trim();
   if (!query) { showError('検索語を入力してください'); return; }
@@ -96,6 +96,7 @@ async function doSearch() {
   document.getElementById('searchResults').innerHTML = html;
 }
 
+// === 詳細表示 ===
 async function loadDetail(vehicleId) {
   var r = await callAPI('vehicle_detail', { vehicleId: vehicleId });
   if (handleAPIError(r)) return;
@@ -114,7 +115,7 @@ async function loadDetail(vehicleId) {
   }
   document.getElementById('vehicleInfo').innerHTML = html;
 
-  // 預かりタイヤ（この車両に紐づくもののみ）
+  // 預かりタイヤ一覧
   var tireHtml = '';
   var tr = await callAPI('warehouse_searchTires', { vehicleId: vehicleId });
   if (handleAPIError(tr)) return;
@@ -124,15 +125,26 @@ async function loadDetail(vehicleId) {
   } else {
     for (var t = 0; t < tires.length; t++) {
       var ti = tires[t];
-      tireHtml += '<div class="card"><div style="font-size:14px;font-weight:700;color:var(--orange);">' + escapeHtml(ti.location ? ti.location['棚'] : '棚未定') + '</div>'
+      var locStatus = ti.location ? ti.location['状態'] || '' : '';
+      var tsId = ti.tireSet ? ti.tireSet['タイヤセットID'] || '' : '';
+      var isActive = locStatus === '保管中' || locStatus === '格納待ち';
+      tireHtml += '<div class="card">'
+        + '<div style="display:flex;justify-content:space-between;align-items:flex-start;">'
+        + '<div>'
+        + '<div style="font-size:14px;font-weight:700;color:var(--orange);">' + escapeHtml(ti.location ? ti.location['棚'] : '棚未定') + '</div>'
         + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(ti.tireSet ? ti.tireSet['区分'] || '' : '') + 'タイヤ ' + escapeHtml(ti.tireSet ? ti.tireSet['本数'] || '' : '') + '本</div>'
-        + '<div style="font-size:12px;color:var(--text3);">' + escapeHtml(ti.location ? ti.location['状態'] || '' : '') + '</div></div>';
+        + '<div style="font-size:12px;color:var(--text3);">' + escapeHtml(locStatus) + '</div>'
+        + '</div>'
+        + (isActive ? '<button style="padding:6px 10px;font-size:11px;font-weight:600;border-radius:6px;cursor:pointer;border:none;background:#FEE2E2;color:var(--red);" onclick="doEndCustody(\'' + escapeHtml(tsId) + '\')">預かり終了</button>' : '')
+        + '</div>'
+        + '</div>';
     }
   }
   document.getElementById('tireList').innerHTML = tireHtml;
   showScr('scrDetail');
 }
 
+// === 車両編集 ===
 function showEditScreen() {
   if (!currentVehicle) return;
   var v = currentVehicle;
@@ -170,6 +182,16 @@ async function saveVehicle() {
   loadDetail(currentVehicle['車両ID']);
 }
 
+// === 預かり終了 ===
+async function doEndCustody(tireSetId) {
+  if (!confirmAction('このタイヤの預かりを終了しますか？\n棚が空きます。')) return;
+  var r = await callAPI('tire_endCustody', { tireSetId: tireSetId });
+  if (handleAPIError(r)) return;
+  showSuccess('預かりを終了しました');
+  loadDetail(currentVehicle['車両ID']);
+}
+
+// === 車両削除 ===
 async function deleteVehicle() {
   if (!currentVehicle) return;
   if (!confirmAction('この車両を削除しますか？\n\nタイヤが紐づいている場合は削除できません。')) return;
