@@ -33,6 +33,17 @@
 .tire-notfound { font-size: 14px; font-weight: 700; color: var(--text3); margin-bottom: 4px; }
 .tire-detail { font-size: 13px; color: var(--text2); }
 .tire-rack { font-size: 16px; font-weight: 700; color: var(--brown); margin-top: 4px; }
+.candidate-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center; padding: 20px; }
+.candidate-dialog { background: var(--bg); border-radius: 16px; padding: 20px; max-width: 400px; width: 100%; max-height: 80vh; overflow-y: auto; }
+.candidate-title { font-size: 16px; font-weight: 700; color: var(--brown); margin-bottom: 4px; }
+.candidate-sub { font-size: 13px; color: var(--text3); margin-bottom: 16px; }
+.candidate-btn { display: block; width: 100%; text-align: left; background: var(--white); border: 2px solid var(--border); border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; cursor: pointer; }
+.candidate-btn:active { background: #F5F0EA; border-color: var(--orange); }
+.candidate-plate { font-size: 16px; font-weight: 700; color: var(--text); }
+.candidate-model { font-size: 13px; color: var(--text2); margin-top: 2px; }
+.candidate-new { border-style: dashed; background: #FAFAFA; }
+.candidate-new .candidate-plate { color: var(--blue); font-size: 14px; }
+.candidate-cancel { display: block; width: 100%; text-align: center; background: none; border: none; color: var(--text3); font-size: 14px; padding: 12px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -290,6 +301,29 @@ async function doConfirm() {
   // 車両の特定
   if (lookup.data.found && lookup.data.vehicle) {
     vehicleId = lookup.data.vehicle['車両ID'];
+  } else if (lookup.data.candidates && lookup.data.candidates.length > 0) {
+    // 下4桁が同じ車両が複数 → ユーザーに選んでもらう
+    var selected = await showVehicleCandidates(lookup.data.candidates);
+    if (selected === 'NEW') {
+      // 該当なし → 新規車両を作成
+      var newVeh2 = await callAPI('vehicle_create', {
+        customerId: customerId,
+        area: document.getElementById('fArea').value.trim(),
+        classNo: document.getElementById('fClassNo').value.trim(),
+        kana: document.getElementById('fKana').value.trim(),
+        plateNum: document.getElementById('fPlate').value.trim(),
+        maker: document.getElementById('fMaker').value.trim(),
+        model: document.getElementById('fModel').value.trim(),
+        vin: document.getElementById('fVin').value.trim(),
+      });
+      if (handleAPIError(newVeh2)) return;
+      vehicleId = newVeh2.data.vehicleId;
+    } else if (selected) {
+      vehicleId = selected;
+    } else {
+      // キャンセル
+      return;
+    }
   } else {
     // 新規車両を作成
     var newVeh = await callAPI('vehicle_create', {
@@ -419,6 +453,47 @@ async function doCancelOrder() {
   registerResult = null;
   showSuccess('取り消しました');
   setTimeout(function() { goHome(); }, 1500);
+}
+
+// 車両候補選択ダイアログ
+function showVehicleCandidates(candidates) {
+  return new Promise(function(resolve) {
+    var overlay = document.createElement('div');
+    overlay.className = 'candidate-overlay';
+    var html = '<div class="candidate-dialog">';
+    html += '<div class="candidate-title">同じナンバー下4桁の車両が見つかりました</div>';
+    html += '<div class="candidate-sub">どの車両ですか？</div>';
+    for (var i = 0; i < candidates.length; i++) {
+      var c = candidates[i];
+      var plateText = escapeHtml(c.plate || '下4桁のみ');
+      var modelText = escapeHtml(c.model || '車種不明');
+      var vinText = c.vin ? ' / 車台番号: ' + escapeHtml(c.vin) : '';
+      html += '<button class="candidate-btn" data-id="' + escapeHtml(c.vehicleId) + '">';
+      html += '<div class="candidate-plate">' + plateText + '</div>';
+      html += '<div class="candidate-model">' + modelText + vinText + '</div>';
+      html += '</button>';
+    }
+    html += '<button class="candidate-btn candidate-new" data-id="NEW">';
+    html += '<div class="candidate-plate">該当なし（新しい車両を登録する）</div>';
+    html += '</button>';
+    html += '<button class="candidate-cancel">キャンセル</button>';
+    html += '</div>';
+    overlay.innerHTML = html;
+    document.body.appendChild(overlay);
+
+    overlay.addEventListener('click', function(e) {
+      var btn = e.target.closest('[data-id]');
+      if (btn) {
+        document.body.removeChild(overlay);
+        resolve(btn.getAttribute('data-id'));
+        return;
+      }
+      if (e.target.closest('.candidate-cancel')) {
+        document.body.removeChild(overlay);
+        resolve(null);
+      }
+    });
+  });
 }
 
 // ページ離脱時に未完了の伝票を自動取消（ブラウザバック対策）
