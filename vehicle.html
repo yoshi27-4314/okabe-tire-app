@@ -26,6 +26,49 @@
   </div>
 </div>
 
+<!-- 顧客の車両一覧 -->
+<div id="scrVehicleList" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrSearch')">< 戻る</button>
+    <div class="header-title">車両一覧</div><button class="reload-btn" onclick="forceReload()">↻</button>
+  </div>
+  <div class="content">
+    <div class="card" id="custInfoBar" style="margin-bottom:12px;"></div>
+    <div class="section-label">登録されている車両</div>
+    <div id="vehicleListArea"></div>
+    <button class="btn-primary" onclick="showNewVehicleScreen()" style="margin-top:12px;background:var(--blue);">+ 新しい車両を登録する</button>
+  </div>
+</div>
+
+<!-- 新規車両登録 -->
+<div id="scrNewVehicle" class="screen">
+  <div class="header">
+    <button class="home-btn" onclick="goHome()">ホーム</button>
+    <button class="back-btn" onclick="showScr('scrVehicleList')">< 戻る</button>
+    <div class="header-title">新規車両登録</div><button class="reload-btn" onclick="forceReload()">↻</button>
+  </div>
+  <div class="content">
+    <div class="card" id="newVehCustName" style="margin-bottom:12px;font-weight:700;"></div>
+    <div class="card">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px;">ナンバー</div>
+      <div class="form-row"><label class="form-label">地名</label><input class="form-input" type="text" id="newArea" style="width:150px;"></div>
+      <div class="form-row"><label class="form-label">分類番号</label><input class="form-input" type="text" id="newClassNo" style="width:120px;"></div>
+      <div class="form-row"><label class="form-label">かな</label><input class="form-input" type="text" id="newKana" style="width:80px;"></div>
+      <div class="form-row"><label class="form-label">下4桁 <span style="color:var(--red);">*</span></label><input class="form-input" type="text" id="newPlateNum" style="width:120px;font-size:20px;font-weight:700;text-align:center;"></div>
+      <div style="margin-top:12px;"></div>
+      <div class="form-row"><label class="form-label">メーカー</label><input class="form-input" type="text" id="newMaker"></div>
+      <div class="form-row"><label class="form-label">車種名</label><input class="form-input" type="text" id="newModel"></div>
+      <div class="form-row"><label class="form-label">輪数</label>
+        <select class="form-input" id="newWheelCount" style="padding:10px;"><option value="未確認">未確認</option><option value="4輪">4輪</option><option value="6輪">6輪</option></select>
+      </div>
+      <div class="form-row"><label class="form-label">車台番号</label><input class="form-input" type="text" id="newVin"></div>
+    </div>
+    <button class="btn-primary" id="newVehSaveBtn" onclick="doCreateVehicle()">登録する</button>
+    <button class="btn-secondary" onclick="showScr('scrVehicleList')">キャンセル</button>
+  </div>
+</div>
+
 <!-- 詳細 -->
 <div id="scrDetail" class="screen">
   <div class="header">
@@ -73,6 +116,8 @@
 if (!requireLogin()) {}
 var currentVehicle = null;
 var currentVersion = null;
+var currentCustomerId = null;
+var currentCustomerName = null;
 
 // === 検索 ===
 async function doSearch() {
@@ -83,17 +128,99 @@ async function doSearch() {
   stopLoading(document.getElementById('searchBtn'));
   if (handleAPIError(r)) return;
   var vehicles = r.data.vehicles || [];
+
+  // 顧客ごとにグループ化
+  var custMap = {};
+  var custOrder = [];
+  for (var i = 0; i < vehicles.length; i++) {
+    var v = vehicles[i];
+    var cid = v['顧客ID'] || 'unknown';
+    if (!custMap[cid]) {
+      custMap[cid] = { name: v['顧客名'] || '（不明）', vehicles: [] };
+      custOrder.push(cid);
+    }
+    custMap[cid].vehicles.push(v);
+  }
+
   var html = '<div class="section-label">検索結果（' + vehicles.length + '件）</div>';
   if (vehicles.length === 0) html += '<div style="text-align:center;color:var(--text3);padding:20px;">該当なし</div>';
+
+  for (var ci = 0; ci < custOrder.length; ci++) {
+    var cid = custOrder[ci];
+    var group = custMap[cid];
+    html += '<div class="card clickable" onclick="loadVehicleList(\'' + escapeHtml(cid) + '\')" style="margin-bottom:8px;">';
+    html += '<div style="font-size:14px;font-weight:700;color:var(--brown);margin-bottom:6px;">' + escapeHtml(group.name) + '</div>';
+    for (var vi = 0; vi < group.vehicles.length; vi++) {
+      var vv = group.vehicles[vi];
+      var plate = [vv['地名'], vv['分類番号'], vv['かな'], vv['下4桁']].filter(Boolean).join(' ');
+      html += '<div style="font-size:13px;color:var(--text2);padding:2px 0;">' + escapeHtml(plate || '（ナンバー未登録）') + ' / ' + escapeHtml(vv['車種名'] || '') + '</div>';
+    }
+    html += '</div>';
+  }
+  document.getElementById('searchResults').innerHTML = html;
+}
+
+// === 顧客の車両一覧 ===
+async function loadVehicleList(customerId) {
+  var r = await callAPI('customer_detail', { customerId: customerId });
+  if (handleAPIError(r)) return;
+  var cust = r.data.customer;
+  var vehicles = r.data.vehicles || [];
+  currentCustomerId = customerId;
+  currentCustomerName = cust['氏名'] || '';
+
+  document.getElementById('custInfoBar').innerHTML =
+    '<div style="font-size:16px;font-weight:700;color:var(--brown);">' + escapeHtml(currentCustomerName) + '</div>'
+    + '<div style="font-size:12px;color:var(--text3);margin-top:2px;">' + escapeHtml(cust['電話'] || cust['携帯'] || '') + '</div>';
+
+  var html = '';
+  if (vehicles.length === 0) {
+    html = '<div style="text-align:center;color:var(--text3);padding:20px;">車両が登録されていません</div>';
+  }
   for (var i = 0; i < vehicles.length; i++) {
     var v = vehicles[i];
     var plate = [v['地名'], v['分類番号'], v['かな'], v['下4桁']].filter(Boolean).join(' ');
     html += '<div class="card clickable" onclick="loadDetail(\'' + escapeHtml(v['車両ID']) + '\')">'
       + '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">' + escapeHtml(plate || '（ナンバー未登録）') + '</div>'
-      + '<div style="font-size:14px;font-weight:600;color:var(--brown);margin-bottom:2px;">' + escapeHtml(v['顧客名'] || '') + '</div>'
       + '<div style="font-size:13px;color:var(--text2);">' + escapeHtml(v['車種名'] || '') + ' / ' + escapeHtml(v['メーカー'] || '') + '</div></div>';
   }
-  document.getElementById('searchResults').innerHTML = html;
+  document.getElementById('vehicleListArea').innerHTML = html;
+  showScr('scrVehicleList');
+}
+
+// === 新規車両登録 ===
+function showNewVehicleScreen() {
+  document.getElementById('newVehCustName').textContent = currentCustomerName;
+  document.getElementById('newArea').value = '';
+  document.getElementById('newClassNo').value = '';
+  document.getElementById('newKana').value = '';
+  document.getElementById('newPlateNum').value = '';
+  document.getElementById('newMaker').value = '';
+  document.getElementById('newModel').value = '';
+  document.getElementById('newWheelCount').value = '未確認';
+  document.getElementById('newVin').value = '';
+  showScr('scrNewVehicle');
+}
+
+async function doCreateVehicle() {
+  var plateNum = document.getElementById('newPlateNum').value.trim();
+  if (!plateNum) { showError('ナンバー下4桁を入力してください'); return; }
+  startLoading(document.getElementById('newVehSaveBtn'));
+  var r = await callAPI('vehicle_create', {
+    customerId: currentCustomerId,
+    area: document.getElementById('newArea').value.trim(),
+    classNo: document.getElementById('newClassNo').value.trim(),
+    kana: document.getElementById('newKana').value.trim(),
+    plateNum: plateNum,
+    maker: document.getElementById('newMaker').value.trim(),
+    model: document.getElementById('newModel').value.trim(),
+    wheelCount: document.getElementById('newWheelCount').value,
+    vin: document.getElementById('newVin').value.trim(),
+  });
+  stopLoading(document.getElementById('newVehSaveBtn'));
+  if (handleAPIError(r)) return;
+  showSuccess('車両を登録しました');
+  loadVehicleList(currentCustomerId);
 }
 
 // === 詳細表示 ===
@@ -230,7 +357,7 @@ async function deleteVehicle() {
 }
 
 function goBackFromDetail() {
-  if (paramId) { history.back(); } else { showScr('scrSearch'); }
+  if (paramId) { history.back(); } else if (currentCustomerId) { loadVehicleList(currentCustomerId); } else { showScr('scrSearch'); }
 }
 
 var paramId = getParam('vehicleId');
