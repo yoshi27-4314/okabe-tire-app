@@ -386,11 +386,7 @@ function openSetting(tabId) {
 }
 
 loadMaster();
-var isAdmin = (localStorage.getItem('role') || '') === 'ADMIN';
-if (!isAdmin) {
-  var staffMenu = document.querySelector('[onclick*="tabStaff"]');
-  if (staffMenu) staffMenu.style.display = 'none';
-}
+// スタッフ管理は全員に表示する
 
 // --- 割引グループ ---
 var groupData = [];
